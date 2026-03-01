@@ -1,17 +1,17 @@
-# Simple WP Site Exporter
+# EngineScript Site Exporter
 
-[![Codacy Badge](https://app.codacy.com/project/badge/Grade/94ac1b08e70a48cc895d8522dffcf472)](https://app.codacy.com/gh/EngineScript/simple-wp-site-exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/94ac1b08e70a48cc895d8522dffcf472)](https://app.codacy.com/gh/EngineScript/enginescript-site-exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?logo=gnu)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![WordPress Compatible](https://img.shields.io/badge/WordPress-6.5%2B-blue.svg?logo=wordpress)](https://wordpress.org/)
 [![PHP Compatible](https://img.shields.io/badge/PHP-7.4%2B-purple.svg?logo=php)](https://www.php.net/)
 
 ## Current Version
-[![Version](https://img.shields.io/badge/Version-1.9.2-orange.svg?logo=github)](https://github.com/EngineScript/simple-wp-site-exporter/releases/latest/download/simple-wp-site-exporter-1.9.2.zip)
+[![Version](https://img.shields.io/badge/Version-2.0.0-orange.svg?logo=github)](https://github.com/EngineScript/enginescript-site-exporter/releases/latest/download/enginescript-site-exporter-2.0.0.zip)
 
 ## Description
 A WordPress plugin that exports your entire site, including files and database, as a secure, downloadable ZIP archive.
 
-EngineScript Simple WP Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
+EngineScript Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
 
 ### Key Features
 
@@ -67,7 +67,7 @@ The export format is specifically designed to work with EngineScript's site impo
 
 ## Security Features
 
-Simple WP Site Exporter is built with security as a priority:
+EngineScript Site Exporter is built with security as a priority:
 
 - **Export Authentication**: Only authorized administrators can create and download exports
 - **Secure Downloads**: All downloads are validated with WordPress nonces
@@ -86,7 +86,7 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 ### Where are the export files stored?
 
 Exports are stored in your WordPress uploads directory, specifically at:
-`[wp-root]/wp-content/uploads/simple-wp-site-exporter-exports/`
+`[wp-root]/wp-content/uploads/enginescript-site-exporter-exports/`
 
 ### Why do export files disappear after 5 minutes?
 
@@ -114,8 +114,8 @@ This plugin is licensed under the [GPL v3 or later](https://www.gnu.org/licenses
 
 ## Credits
 
-Simple WP Site Exporter is developed and maintained by [EngineScript](https://github.com/EngineScript/EngineScript).
+EngineScript Site Exporter is developed and maintained by [EngineScript](https://github.com/EngineScript/EngineScript).
 
 ## Support
 
-For support, feature requests, or bug reports, please [create an issue](https://github.com/EngineScript/simple-wp-site-exporter/issues) on our GitHub repository.
+For support, feature requests, or bug reports, please [create an issue](https://github.com/EngineScript/enginescript-site-exporter/issues) on our GitHub repository.

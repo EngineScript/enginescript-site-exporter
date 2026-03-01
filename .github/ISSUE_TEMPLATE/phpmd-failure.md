@@ -8,7 +8,7 @@ assignees: []
 
 ## PHPMD Code Quality Analysis Failure
 
-The automated PHP Mess Detector (PHPMD) analysis has detected code quality issues in the Simple WP Site Exporter plugin.
+The automated PHP Mess Detector (PHPMD) analysis has detected code quality issues in the EngineScript Site Exporter plugin.
 
 ### Details
 
@@ -19,7 +19,7 @@ The automated PHP Mess Detector (PHPMD) analysis has detected code quality issue
 
 ### Next Steps
 
-This issue has been automatically created because the Simple WP Site Exporter plugin failed PHPMD code quality analysis. PHPMD detects:
+This issue has been automatically created because the EngineScript Site Exporter plugin failed PHPMD code quality analysis. PHPMD detects:
 
 #### Analyzed Areas:
 1. **Clean Code**: Code complexity and maintainability issues
@@ -60,16 +60,16 @@ This project uses a WordPress-specific PHPMD configuration (`phpmd.xml`) that su
 composer install
 
 # Run PHPMD with WordPress-specific configuration (recommended)
-./vendor/bin/phpmd simple-wp-site-exporter.php text phpmd.xml
+./vendor/bin/phpmd enginescript-site-exporter.php text phpmd.xml
 
 # Run PHPMD with standard rules (may show WordPress-specific warnings)
-./vendor/bin/phpmd simple-wp-site-exporter.php text cleancode,codesize,design,naming,unusedcode
+./vendor/bin/phpmd enginescript-site-exporter.php text cleancode,codesize,design,naming,unusedcode
 
 # Generate HTML report with WordPress config
-./vendor/bin/phpmd simple-wp-site-exporter.php html phpmd.xml --reportfile phpmd-report.html
+./vendor/bin/phpmd enginescript-site-exporter.php html phpmd.xml --reportfile phpmd-report.html
 
 # Check specific rules with high priority
-./vendor/bin/phpmd simple-wp-site-exporter.php text codesize --minimumpriority 1
+./vendor/bin/phpmd enginescript-site-exporter.php text codesize --minimumpriority 1
 ```
 
 #### Example Fixes:

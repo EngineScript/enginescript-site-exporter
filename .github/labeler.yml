@@ -4,7 +4,7 @@
 # Core plugin functionality
 core:
   - changed-files:
-    - any-glob-to-any-file: simple-wp-site-exporter.php
+    - any-glob-to-any-file: enginescript-site-exporter.php
     - any-glob-to-any-file: includes/**/*
     - any-glob-to-any-file: assets/js/**/*
 

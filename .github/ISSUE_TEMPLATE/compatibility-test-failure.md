@@ -19,7 +19,7 @@ The automated compatibility test has failed for the following environment:
 
 ### Next Steps
 
-This issue has been automatically created because the Simple WP Site Exporter plugin failed compatibility testing with this specific WordPress and PHP version combination. This could indicate:
+This issue has been automatically created because the EngineScript Site Exporter plugin failed compatibility testing with this specific WordPress and PHP version combination. This could indicate:
 
 #### Potential Issues:
 1. **PHP Compatibility**: Code may use features not available in PHP {{ env.PHP_VERSION }}
@@ -41,7 +41,7 @@ This issue has been automatically created because the Simple WP Site Exporter pl
 docker run --rm -v $(pwd):/app wordpress:{{ env.WP_VERSION }}-php{{ env.PHP_VERSION }}-apache
 
 # Run plugin check locally
-wp plugin check simple-wp-site-exporter --format=json --require=./wp-content/plugins/plugin-check/cli.php
+wp plugin check enginescript-site-exporter --format=json --require=./wp-content/plugins/plugin-check/cli.php
 ```
 
 Once fixed, please close this issue and reference it in the changelog.

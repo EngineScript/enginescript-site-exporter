@@ -8,7 +8,7 @@ assignees: []
 
 ## WordPress Plugin Check Failure
 
-The WordPress Plugin Check action has identified issues with the Simple WP Site Exporter plugin.
+The WordPress Plugin Check action has identified issues with the EngineScript Site Exporter plugin.
 
 ### Details
 

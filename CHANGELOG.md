@@ -1,6 +1,6 @@
-# Changelog for Simple WP Site Exporter
+# Changelog for EngineScript Site Exporter
 
-## 1.9.2 - February 28, 2026
+## 2.0.0 - March 1, 2026
 
 ### Critical Bug Fixes
 
@@ -102,7 +102,7 @@
 
 ### WordPress Plugin Directory Compliance (1.8.3)
 
-- **Text Domain Fix**: Updated text domain from 'Simple-WP-Site-Exporter' to 'simple-wp-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
+- **Text Domain Fix**: Updated text domain from 'EngineScript-Site-Exporter' to 'enginescript-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
 - **Load Textdomain Removal**: Removed discouraged `load_plugin_textdomain()` function call as WordPress automatically handles translations for plugins hosted on WordPress.org since version 4.6
 - **Plugin Header Update**: Fixed "Text Domain" header to use only lowercase letters, numbers, and hyphens as required by WordPress standards
 
@@ -124,7 +124,7 @@
 
 - **WordPress Baseline**: Updated minimum WordPress version requirement from 6.0 to 6.5+ for better compatibility
 - **Internationalization**: Added complete i18n support with `load_plugin_textdomain()` and `.pot` file generation  
-- **Language Files**: Created `languages/simple-wp-site-exporter.pot` with all translatable strings
+- **Language Files**: Created `languages/enginescript-site-exporter.pot` with all translatable strings
 - **Documentation Consistency**: Updated README.md, readme.txt, and phpcs.xml to reflect WordPress 6.5+ baseline
 - **Workflow Updates**: Modified compatibility testing to use WordPress 6.5+ as minimum test version
 - **Standards Alignment**: Ensured all code, workflows, and documentation strictly follow WordPress coding standards
@@ -135,7 +135,7 @@
 
 - **WordPress Baseline**: Updated minimum WordPress version requirement from 6.0 to 6.5+ for better compatibility
 - **Internationalization**: Added complete i18n support with `load_plugin_textdomain()` and `.pot` file generation  
-- **Language Files**: Created `languages/simple-wp-site-exporter.pot` with all translatable strings
+- **Language Files**: Created `languages/enginescript-site-exporter.pot` with all translatable strings
 - **Documentation Consistency**: Updated README.md, readme.txt, and phpcs.xml to reflect WordPress 6.5+ baseline
 - **Workflow Updates**: Modified compatibility testing to use WordPress 6.5+ as minimum test version
 - **Standards Alignment**: Ensured all code, workflows, and documentation strictly follow WordPress coding standards
@@ -219,7 +219,7 @@
   - Enhanced file download security with proper output handling
 - **Output Escaping**: Added proper phpcs:ignore comments for binary file downloads
 - **Text Domain Consistency**: Fixed all remaining text domain inconsistencies:
-  - Changed remaining 'simple-wp-site-exporter' instances to 'simple-wp-site-exporter'
+  - Changed remaining legacy slug instances to 'enginescript-site-exporter'
   - Updated all translation function calls for consistency
   - Fixed output escaping in `wp_die()` calls using `esc_html__()` instead of `__()`
   - Added proper escaping for WP_Error messages in `wp_die()` calls
@@ -292,7 +292,7 @@
 ### Security & Best Practices Improvements (1.6.6)
 
 - **CRITICAL**: Added missing secure download and delete handlers for export files
-- **Text Domain Consistency**: Fixed all text domain inconsistencies to use 'simple-wp-site-exporter'
+- **Text Domain Consistency**: Fixed all text domain inconsistencies to use 'enginescript-site-exporter'
 - **Enhanced Shell Security**: Improved WP-CLI path validation with comprehensive security checks
 - **Path Traversal Protection**: Enhanced file path validation with better edge case handling
 - **Global Variable Handling**: Improved WordPress filesystem API initialization and error handling
@@ -325,7 +325,7 @@
 
 ### Bug Fixes (1.6.4)
 
-- **Text Domain Fix**: Fixed mismatched text domain to properly use 'simple-wp-site-exporter' instead of 'simple-wp-site-exporter' for WordPress plugin compliance
+- **Text Domain Fix**: Fixed mismatched text domain to properly use 'enginescript-site-exporter' for WordPress plugin compliance
 - **Plugin Header Compliance**: Updated plugin text domain header to match expected slug format for WordPress.org directory standards
 
 ## 1.6.3 - June 6, 2025
@@ -338,12 +338,12 @@
 
 ### Plugin Rebrand (1.6.2)
 
-- **Plugin Renamed**: Changed plugin name from "EngineScript: Simple Site Exporter" to "Simple WP Site Exporter"
-- **Plugin File Renamed**: Changed main plugin file from 'simple-site-exporter.php' to 'simple-wp-site-exporter.php'
-- **Repository Moved**: Moved repository from 'EngineScript-Simple-Site-Exporter' to 'simple-wp-site-exporter'
-- **Text Domain Updated**: Updated text domain from 'Simple-Site-Exporter' to 'simple-wp-site-exporter' for consistency
-- **Package Name Updated**: Updated composer package name to 'enginescript/simple-wp-site-exporter'
-- **Directory Names Updated**: Updated export directory from 'enginescript-sse-site-exports' to 'simple-wp-site-exporter-exports'
+- **Plugin Renamed**: Changed plugin name from "EngineScript: Simple Site Exporter" to "EngineScript Site Exporter"
+- **Plugin File Renamed**: Changed main plugin file from 'simple-site-exporter.php' to 'enginescript-site-exporter.php'
+- **Repository Moved**: Moved repository from 'EngineScript-Simple-Site-Exporter' to 'enginescript-site-exporter'
+- **Text Domain Updated**: Updated text domain from 'Simple-Site-Exporter' to 'enginescript-site-exporter' for consistency
+- **Package Name Updated**: Updated composer package name to 'enginescript/enginescript-site-exporter'
+- **Directory Names Updated**: Updated export directory from 'enginescript-sse-site-exports' to 'enginescript-site-exporter-exports'
 - **GitHub Workflows Updated**: Updated all GitHub Actions workflows to reference the new plugin name, filename, and repository
 - **Documentation Updated**: Updated README.md, readme.txt, and all documentation to reflect the new plugin name and repository
 
@@ -365,12 +365,12 @@
 - **Improved File Operations**: Replaced unsafe `@unlink()` calls with `sse_safely_delete_file()` function using WordPress Filesystem API with proper error handling
 - **Execution Time Safety**: Enhanced `set_time_limit()` usage with safety checks, reasonable 30-minute limits instead of unlimited execution, and proper logging
 - **Path Security**: Added `sse_validate_filepath()` function to prevent directory traversal attacks with comprehensive path validation
-- **Text Domain Standardization**: Updated all translatable strings to use consistent 'simple-wp-site-exporter' text domain across the entire plugin
+- **Text Domain Standardization**: Updated all translatable strings to use consistent 'enginescript-site-exporter' text domain across the entire plugin
 
 ### GitHub Actions Security Updates (1.6.0)
 
 - Pinned all GitHub Actions to specific commit hashes instead of version tags for improved security
-- Updated all workflow references from Simple-WP-Optimizer to Simple WP Site Exporter
+- Updated all workflow references from Simple-WP-Optimizer to EngineScript Site Exporter
 - Enhanced CI/CD pipeline security with version pinning and proper repository references
 
 ### Code Structure Improvements (1.6.0)

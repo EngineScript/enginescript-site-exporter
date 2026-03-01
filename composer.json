@@ -1,6 +1,6 @@
 {
-  "name": "enginescript/simple-wp-site-exporter",
-  "description": "Simple WP Site Exporter - Export your entire WordPress site as a ZIP archive",
+  "name": "enginescript/enginescript-site-exporter",
+  "description": "EngineScript Site Exporter - Export your entire WordPress site as a ZIP archive",
   "type": "wordpress-plugin",
   "license": "GPL-3.0-or-later",
   "authors": [

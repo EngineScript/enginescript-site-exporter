@@ -8,7 +8,7 @@ assignees: []
 
 ## PHPCS WordPress Coding Standards Failure
 
-The automated PHP CodeSniffer (PHPCS) test has detected coding standard violations in the Simple WP Site Exporter plugin.
+The automated PHP CodeSniffer (PHPCS) test has detected coding standard violations in the EngineScript Site Exporter plugin.
 
 ### Details
 
@@ -19,7 +19,7 @@ The automated PHP CodeSniffer (PHPCS) test has detected coding standard violatio
 
 ### Next Steps
 
-This issue has been automatically created because the Simple WP Site Exporter plugin failed to meet WordPress coding standards. PHPCS checks for:
+This issue has been automatically created because the EngineScript Site Exporter plugin failed to meet WordPress coding standards. PHPCS checks for:
 
 #### Checked Standards:
 1. **WordPress Core**: Core WordPress coding standards
@@ -50,13 +50,13 @@ This issue has been automatically created because the Simple WP Site Exporter pl
 composer install
 
 # Run PHPCS checks
-./vendor/bin/phpcs --standard=WordPress simple-wp-site-exporter.php
+./vendor/bin/phpcs --standard=WordPress enginescript-site-exporter.php
 
 # Auto-fix simple issues
-./vendor/bin/phpcbf --standard=WordPress simple-wp-site-exporter.php
+./vendor/bin/phpcbf --standard=WordPress enginescript-site-exporter.php
 
 # Check specific files
-./vendor/bin/phpcs --standard=WordPress-Extra --report=full simple-wp-site-exporter.php
+./vendor/bin/phpcs --standard=WordPress-Extra --report=full enginescript-site-exporter.php
 ```
 
 Once fixed, please close this issue and reference it in the changelog.

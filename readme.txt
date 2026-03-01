@@ -1,9 +1,9 @@
-=== Simple WP Site Exporter ===
+=== EngineScript Site Exporter ===
 Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 6.5
 Tested up to: 6.9
-Stable tag: 1.9.2
+Stable tag: 2.0.0
 Requires PHP: 7.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -12,7 +12,7 @@ Export your entire WordPress site as a secure downloadable ZIP archive.
 
 == Description ==
 
-Simple WP Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
+EngineScript Site Exporter provides WordPress administrators with a straightforward, secure way to export their entire website. With a single click, you can create a complete backup of your site's files and database, perfect for site migrations, backups, or local development environments.
 
 Key features:
 * One-Click Export: Create a complete site backup with just one click
@@ -34,7 +34,7 @@ The export format is specifically designed to work with EngineScript's site impo
 
 == Installation ==
 
-1. Upload the plugin files to the `/wp-content/plugins/simple-wp-site-exporter` directory, or install the plugin through the WordPress plugins screen directly.
+1. Upload the plugin files to the `/wp-content/plugins/enginescript-site-exporter` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
 3. Navigate to Tools → Site Exporter in your WordPress admin.
 4. Click the "Export Site" button to create a full site backup.
@@ -48,7 +48,7 @@ The plugin is designed to work with most WordPress sites, but very large sites (
 = Where are the export files stored? =
 
 Exports are stored in your WordPress uploads directory, specifically at:
-`[wp-root]/wp-content/uploads/simple-wp-site-exporter-exports/`
+`[wp-root]/wp-content/uploads/enginescript-site-exporter-exports/`
 
 = Why do export files disappear after 5 minutes? =
 
@@ -89,7 +89,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
 
-= 1.9.2 =
+= 2.0.0 =
 * **Critical Fix**: Fixed bug where automatic export file cleanup via WordPress cron was completely broken due to referer validation blocking cron-triggered deletions
 * **Critical Fix**: Fixed deletion success/failure notices being lost after redirect
 * **Security**: Fixed 9 instances of double-escaped WP_Error messages that could display garbled text to users
@@ -137,7 +137,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Security Hardening**: Added WP-CLI executable verification, sanitized WP-CLI error output (path masking), conditional --allow-root usage, stricter download data validation, and graceful scheduled deletion handling
 
 = 1.8.3 =
-* **WordPress Plugin Directory Compliance**: Updated text domain from 'Simple-WP-Site-Exporter' to 'simple-wp-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
+* **WordPress Plugin Directory Compliance**: Updated text domain from 'EngineScript-Site-Exporter' to 'enginescript-site-exporter' (lowercase) to comply with WordPress.org plugin directory requirements
 * **Load Textdomain Removal**: Removed discouraged `load_plugin_textdomain()` function call as WordPress automatically handles translations for plugins hosted on WordPress.org since version 4.6
 * **Plugin Header Update**: Fixed "Text Domain" header to use only lowercase letters, numbers, and hyphens as required by WordPress standards
 * **Critical Security Fix**: Resolved a fatal error caused by a missing `sse_get_safe_wp_cli_path()` function. This function is essential for securely locating the WP-CLI executable, and its absence prevented the database export process from running. The new function ensures that the plugin can reliably find WP-CLI in common locations, allowing the export to proceed as intended.
@@ -177,7 +177,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 = 1.6.6 =
 * CRITICAL: Added missing secure download and delete handlers for export files
-* Fixed all text domain inconsistencies to use 'simple-wp-site-exporter'
+* Fixed all text domain inconsistencies to use 'enginescript-site-exporter'
 * Enhanced shell security with improved WP-CLI path validation and security checks
 * Improved path traversal protection with better edge case handling
 * Enhanced global variable handling for WordPress filesystem API
@@ -198,17 +198,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * Split complex boolean-flag functions into separate, dedicated functions
 
 = 1.6.4 =
-* Fixed text domain mismatch to use 'Simple-WP-Site-Exporter' for WordPress plugin compliance
+* Fixed text domain mismatch to use 'enginescript-site-exporter' for WordPress plugin compliance
 * Updated plugin header text domain to match expected slug format for WordPress.org directory standards
 
 = 1.6.3 =
 * Version consistency update across all plugin files and documentation
 
 = 1.6.2 =
-* Plugin renamed from "EngineScript: Simple Site Exporter" to "Simple WP Site Exporter"
-* Updated text domain to 'simple-wp-site-exporter' for consistency
-* Updated composer package name to 'enginescript/simple-wp-site-exporter'
-* Updated export directory naming to 'simple-wp-site-exporter-exports'
+* Plugin renamed from "EngineScript: Simple Site Exporter" to "EngineScript Site Exporter"
+* Updated text domain to 'enginescript-site-exporter' for consistency
+* Updated composer package name to 'enginescript/enginescript-site-exporter'
+* Updated export directory naming to 'enginescript-site-exporter-exports'
 * Updated all GitHub workflows and documentation to reflect new plugin name
 * Enhanced plugin branding and consistency
 

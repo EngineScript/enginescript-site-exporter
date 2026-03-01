@@ -23,7 +23,7 @@ jobs:
       - name: Get latest version
         id: get_version
         run: |
-          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" simple-wp-site-exporter.php)
+          VERSION=$(grep -oP "Version: \K[0-9]+\.[0-9]+\.[0-9]+" enginescript-site-exporter.php)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Found version: $VERSION"
 
@@ -42,12 +42,12 @@ jobs:
       - name: Create zip file
         if: steps.check_release.outputs.exists == 'false'
         run: |
-          mkdir -p simple-wp-site-exporter
-          cp simple-wp-site-exporter.php simple-wp-site-exporter/
-          cp README.md simple-wp-site-exporter/
-          cp CHANGELOG.md simple-wp-site-exporter/
-          cp LICENSE simple-wp-site-exporter/ || echo "No LICENSE file found"
-          zip -r simple-wp-site-exporter-${{ steps.get_version.outputs.version }}.zip simple-wp-site-exporter
+          mkdir -p enginescript-site-exporter
+          cp enginescript-site-exporter.php enginescript-site-exporter/
+          cp README.md enginescript-site-exporter/
+          cp CHANGELOG.md enginescript-site-exporter/
+          cp LICENSE enginescript-site-exporter/ || echo "No LICENSE file found"
+          zip -r enginescript-site-exporter-${{ steps.get_version.outputs.version }}.zip enginescript-site-exporter
 
       - name: Get changelog entry
         if: steps.check_release.outputs.exists == 'false'
@@ -73,7 +73,7 @@ jobs:
             3. Activate the plugin
             
             [Full Documentation](https://github.com/${{ github.repository }})
-          files: simple-wp-site-exporter-${{ steps.get_version.outputs.version }}.zip
+          files: enginescript-site-exporter-${{ steps.get_version.outputs.version }}.zip
           draft: false
           prerelease: false
           generate_release_notes: false
@@ -88,7 +88,7 @@ jobs:
           TMP_FILE=$(mktemp)
           
           # Update the version badge with the new version and logo
-          sed -E 's/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/simple-wp-site-exporter\/releases\/latest\/download\/simple-wp-site-exporter-[0-9]+\.[0-9]+\.[0-9]+\.zip\)/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-'"$VERSION"'-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/simple-wp-site-exporter\/releases\/latest\/download\/simple-wp-site-exporter-'"$VERSION"'\.zip\)/g' "$README_FILE" > "$TMP_FILE"
+          sed -E 's/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-[0-9]+\.[0-9]+\.[0-9]+-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/enginescript-site-exporter\/releases\/latest\/download\/enginescript-site-exporter-[0-9]+\.[0-9]+\.[0-9]+\.zip\)/\[\!Version\]\(https:\/\/img\.shields\.io\/badge\/Version-'"$VERSION"'-orange\.svg\?logo=github\)\]\(https:\/\/github\.com\/EngineScript\/enginescript-site-exporter\/releases\/latest\/download\/enginescript-site-exporter-'"$VERSION"'\.zip\)/g' "$README_FILE" > "$TMP_FILE"
           
           # Replace file if changes were made
           if ! cmp -s "$README_FILE" "$TMP_FILE"; then

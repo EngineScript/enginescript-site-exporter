@@ -1,4 +1,4 @@
-# This workflow runs continuous integration checks on the Simple WP Site Exporter plugin.
+# This workflow runs continuous integration checks on the EngineScript Site Exporter plugin.
 # It performs code linting for both PHP and JavaScript files and builds the plugin package.
 # The workflow is triggered on push to main branch and on pull requests to ensure code quality.
 # It creates and stores a plugin zip file as an artifact that can be used for testing.
@@ -161,29 +161,29 @@ jobs:
         
       - name: Create plugin package
         run: |
-          mkdir -p build/simple-wp-site-exporter
+          mkdir -p build/enginescript-site-exporter
           
           # Copy main plugin file
-          cp simple-wp-site-exporter.php build/simple-wp-site-exporter/
+          cp enginescript-site-exporter.php build/enginescript-site-exporter/
           
           # Copy directories if they exist
-          [ -d assets ] && cp -r assets build/simple-wp-site-exporter/ || echo "No assets directory found"
-          [ -d includes ] && cp -r includes build/simple-wp-site-exporter/ || echo "No includes directory found"
-          [ -d languages ] && cp -r languages build/simple-wp-site-exporter/ || echo "No languages directory found"
-          [ -d templates ] && cp -r templates build/simple-wp-site-exporter/ || echo "No templates directory found"
+          [ -d assets ] && cp -r assets build/enginescript-site-exporter/ || echo "No assets directory found"
+          [ -d includes ] && cp -r includes build/enginescript-site-exporter/ || echo "No includes directory found"
+          [ -d languages ] && cp -r languages build/enginescript-site-exporter/ || echo "No languages directory found"
+          [ -d templates ] && cp -r templates build/enginescript-site-exporter/ || echo "No templates directory found"
           
           # Copy additional files if they exist
-          [ -f readme.txt ] && cp readme.txt build/simple-wp-site-exporter/ || echo "No readme.txt found"
-          [ -f README.md ] && cp README.md build/simple-wp-site-exporter/ || echo "No README.md found"
-          [ -f CHANGELOG.md ] && cp CHANGELOG.md build/simple-wp-site-exporter/ || echo "No CHANGELOG.md found"
-          [ -f LICENSE ] && cp LICENSE build/simple-wp-site-exporter/ || echo "No LICENSE file found"
+          [ -f readme.txt ] && cp readme.txt build/enginescript-site-exporter/ || echo "No readme.txt found"
+          [ -f README.md ] && cp README.md build/enginescript-site-exporter/ || echo "No README.md found"
+          [ -f CHANGELOG.md ] && cp CHANGELOG.md build/enginescript-site-exporter/ || echo "No CHANGELOG.md found"
+          [ -f LICENSE ] && cp LICENSE build/enginescript-site-exporter/ || echo "No LICENSE file found"
           
           # Create zip file
           cd build
-          zip -r simple-wp-site-exporter.zip simple-wp-site-exporter
+          zip -r enginescript-site-exporter.zip enginescript-site-exporter
           
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: simple-wp-site-exporter
-          path: build/simple-wp-site-exporter.zip
+          name: enginescript-site-exporter
+          path: build/enginescript-site-exporter.zip

@@ -4,7 +4,7 @@ includes:
 parameters:
     level: 5
     paths:
-        - simple-wp-site-exporter.php
+        - enginescript-site-exporter.php
 
     excludePaths:
         - .github

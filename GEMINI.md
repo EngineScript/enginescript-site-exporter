@@ -1,4 +1,4 @@
-# Simple WP Site Exporter - WordPress Plugin
+# EngineScript Site Exporter - WordPress Plugin
 
 ## Project Overview
 
@@ -6,12 +6,12 @@ This is a secure WordPress site export plugin that creates complete site backups
 
 ## Plugin Details
 
-- **Name:** Simple WP Site Exporter
-- **Version:** 1.9.2
+- **Name:** EngineScript Site Exporter
+- **Version:** 2.0.0
 - **WordPress Compatibility:** 6.5+
 - **PHP Compatibility:** 7.4+
 - **License:** GPL-3.0-or-later
-- **Text Domain:** simple-wp-site-exporter
+- **Text Domain:** enginescript-site-exporter
 
 ## Architecture & Design Patterns
 
@@ -20,7 +20,7 @@ This is a secure WordPress site export plugin that creates complete site backups
 The plugin follows a single-file architecture pattern for simplicity:
 
 ```php
-// All functionality contained in simple-wp-site-exporter.php
+// All functionality contained in enginescript-site-exporter.php
 // Functions prefixed with 'sse_' for namespace consistency
 function sse_function_name() {
     // Implementation
@@ -42,7 +42,7 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 
 ### File Structure
 
-- `simple-wp-site-exporter.php` - Main plugin file (all functionality)
+- `enginescript-site-exporter.php` - Main plugin file (all functionality)
 - `languages/` - Translation files (.pot file included)
 - `CHANGELOG.md` - Developer changelog
 - `README.md` - Developer documentation
@@ -56,7 +56,7 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 - **Functions:** `sse_snake_case` (WordPress standard with plugin prefix)
 - **Variables:** `$snake_case`
 - **Constants:** `SSE_UPPER_SNAKE_CASE`
-- **Text Domain:** Always use `'simple-wp-site-exporter'`
+- **Text Domain:** Always use `'enginescript-site-exporter'`
 
 ### Security Requirements
 

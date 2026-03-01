@@ -20,7 +20,7 @@ jobs:
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Thanks for contributing to Simple WP Site Exporter! 🎉
+            Thanks for contributing to EngineScript Site Exporter! 🎉
 
             **Before we review:**
             - [ ] Have you tested your changes with WordPress 6.5+?
