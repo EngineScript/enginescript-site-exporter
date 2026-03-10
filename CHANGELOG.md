@@ -1,5 +1,37 @@
 # Changelog for EngineScript Site Exporter
 
+## Unreleased
+
+### Security
+
+- **Export Directory Protection**: Added `.htaccess` file to the export directory with `Deny from all` rules (Apache 2.2 and 2.4) to prevent direct HTTP access to export files during the cleanup window. Previously only an `index.php` prevented directory listing.
+- **Private API Removal**: Removed usage of `_get_cron_array()` (WordPress private/internal function) from cron failure diagnostics. Uses only public APIs (`wp_next_scheduled()`, `wp_schedule_single_event()`) now.
+- **Filesystem Compatibility**: Replaced `glob()` with `scandir()` in `sse_bulk_cleanup_exports_handler()` for cross-platform compatibility and consistency with WordPress filesystem conventions.
+- **SSRF Hardening**: File download functions now use `realpath()`-resolved paths for all filesystem operations (`readfile()`, `is_readable()`, `is_file()`), preventing TOCTOU and SSRF attack vectors. `sse_validate_file_output_security()` now returns the resolved path for direct use.
+
+### Bug Fixes
+
+- **Documentation Fix**: Corrected README.md Security Features section from "after 1 hour" to "after 5 minutes" to match actual cleanup timer.
+- **Unused Variable**: Removed unused `$export_dir_name` variable assignment in `sse_exporter_page_html()`.
+- **phpcs Suppression**: Removed unnecessary `phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped` comment on a line already properly escaped with `esc_html()`.
+- **GEMINI.md Accuracy**: Updated WP-CLI Integration section to reflect that WP-CLI is a required dependency (returns `WP_Error` if unavailable), replacing outdated "graceful fallback" language.
+
+### Architecture
+
+- **WP_Filesystem Helper**: Extracted duplicated `WP_Filesystem` initialization from 4 functions into a single `sse_init_filesystem()` helper that returns `true|WP_Error`, reducing ~40 lines of duplicated code to ~10.
+- **Removed Wrapper Functions**: Inlined 3 pass-through wrapper functions (`sse_validate_download_request()`, `sse_validate_file_deletion()`, `sse_validate_export_file_for_deletion()`) — callers now invoke the underlying functions directly.
+- **Download Validation Consolidation**: Removed 2 redundant intermediate validation passes (`sse_validate_download_file_data()`, `sse_validate_download_file_access()`) from the download flow. Entry validation and final `readfile()` security gate remain; intermediate re-validation of already-validated data removed.
+- **Path Resolution Consolidation**: Consolidated 7-function-deep path resolution chain into a single `sse_resolve_file_path()` function. Removed 6 single-use intermediary functions (`sse_resolve_nonexistent_file_path()`, `sse_get_upload_directory_info()`, `sse_build_validated_file_path()`, `sse_validate_parent_directory_safety()`, `sse_construct_final_file_path()`, `sse_resolve_parent_directory()`, `sse_sanitize_filename()`).
+- **Dead Code Removal**: Removed no-op `sse_prepare_execution_environment()` function and its call from the export flow.
+- **Debug Code Removal**: Removed `sse_test_cron_scheduling()` debug function that created/verified/removed a test cron event on every export — no longer needed after v2.0.0 cron fixes.
+- **Cron Logging Reduction**: Reduced cron scheduling functions from 5+ log entries each to 2 (success/failure), keeping `DISABLE_WP_CRON` diagnostic on failure only.
+
+### PHP 7.4 Modernization
+
+- **Type Declarations**: Added PHP 7.4 parameter types and return types to all functions where deterministic. Functions returning union types (`array|WP_Error`, `string|false`, `true|WP_Error`) retain PHPDoc-only annotations since PHP 7.4 does not support union return types.
+- **Short Array Syntax**: Standardized all `array()` constructor calls to short `[]` syntax throughout the plugin.
+- **Null Coalescing Assignment**: Replaced explicit null check + assignment pattern with PHP 7.4 `??=` operator in `sse_should_exclude_file()` file size cache, and `?:` Elvis operator for the ternary fallback.
+
 ## 2.0.0 - March 1, 2026
 
 ### Critical Bug Fixes

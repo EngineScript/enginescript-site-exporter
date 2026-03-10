@@ -124,9 +124,9 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 
 ### WP-CLI Integration
 
-- **Database Export:** Efficient database dumps when WP-CLI available
+- **Database Export:** Efficient database dumps via WP-CLI
 - **Security Validation:** WP-CLI executable verification
-- **Error Handling:** Graceful fallback when WP-CLI unavailable
+- **Error Handling:** Returns WP_Error when WP-CLI is unavailable (required dependency)
 - **Root Detection:** Conditional --allow-root flag usage
 
 ## Development Standards

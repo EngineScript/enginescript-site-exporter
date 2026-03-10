@@ -89,6 +89,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 == Changelog ==
 
+= Unreleased =
+* **Security**: Added `.htaccess` file to export directory with `Deny from all` rules to prevent direct HTTP access to export files
+* **Security**: Removed usage of `_get_cron_array()` private WordPress API from cron failure diagnostics
+* **Security**: Replaced `glob()` with `scandir()` in bulk cleanup handler for cross-platform compatibility
+* **Security**: File download functions now use `realpath()`-resolved paths for all filesystem operations to prevent SSRF
+* **Bug Fix**: Corrected README.md cleanup timer from "1 hour" to "5 minutes"
+* **Bug Fix**: Removed unused `$export_dir_name` variable in admin page
+* **Bug Fix**: Removed unnecessary phpcs suppression comment on properly escaped output
+* **Bug Fix**: Updated GEMINI.md WP-CLI section to reflect required dependency status
+* **Architecture**: Extracted duplicated WP_Filesystem initialization into `sse_init_filesystem()` helper
+* **Architecture**: Inlined 3 pass-through wrapper functions for simpler call graph
+* **Architecture**: Removed 2 redundant intermediate download validation passes
+* **Architecture**: Consolidated 7-deep path resolution chain into single `sse_resolve_file_path()` function
+* **Architecture**: Removed no-op `sse_prepare_execution_environment()` function
+* **Architecture**: Removed `sse_test_cron_scheduling()` debug function from export flow
+* **Architecture**: Reduced cron scheduling logging from 5+ entries to 2 per operation
+* **PHP 7.4**: Added type declarations (parameter and return types) to all functions
+* **PHP 7.4**: Standardized all `array()` to short `[]` syntax
+* **PHP 7.4**: Applied `??=` null coalescing assignment and `?:` Elvis operator
+
 = 2.0.0 =
 * **Critical Fix**: Fixed bug where automatic export file cleanup via WordPress cron was completely broken due to referer validation blocking cron-triggered deletions
 * **Critical Fix**: Fixed deletion success/failure notices being lost after redirect

@@ -73,7 +73,7 @@ EngineScript Site Exporter is built with security as a priority:
 - **Secure Downloads**: All downloads are validated with WordPress nonces
 - **Request Validation**: Referrer checking for all operations
 - **Path Traversal Protection**: Comprehensive file path validation
-- **Automatic Deletion**: Exports are automatically cleaned up after 1 hour
+- **Automatic Deletion**: Exports are automatically cleaned up after 5 minutes
 - **Security Headers**: Implements proper headers for download operations
 - **Secure File Handling**: Uses WordPress Filesystem API for file operations
 

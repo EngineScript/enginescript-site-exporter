@@ -20,11 +20,16 @@
     "dealerdirect/phpcodesniffer-composer-installer": "^1.0.0",
     "php-stubs/wordpress-stubs": "^6.8",
     "szepeviktor/phpstan-wordpress": "^1.3",
-    "phpstan/phpstan": "^1.0"
+    "phpstan/phpstan": "^1.0",
+    "phpcompatibility/phpcompatibility-wp": "^2.1"
   },
   "config": {
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true
     }
+  },
+  "scripts": {
+    "lint:php": "phpcs",
+    "analyze": "phpstan analyse"
   }
 }
