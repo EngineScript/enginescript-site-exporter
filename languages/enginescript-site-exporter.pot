@@ -16,239 +16,240 @@ msgstr ""
 "X-Generator: WordPress\n"
 "X-Domain: enginescript-site-exporter\n"
 
-#: enginescript-site-exporter.php:190
+#: includes/admin-page.php:20
 msgid "EngineScript Site Exporter"
 msgstr ""
 
-#: enginescript-site-exporter.php:191
+#: includes/admin-page.php:21
 msgid "Site Exporter"
 msgstr ""
 
-#: enginescript-site-exporter.php:239
+#: includes/admin-page.php:59
+msgid "Are you sure you want to delete this export file?"
+msgstr ""
+
+#: includes/admin-page.php:72
 msgid "You do not have permission to view this page."
 msgstr ""
 
-#: enginescript-site-exporter.php:244
+#: includes/admin-page.php:77
 msgid "Could not determine the WordPress upload directory."
 msgstr ""
 
-#: enginescript-site-exporter.php:256
+#: includes/admin-page.php:89
 msgid "Export file successfully deleted."
 msgstr ""
 
-#: enginescript-site-exporter.php:258
+#: includes/admin-page.php:91
 msgid "Failed to delete export file."
 msgstr ""
 
-#: enginescript-site-exporter.php:262
+#: includes/admin-page.php:95
 msgid "Click the button below to generate a zip archive containing your WordPress files and a database dump (.sql file)."
 msgstr ""
 
-#: enginescript-site-exporter.php:263
+#: includes/admin-page.php:96
 msgid "Warning:"
 msgstr ""
 
-#: enginescript-site-exporter.php:263
+#: includes/admin-page.php:96
 msgid "This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time."
 msgstr ""
 
 #. translators: %s: directory path
-#: enginescript-site-exporter.php:269
+#: includes/admin-page.php:102
 msgid "Exported .zip files will be saved in the following directory on the server: %s"
 msgstr ""
 
-#: enginescript-site-exporter.php:282
+#: includes/admin-page.php:115
 msgid "Maximum File Size"
 msgstr ""
 
-#: enginescript-site-exporter.php:286
+#: includes/admin-page.php:119
 msgid "No limit (include all files)"
 msgstr ""
 
-#: enginescript-site-exporter.php:287
+#: includes/admin-page.php:120
 msgid "100 MB"
 msgstr ""
 
-#: enginescript-site-exporter.php:288
+#: includes/admin-page.php:121
 msgid "500 MB"
 msgstr ""
 
-#: enginescript-site-exporter.php:289
+#: includes/admin-page.php:122
 msgid "1 GB"
 msgstr ""
 
-#: enginescript-site-exporter.php:292
+#: includes/admin-page.php:125
 msgid "Files larger than this size will be excluded from the export. Choose \"No limit\" to include all files regardless of size."
 msgstr ""
 
-#: enginescript-site-exporter.php:299
+#: includes/admin-page.php:132
 msgid "Export Site"
 msgstr ""
 
-#: enginescript-site-exporter.php:303
+#: includes/admin-page.php:136
 msgid "This plugin is part of the EngineScript project."
 msgstr ""
 
-#: enginescript-site-exporter.php:305
+#: includes/admin-page.php:138
 msgid "Visit the EngineScript GitHub page"
 msgstr ""
 
-#: enginescript-site-exporter.php:309
+#: includes/admin-page.php:142
 msgid "Important:"
 msgstr ""
 
-#: enginescript-site-exporter.php:310
+#: includes/admin-page.php:143
 msgid "The exported zip file is publicly accessible while it remains in the above directory. For security, you should remove the exported file from the server once you are finished downloading it."
 msgstr ""
 
-#: enginescript-site-exporter.php:313
+#: includes/admin-page.php:146
 msgid "Security Notice:"
 msgstr ""
 
-#: enginescript-site-exporter.php:314
+#: includes/admin-page.php:147
 msgid "For your protection, the exported zip file will be automatically deleted from the server 5 minutes after it is created."
 msgstr ""
 
-#: enginescript-site-exporter.php:333
+#: includes/export.php:25
 msgid "An export process is already running. Please wait for it to complete before starting a new one."
 msgstr ""
 
-#: enginescript-site-exporter.php:392
+#: includes/export.php:85
 msgid "Nonce verification failed! Please try again."
 msgstr ""
 
-#: enginescript-site-exporter.php:396
+#: includes/export.php:89
 msgid "You do not have permission to perform this action."
 msgstr ""
 
-#: enginescript-site-exporter.php:424
+#: includes/helpers.php:160
 msgid "Failed to initialize WordPress filesystem API."
 msgstr ""
 
-#: enginescript-site-exporter.php:438
+#: includes/export.php:108
 msgid "Could not determine the WordPress upload directory or URL."
 msgstr ""
 
-#: enginescript-site-exporter.php:447
+#: includes/export.php:117
 msgid "Could not create the export directory. Please verify filesystem permissions."
 msgstr ""
 
-#: enginescript-site-exporter.php:458
+#: includes/export.php:128
 msgid "The export directory is not writable. Please adjust filesystem permissions."
 msgstr ""
 
-#: enginescript-site-exporter.php:558
+#: includes/export.php:230
 msgid "WP-CLI executable not found. Please ensure it is installed and in your server's PATH."
 msgstr ""
 
-#: enginescript-site-exporter.php:574
+#: includes/export.php:247
 msgid "shell_exec function is disabled on this server."
 msgstr ""
 
-#: enginescript-site-exporter.php:637
+#: includes/archive.php:22
 msgid "ZipArchive class is not available on your server. Cannot create zip file."
 msgstr ""
 
 #. translators: %s: filename
-#: enginescript-site-exporter.php:652
+#: includes/archive.php:37
 msgid "Could not create zip file at %s"
 msgstr ""
 
-#: enginescript-site-exporter.php:661
+#: includes/archive.php:46
 msgid "Failed to add database file to zip archive."
 msgstr ""
 
-#: enginescript-site-exporter.php:673
+#: includes/archive.php:58
 msgid "Failed to finalize or save the zip archive after processing files."
 msgstr ""
 
 #. translators: %s: error message
-#: enginescript-site-exporter.php:711
+#: includes/archive.php:97
+#: includes/archive.php:106
 msgid "Error during file processing: %s"
 msgstr ""
 
-#: enginescript-site-exporter.php:885
+#: includes/admin-page.php:206
 msgid "Site export successfully created!"
 msgstr ""
 
-#: enginescript-site-exporter.php:887
+#: includes/admin-page.php:208
 msgid "Download Export File"
 msgstr ""
 
-#: enginescript-site-exporter.php:889
-msgid "Are you sure you want to delete this export file?"
-msgstr ""
-
-#: enginescript-site-exporter.php:890
+#: includes/admin-page.php:211
 msgid "Delete Export File"
 msgstr ""
 
 #. translators: %s: file path
-#: enginescript-site-exporter.php:897
+#: includes/admin-page.php:218
 msgid "File location: %s"
 msgstr ""
 
-#: enginescript-site-exporter.php:898
+#: includes/admin-page.php:219
 msgid "Path is relative to WordPress root directory"
 msgstr ""
 
-#: enginescript-site-exporter.php:1258
+#: includes/security.php:196
 msgid "Export file not readable."
 msgstr ""
 
-#: enginescript-site-exporter.php:1264
+#: includes/security.php:202
 msgid "Could not determine file size."
 msgstr ""
 
-#: enginescript-site-exporter.php:1304
+#: includes/security.php:244
 msgid "No file specified."
 msgstr ""
 
-#: enginescript-site-exporter.php:1309
+#: includes/security.php:249
 msgid "Invalid filename."
 msgstr ""
 
-#: enginescript-site-exporter.php:1314
+#: includes/security.php:254
 msgid "Invalid export file format."
 msgstr ""
 
-#: enginescript-site-exporter.php:1334
+#: includes/security.php:275
 msgid "Invalid file path."
 msgstr ""
 
-#: enginescript-site-exporter.php:1358
+#: includes/security.php:300
 msgid "Export file not found."
 msgstr ""
 
-#: enginescript-site-exporter.php:1373
+#: includes/security.php:316
 msgid "Invalid request source."
 msgstr ""
 
-#: enginescript-site-exporter.php:1393
-#: enginescript-site-exporter.php:1435
+#: includes/download.php:26
+#: includes/download.php:69
 msgid "Security check failed. Please try again."
 msgstr ""
 
-#: enginescript-site-exporter.php:1398
+#: includes/download.php:31
 msgid "You do not have permission to download export files."
 msgstr ""
 
-#: enginescript-site-exporter.php:1416
+#: includes/download.php:49
 msgid "Too many download requests. Please wait before trying again."
 msgstr ""
 
-#: enginescript-site-exporter.php:1440
+#: includes/download.php:74
 msgid "You do not have permission to delete export files."
 msgstr ""
 
-#: enginescript-site-exporter.php:1540
+#: includes/download.php:177
 msgid "Access denied - invalid file type."
 msgstr ""
 
-#: enginescript-site-exporter.php:1551
+#: includes/download.php:188
 msgid "Access denied."
 msgstr ""
 
-#: enginescript-site-exporter.php:1577
+#: includes/download.php:215
 msgid "Unable to serve file download."
 msgstr ""

@@ -19,7 +19,7 @@ EngineScript Site Exporter provides WordPress administrators with a straightforw
 - **Database Export**: Includes a full database dump in your export
 - **Automatic Cleanup**: Exports are automatically deleted after 5 minutes to save disk space
 - **Secure Downloads**: All exports use WordPress security tokens for protected access
-- **WP-CLI Integration**: Leverages WP-CLI for efficient database exports when available
+- **WP-CLI Integration**: Requires WP-CLI for efficient database exports
 - **Export Management**: Download or manually delete export files as needed
 - **EngineScript Integration**: Natively works with EngineScript's LEMP server environment and site import tools
 

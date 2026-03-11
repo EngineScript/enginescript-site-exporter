@@ -1,0 +1,29 @@
+/**
+ * EngineScript Site Exporter — Admin Styles
+ *
+ * Enqueued only on the Site Exporter admin page (tools_page_enginescript-site-exporter).
+ *
+ * @package EngineScript_Site_Exporter
+ * @since   2.1.0
+ */
+
+/* Spacing between form sections and intro paragraphs. */
+.sse-section-spacing {
+	margin-top: 15px;
+}
+
+/* Settings table bottom margin. */
+.sse-form-table {
+	margin-bottom: 20px;
+}
+
+/* Warning and security notice text. */
+.sse-warning-text {
+	color: #b94a48;
+	font-weight: bold;
+}
+
+/* Action buttons (download/delete) in success notices. */
+.sse-action-button {
+	margin-left: 10px;
+}

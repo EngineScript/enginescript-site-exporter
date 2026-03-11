@@ -15,16 +15,19 @@ This is a secure WordPress site export plugin that creates complete site backups
 
 ## Architecture & Design Patterns
 
-### Single-File Plugin Architecture
+### Modular Plugin Architecture
 
-The plugin follows a single-file architecture pattern for simplicity:
+The plugin uses a bootstrap + include files architecture:
 
 ```php
-// All functionality contained in enginescript-site-exporter.php
-// Functions prefixed with 'sse_' for namespace consistency
-function sse_function_name() {
-    // Implementation
-}
+// enginescript-site-exporter.php — Bootstrap (constants, require_once, init)
+// includes/helpers.php     — Logging, IP detection, execution time, filesystem init
+// includes/security.php    — Path validation, traversal checks, extension validation
+// includes/admin-page.php  — Admin UI rendering, notices, asset enqueueing
+// includes/export.php      — Export workflow, validation, directory setup, DB export
+// includes/archive.php     — ZIP operations, file iteration, exclusion logic
+// includes/cleanup.php     — Deletion handler, scheduling, bulk cleanup
+// includes/download.php    — Secure download handler, headers, rate limiting
 ```
 
 ### Plugin Initialization
@@ -42,11 +45,21 @@ add_action( 'plugins_loaded', 'sse_init_plugin' );
 
 ### File Structure
 
-- `enginescript-site-exporter.php` - Main plugin file (all functionality)
+- `enginescript-site-exporter.php` - Bootstrap: constants, require_once, plugin init
+- `includes/helpers.php` - Logging, IP detection, execution time, filesystem init
+- `includes/security.php` - Path validation, traversal checks, extension validation
+- `includes/admin-page.php` - Admin UI rendering, notices, asset enqueueing
+- `includes/export.php` - Export workflow, validation, directory setup, DB export
+- `includes/archive.php` - ZIP operations, file iteration, exclusion logic
+- `includes/cleanup.php` - Deletion handler, scheduling, bulk cleanup
+- `includes/download.php` - Secure download handler, headers, rate limiting
+- `css/admin.css` - Admin page styles (enqueued on plugin page only)
+- `js/admin.js` - Admin page scripts (enqueued on plugin page only)
 - `languages/` - Translation files (.pot file included)
 - `CHANGELOG.md` - Developer changelog
 - `README.md` - Developer documentation
 - `readme.txt` - WordPress.org plugin directory readme
+- `ROADMAP.md` - Prioritized improvement roadmap
 - `.github/workflows/` - CI/CD automation
 
 ## WordPress Coding Standards

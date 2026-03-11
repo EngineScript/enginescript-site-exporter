@@ -19,7 +19,7 @@ Key features:
 * Database Export: Includes a full database dump in your export
 * Automatic Cleanup: Exports are automatically deleted after 5 minutes to enhance security
 * Secure Downloads: All exports use WordPress security tokens for protected access
-* WP-CLI Integration: Leverages WP-CLI for efficient database exports when available
+* WP-CLI Integration: Requires WP-CLI for efficient database exports
 * Export Management: Download or manually delete export files as needed
 * EngineScript Integration: Natively works with EngineScript's LEMP server environment and site import tools
 
@@ -94,10 +94,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Security**: Removed usage of `_get_cron_array()` private WordPress API from cron failure diagnostics
 * **Security**: Replaced `glob()` with `scandir()` in bulk cleanup handler for cross-platform compatibility
 * **Security**: File download functions now use `realpath()`-resolved paths for all filesystem operations to prevent SSRF
+* **Security**: Replaced inline `onclick` JS with external script file for Content Security Policy compliance
+* **Security**: Added `wp_upload_dir()` error key validation alongside basedir empty check
 * **Bug Fix**: Corrected README.md cleanup timer from "1 hour" to "5 minutes"
 * **Bug Fix**: Removed unused `$export_dir_name` variable in admin page
 * **Bug Fix**: Removed unnecessary phpcs suppression comment on properly escaped output
 * **Bug Fix**: Updated GEMINI.md WP-CLI section to reflect required dependency status
+* **Bug Fix**: Corrected WP-CLI description from "when available" to "requires" in README.md and readme.txt
+* **Bug Fix**: Fixed phpcs.xml `minimum_supported_wp_version` from 6.8 to 6.5 to match plugin header
 * **Architecture**: Extracted duplicated WP_Filesystem initialization into `sse_init_filesystem()` helper
 * **Architecture**: Inlined 3 pass-through wrapper functions for simpler call graph
 * **Architecture**: Removed 2 redundant intermediate download validation passes
@@ -105,6 +109,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Architecture**: Removed no-op `sse_prepare_execution_environment()` function
 * **Architecture**: Removed `sse_test_cron_scheduling()` debug function from export flow
 * **Architecture**: Reduced cron scheduling logging from 5+ entries to 2 per operation
+* **Architecture**: Extracted 7 inline styles into `css/admin.css` with semantic CSS classes
+* **Architecture**: Extracted inline JS confirmation dialog into `js/admin.js` with `wp_localize_script()` i18n
+* **Architecture**: Added `sse_enqueue_admin_assets()` for proper CSS/JS enqueueing on plugin page only
+* **Architecture**: Rewrote copilot-instructions.md for clarity, removed irrelevant references
+* **Architecture**: Created ROADMAP.md with prioritized improvement plan
+* **Architecture**: Split monolithic plugin file (~1,400 lines) into 112-line bootstrap + 7 include files under `includes/`
+* **Architecture**: Added `SSE_PLUGIN_FILE` constant for correct `plugin_dir_url()` resolution in include files
+* **Architecture**: Added `SSE_FILTER_MAX_FILE_SIZE` constant replacing hardcoded filter name string
+* **Architecture**: Added `sanitize_text_field()` to WP-CLI error output for defense-in-depth
+* **Architecture**: Added explicit `return null;` to `sse_process_file_for_zip()` matching documented return type
+* **Architecture**: Changed `sse_add_wordpress_files_to_zip()` to catch `RuntimeException` specifically
+* **Architecture**: Replaced `scandir()` with `DirectoryIterator` in bulk cleanup handler
+* **Architecture**: Increased PHPStan analysis level from 5 to 6 with `includes/` scan path
 * **PHP 7.4**: Added type declarations (parameter and return types) to all functions
 * **PHP 7.4**: Standardized all `array()` to short `[]` syntax
 * **PHP 7.4**: Applied `??=` null coalescing assignment and `?:` Elvis operator
