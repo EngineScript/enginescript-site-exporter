@@ -49,6 +49,10 @@
 - **Type Declarations**: Added PHP 7.4 parameter types and return types to all functions where deterministic. Functions returning union types (`array|WP_Error`, `string|false`, `true|WP_Error`) retain PHPDoc-only annotations since PHP 7.4 does not support union return types.
 - **Short Array Syntax**: Standardized all `array()` constructor calls to short `[]` syntax throughout the plugin.
 - **Null Coalescing Assignment**: Replaced explicit null check + assignment pattern with PHP 7.4 `??=` operator in `sse_should_exclude_file()` file size cache, and `?:` Elvis operator for the ternary fallback.
+- **PHPStan Array Shapes**: Added PHPStan `array{}` shape annotations to all functions accepting or returning associative arrays, resolving 10 level-6 "no value type specified in iterable type array" errors.
+- **Trailing Whitespace**: Removed trailing whitespace (tabs on blank lines) across `export.php`, `download.php`, `cleanup.php`, `admin-page.php`, and `security.php`.
+- **JS File Header**: Converted `admin.js` file header from JSDoc (`/** @package`, `@since`) to plain block comment to avoid TSDoc linter false positives.
+- **Bulk Cleanup Complexity**: Extracted per-file deletion logic from `sse_bulk_cleanup_exports_handler()` into `sse_cleanup_expired_export_file()` helper, reducing cyclomatic complexity from 13 to 8 and NPath complexity from 336 to under 200.
 
 ## 2.0.0 - March 1, 2026
 

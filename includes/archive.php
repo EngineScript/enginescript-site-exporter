@@ -13,9 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Creates a site archive with database and files.
  *
  * @since 1.0.0
- * @param array $export_paths  Export directory paths.
- * @param array $database_file Database file information.
- * @return array|WP_Error Archive info on success, WP_Error on failure.
+ * @param array{export_dir: string, export_url: string, export_dir_name: string} $export_paths  Export directory paths.
+ * @param array{filename: string, filepath: string} $database_file Database file information.
+ * @return array{filename: string, filepath: string}|WP_Error Archive info on success, WP_Error on failure.
  */
 function sse_create_site_archive( array $export_paths, array $database_file ) {
 	if ( ! class_exists( 'ZipArchive' ) ) {

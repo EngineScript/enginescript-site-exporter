@@ -112,7 +112,7 @@ function sse_validate_file_extension( string $file_path ): bool {
 		sse_log( 'Rejected file access - invalid extension: ' . $file_extension, 'security' );
 		return false;
 	}
-	
+
 	return true;
 }
 
@@ -180,7 +180,7 @@ function sse_validate_filepath( string $file_path, string $base_dir ): bool {
  *
  * @since 2.0.0
  * @param string $filename The filename to validate.
- * @return array|WP_Error Result array with file data or WP_Error on failure.
+ * @return array{filepath: string, filename: string, filesize: int}|WP_Error Result array with file data or WP_Error on failure.
  */
 function sse_validate_export_file_for_download( string $filename ) {
 	$basic_validation = sse_validate_basic_export_file( $filename );
@@ -211,7 +211,7 @@ function sse_validate_export_file_for_download( string $filename ) {
  *
  * @since 2.0.0
  * @param string $filename The filename to validate.
- * @return array|WP_Error Result array with file data or WP_Error on failure.
+ * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
 function sse_validate_basic_export_file( string $filename ) {
 	$basic_checks = sse_validate_filename_format( $filename );

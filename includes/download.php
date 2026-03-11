@@ -143,7 +143,7 @@ function sse_set_download_headers( string $filename, int $filesize ): void {
 			$content_type = 'application/octet-stream';
 			break;
 	}
-	
+
 	// Security: Set headers to prevent XSS and ensure proper download behavior.
 	header( 'Content-Type: ' . $content_type );
 	header( 'Content-Disposition: attachment; filename="' . esc_attr( $filename ) . '"' );
@@ -153,7 +153,7 @@ function sse_set_download_headers( string $filename, int $filesize ): void {
 	header( 'Expires: 0' );
 	header( 'X-Content-Type-Options: nosniff' ); // Security: Prevent MIME sniffing.
 	header( 'X-Frame-Options: DENY' ); // Security: Prevent framing.
-	
+
 	// Disable output buffering for large files.
 	if ( ob_get_level() ) {
 		ob_end_clean();
@@ -176,18 +176,18 @@ function sse_validate_file_output_security( string $filepath ): string {
 		sse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . pathinfo( $filepath, PATHINFO_EXTENSION ), 'security' );
 		wp_die( esc_html__( 'Access denied - invalid file type.', 'enginescript-site-exporter' ) );
 	}
-	
+
 	// Security: Ensure file is within our controlled directory before serving.
 	$upload_dir      = wp_upload_dir();
 	$export_dir      = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
 	$real_export_dir = realpath( $export_dir );
 	$real_file_path  = realpath( $filepath );
-	
+
 	if ( false === $real_export_dir || false === $real_file_path || 0 !== strpos( $real_file_path, $real_export_dir ) ) {
 		sse_log( 'Security: File not within controlled export directory: ' . $filepath, 'security' );
 		wp_die( esc_html__( 'Access denied.', 'enginescript-site-exporter' ) );
 	}
-	
+
 	return $real_file_path;
 }
 
@@ -203,14 +203,14 @@ function sse_validate_file_output_security( string $filepath ): string {
 function sse_output_file_content( string $filepath, string $filename ): void {
 	// Security: Validate and resolve to realpath before any filesystem access.
 	$resolved_path = sse_validate_file_output_security( $filepath );
-	
+
 	// Security: Use resolved path (from realpath) for all filesystem operations to prevent SSRF/TOCTOU.
 	if ( function_exists( 'readfile' ) && is_readable( $resolved_path ) && is_file( $resolved_path ) ) {
 		readfile( $resolved_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- Security validated export file download.
 		sse_log( 'Secure file download served via readfile: ' . $filename, 'info' );
 		exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required to terminate script after file download.
 	}
-	
+
 	sse_log( 'Failed to serve secure file download: ' . $filename, 'error' );
 	wp_die( esc_html__( 'Unable to serve file download.', 'enginescript-site-exporter' ) );
 }
@@ -219,13 +219,13 @@ function sse_output_file_content( string $filepath, string $filename ): void {
  * Serves a file download with enhanced security validation.
  *
  * @since 2.0.0
- * @param array $file_data Validated file information array.
+ * @param array{filename: string, filesize: int, filepath: string} $file_data Validated file information array.
  * @return void
  */
 function sse_serve_file_download( array $file_data ): void {
 	// Set download headers.
 	sse_set_download_headers( $file_data['filename'], $file_data['filesize'] );
-	
+
 	// Output file content (includes final security validation before readfile).
 	sse_output_file_content( $file_data['filepath'], $file_data['filename'] );
 }

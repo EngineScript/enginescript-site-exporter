@@ -107,7 +107,7 @@ function sse_exporter_page_html(): void {
 		<form method="post" action="" class="sse-section-spacing">
 			<?php wp_nonce_field( 'sse_export_action', 'sse_export_nonce' ); ?>
 			<input type="hidden" name="action" value="sse_export_site">
-			
+
 			<table class="form-table sse-form-table">
 				<tbody>
 					<tr>
@@ -128,7 +128,7 @@ function sse_exporter_page_html(): void {
 					</tr>
 				</tbody>
 			</table>
-			
+
 			<?php submit_button( __( 'Export Site', 'enginescript-site-exporter' ) ); ?>
 		</form>
 		<hr>
@@ -175,7 +175,7 @@ function sse_show_error_notice( string $message ): void {
  * Shows a success notice to the user.
  *
  * @since 1.0.0
- * @param array $zip_result The zip file information.
+ * @param array{filename: string, filepath: string} $zip_result The zip file information.
  * @return void
  */
 function sse_show_success_notice( array $zip_result ): void {

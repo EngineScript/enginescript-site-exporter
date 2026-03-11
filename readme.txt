@@ -125,6 +125,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **PHP 7.4**: Added type declarations (parameter and return types) to all functions
 * **PHP 7.4**: Standardized all `array()` to short `[]` syntax
 * **PHP 7.4**: Applied `??=` null coalescing assignment and `?:` Elvis operator
+* **PHP 7.4**: Added PHPStan `array{}` shape annotations to all functions with untyped array params/returns
+* **Code Quality**: Removed trailing whitespace across 5 include files
+* **Code Quality**: Converted `admin.js` file header to plain block comment (avoids TSDoc linter false positives)
+* **Code Quality**: Extracted `sse_cleanup_expired_export_file()` from bulk cleanup handler to reduce cyclomatic/NPath complexity
 
 = 2.0.0 =
 * **Critical Fix**: Fixed bug where automatic export file cleanup via WordPress cron was completely broken due to referer validation blocking cron-triggered deletions

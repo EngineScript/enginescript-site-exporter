@@ -1,10 +1,10 @@
-/**
+/*
  * EngineScript Site Exporter — Admin Scripts
  *
  * Enqueued only on the Site Exporter admin page (tools_page_enginescript-site-exporter).
  *
- * @package EngineScript_Site_Exporter
- * @since   2.1.0
+ * Package: EngineScript_Site_Exporter
+ * Since:   2.1.0
  */
 
 ( function () {

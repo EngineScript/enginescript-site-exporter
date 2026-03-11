@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Cleans up temporary files.
  *
  * @since 1.0.0
- * @param array $files Array of file paths to delete.
+ * @param string[] $files Array of file paths to delete.
  * @return void
  */
 function sse_cleanup_files( array $files ): void {
@@ -81,15 +81,15 @@ function sse_schedule_bulk_cleanup(): void {
  */
 function sse_bulk_cleanup_exports_handler(): void {
 	sse_log( 'Bulk export cleanup handler triggered', 'info' );
-	
+
 	$upload_dir = wp_upload_dir();
 	$export_dir = trailingslashit( $upload_dir['basedir'] ) . SSE_EXPORT_DIR_NAME;
-	
+
 	if ( ! is_dir( $export_dir ) ) {
 		sse_log( 'Export directory does not exist, nothing to clean up', 'info' );
 		return;
 	}
-	
+
 	try {
 		$dir_iterator = new DirectoryIterator( $export_dir );
 	} catch ( RuntimeException $e ) {
@@ -111,32 +111,49 @@ function sse_bulk_cleanup_exports_handler(): void {
 		sse_log( 'No export files found in bulk cleanup', 'info' );
 		return;
 	}
-	
+
 	$cleaned_count = 0;
 	$cutoff_time   = time() - ( 5 * 60 ); // Files older than 5 minutes.
-	
+
 	foreach ( $files as $file_path ) {
-		$file_time = filemtime( $file_path );
-		
-		if ( $file_time && $file_time < $cutoff_time ) {
-			// File is older than 5 minutes, validate it's an export file.
-			$filename   = basename( $file_path );
-			$validation = sse_validate_basic_export_file( $filename );
-			
-			if ( ! is_wp_error( $validation ) ) {
-				if ( sse_safely_delete_file( $file_path ) ) {
-					sse_log( 'Bulk cleanup deleted export file: ' . $file_path, 'info' );
-					$cleaned_count++;
-				} else {
-					sse_log( 'Bulk cleanup failed to delete: ' . $file_path, 'error' );
-				}
-			} else {
-				sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
-			}
+		if ( sse_cleanup_expired_export_file( $file_path, $cutoff_time ) ) {
+			$cleaned_count++;
 		}
 	}
-	
+
 	sse_log( "Bulk cleanup completed. Deleted {$cleaned_count} export files.", 'info' );
+}
+
+/**
+ * Attempts to clean up a single expired export file.
+ *
+ * @since 2.0.0
+ * @param string $file_path   The file path to check and potentially delete.
+ * @param int    $cutoff_time Unix timestamp; files modified before this are eligible.
+ * @return bool True if the file was deleted, false otherwise.
+ */
+function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time ): bool {
+	$file_time = filemtime( $file_path );
+
+	if ( ! $file_time || $file_time >= $cutoff_time ) {
+		return false;
+	}
+
+	$filename   = basename( $file_path );
+	$validation = sse_validate_basic_export_file( $filename );
+
+	if ( is_wp_error( $validation ) ) {
+		sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
+		return false;
+	}
+
+	if ( sse_safely_delete_file( $file_path ) ) {
+		sse_log( 'Bulk cleanup deleted export file: ' . $file_path, 'info' );
+		return true;
+	}
+
+	sse_log( 'Bulk cleanup failed to delete: ' . $file_path, 'error' );
+	return false;
 }
 
 /**
@@ -148,7 +165,7 @@ function sse_bulk_cleanup_exports_handler(): void {
  */
 function sse_delete_export_file_handler( string $file ): void {
 	sse_log( 'Scheduled deletion handler triggered for file: ' . $file, 'info' );
-	
+
 	// Validate that this is actually an export file before deletion.
 	$filename = basename( $file );
 

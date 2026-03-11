@@ -54,12 +54,12 @@ function sse_handle_export(): void {
 		}
 
 		sse_cleanup_files( [ $database_file['filepath'] ] );
-		
+
 		sse_schedule_export_cleanup( $zip_result['filepath'] );
-		
+
 		// Schedule a bulk cleanup sweep in case individual files were missed.
 		sse_schedule_bulk_cleanup();
-		
+
 		sse_show_success_notice( $zip_result );
 	} finally {
 		// Always release the lock and clean up user preferences.
@@ -100,7 +100,7 @@ function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Securit
  * Sets up export directories and returns path information.
  *
  * @since 1.0.0
- * @return array|WP_Error Array of paths on success, WP_Error on failure.
+ * @return array{export_dir: string, export_url: string, export_dir_name: string}|WP_Error Array of paths on success, WP_Error on failure.
  */
 function sse_setup_export_directories() {
 	$upload_dir = wp_upload_dir();
@@ -235,7 +235,7 @@ function sse_get_safe_wp_cli_path() {
  *
  * @since 1.0.0
  * @param string $export_dir The directory to save the database dump.
- * @return array|WP_Error Array with file info on success, WP_Error on failure.
+ * @return array{filename: string, filepath: string}|WP_Error Array with file info on success, WP_Error on failure.
  */
 function sse_export_database( string $export_dir ) {
 	$site_name   = sanitize_file_name( get_bloginfo( 'name' ) );
