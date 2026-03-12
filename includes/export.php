@@ -173,7 +173,7 @@ function sse_create_index_file( string $export_dir ): void {
 	// Create .htaccess to deny direct HTTP access (Apache).
 	$htaccess_path = trailingslashit( $export_dir ) . '.htaccess';
 	if ( ! file_exists( $htaccess_path ) ) { // phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.file_exists_file_exists -- Checking controlled export directory
-		$htaccess_content = "# Deny direct access to export files.\n";
+		$htaccess_content  = "# Deny direct access to export files.\n";
 		$htaccess_content .= "# For Nginx, add a location block to deny access to this directory.\n";
 		$htaccess_content .= "<IfModule mod_authz_core.c>\n";
 		$htaccess_content .= "\tRequire all denied\n";

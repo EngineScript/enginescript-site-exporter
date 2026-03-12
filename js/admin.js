@@ -13,7 +13,7 @@
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var deleteButtons = document.querySelectorAll( '.sse-confirm-delete' );
 
-		deleteButtons.forEach( function ( button ) {
+		deleteButtons.forEach( function ( button ) { // eslint-disable-line lodash/prefer-lodash-collection-iteration
 			button.addEventListener( 'click', function ( event ) {
 				/* global sseAdmin */
 				var message = ( typeof sseAdmin !== 'undefined' && sseAdmin.confirmDelete )
