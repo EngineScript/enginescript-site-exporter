@@ -16,8 +16,4 @@ parameters:
     
     treatPhpDocTypesAsCertain: false
     
-    ignoreErrors:
-        # Ignore WordPress global variables that might not be defined in test context
-        - '#Variable \$wpdb might not be defined#'
-        - '#Variable \$wp_query might not be defined#'
-        - '#Variable \$post might not be defined#'
+    ignoreErrors: []

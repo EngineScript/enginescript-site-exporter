@@ -262,7 +262,7 @@ function sse_validate_filename_format( string $filename ) {
  *
  * @since 2.0.0
  * @param string $filename The filename to validate.
- * @return array|WP_Error Result array with file data or WP_Error on failure.
+ * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
 function sse_validate_export_file_path( string $filename ) {
 	// Get the full path to the file.

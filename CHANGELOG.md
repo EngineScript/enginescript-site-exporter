@@ -53,6 +53,8 @@
 - **Trailing Whitespace**: Removed trailing whitespace (tabs on blank lines) across `export.php`, `download.php`, `cleanup.php`, `admin-page.php`, and `security.php`.
 - **JS File Header**: Converted `admin.js` file header from JSDoc (`/** @package`, `@since`) to plain block comment to avoid TSDoc linter false positives.
 - **Bulk Cleanup Complexity**: Extracted per-file deletion logic from `sse_bulk_cleanup_exports_handler()` into `sse_cleanup_expired_export_file()` helper, reducing cyclomatic complexity from 13 to 8 and NPath complexity from 336 to under 200.
+- **PHPStan Array Shape**: Added `array{filepath: string, filename: string}` shape annotation to `sse_validate_export_file_path()` return type in `security.php`, resolving level-6 error.
+- **PHPStan Ignore Cleanup**: Removed three obsolete `ignoreErrors` patterns from `phpstan.neon` (`$post`, `$wp_query`, `$wpdb`) that are now resolved by the WordPress stubs.
 
 ## 2.0.0 - March 1, 2026
 

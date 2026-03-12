@@ -129,6 +129,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Code Quality**: Removed trailing whitespace across 5 include files
 * **Code Quality**: Converted `admin.js` file header to plain block comment (avoids TSDoc linter false positives)
 * **Code Quality**: Extracted `sse_cleanup_expired_export_file()` from bulk cleanup handler to reduce cyclomatic/NPath complexity
+* **Code Quality**: Added `array{filepath, filename}` shape annotation to `sse_validate_export_file_path()` return type
+* **Code Quality**: Removed obsolete PHPStan ignore patterns for WordPress globals now covered by stubs
 
 = 2.0.0 =
 * **Critical Fix**: Fixed bug where automatic export file cleanup via WordPress cron was completely broken due to referer validation blocking cron-triggered deletions
