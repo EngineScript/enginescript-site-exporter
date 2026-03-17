@@ -7,7 +7,7 @@ applyTo: '**'
 ## Project Context
 
 - **Plugin:** EngineScript Site Exporter (WordPress site export/backup plugin)
-- **WordPress:** 6.5+ minimum
+- **WordPress:** 6.6+ minimum
 - **PHP:** 7.4+ minimum (use typed parameters, return types, short arrays `[]`, null coalescing `??=`)
 - **License:** GPL-3.0-or-later
 - **Text Domain:** `enginescript-site-exporter`

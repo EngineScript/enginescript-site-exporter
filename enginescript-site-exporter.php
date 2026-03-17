@@ -4,7 +4,7 @@
  * Description: Exports the site files and database as a zip archive.
  * Version: 2.0.0
  * Author: EngineScript
- * Requires at least: 6.5
+ * Requires at least: 6.6
  * Tested up to: 6.9
  * Requires PHP: 7.4
  * License: GPL-3.0-or-later

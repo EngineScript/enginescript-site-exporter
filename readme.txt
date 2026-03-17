@@ -1,7 +1,7 @@
 === EngineScript Site Exporter ===
 Contributors: enginescript
 Tags: backup, export, migration, site export, database export
-Requires at least: 6.5
+Requires at least: 6.6
 Tested up to: 6.9
 Stable tag: 2.0.0
 Requires PHP: 7.4
@@ -101,7 +101,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 * **Bug Fix**: Removed unnecessary phpcs suppression comment on properly escaped output
 * **Bug Fix**: Updated GEMINI.md WP-CLI section to reflect required dependency status
 * **Bug Fix**: Corrected WP-CLI description from "when available" to "requires" in README.md and readme.txt
-* **Bug Fix**: Fixed phpcs.xml `minimum_supported_wp_version` from 6.8 to 6.5 to match plugin header
+* **Bug Fix**: Fixed phpcs.xml `minimum_supported_wp_version` from 6.8 to 6.6 to match plugin header
 * **Architecture**: Extracted duplicated WP_Filesystem initialization into `sse_init_filesystem()` helper
 * **Architecture**: Inlined 3 pass-through wrapper functions for simpler call graph
 * **Architecture**: Removed 2 redundant intermediate download validation passes

@@ -9,13 +9,13 @@
     <exclude-pattern>*/vendor/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
     <exclude-pattern>*/tests/*</exclude-pattern>
-    <exclude-pattern>*/assets/*</exclude-pattern>
-    <exclude-pattern>*/languages/*</exclude-pattern>
     <exclude-pattern>*/.git/*</exclude-pattern>
     <exclude-pattern>*/.github/*</exclude-pattern>
+    <exclude-pattern>*/build/*</exclude-pattern>
+    <exclude-pattern>*/dist/*</exclude-pattern>
 
-    <!-- Use WordPress coding standards -->
-    <rule ref="WordPress">
+    <!-- Use WordPress-Extra coding standards (includes WordPress-Core) -->
+    <rule ref="WordPress-Extra">
         <!-- Allow short array syntax [] instead of array() -->
         <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
         
@@ -25,6 +25,9 @@
         <!-- Allow direct database queries when using $wpdb properly -->
         <exclude name="WordPress.DB.DirectDatabaseQuery"/>
     </rule>
+
+    <!-- WordPress documentation standards -->
+    <rule ref="WordPress-Docs"/>
 
     <!-- COMMENTED OUT: These rules enforce spaces instead of tabs, which conflicts with WordPress standards -->
     <!-- WordPress standards actually require TABS for indentation, not spaces -->
@@ -85,6 +88,8 @@
 
     <!-- WordPress security and best practices -->
     <rule ref="WordPress.Security"/>
+
+    <!-- WordPress internationalization configuration -->
     <rule ref="WordPress.WP.I18n">
         <properties>
             <!-- Set the text domain for internationalization -->
@@ -103,7 +108,14 @@
     <rule ref="PHPCompatibilityWP">
         <include-pattern>*\.php$</include-pattern>
     </rule>
-    <config name="minimum_supported_wp_version" value="6.5"/>
+
+    <!-- PHPCSExtra rules for additional code quality checks -->
+    <rule ref="PHPCSExtra">
+        <exclude name="Modernize.FunctionCalls.Dirname.Nested"/>
+    </rule>
+
+    <!-- Set minimum WordPress version for deprecated function checks -->
+    <config name="minimum_wp_version" value="6.6"/>
     <config name="testVersion" value="7.4-"/>
 
     <!-- Show progress -->

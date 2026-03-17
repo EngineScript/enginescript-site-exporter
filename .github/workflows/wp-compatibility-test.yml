@@ -2,7 +2,7 @@
 # It runs multiple validation processes including:
 # - WordPress Plugin Check for WordPress.org compatibility
 # - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4)
-# - WordPress compatibility testing across multiple WP versions (6.5, latest, nightly)
+# - WordPress compatibility testing across multiple WP versions (6.6, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
 # - WordPress security vulnerability scanning using pattern analysis
 # - PHPCS code standards validation for WordPress coding standards
@@ -587,7 +587,7 @@ jobs:
     strategy:
       matrix:
         php-version: ['7.4', '8.0', '8.3', '8.4']
-        wp-version: ['6.5', 'latest', 'nightly']
+        wp-version: ['6.6', 'latest', 'nightly']
       fail-fast: false
 
     services:
@@ -805,7 +805,7 @@ jobs:
                   $this->assertNotEmpty($wp_version, 'WordPress version should be available');
                   
                   // Test that we're running on a supported WordPress version
-                  $min_wp_version = '6.5';
+                  $min_wp_version = '6.6';
                   $this->assertTrue(version_compare($wp_version, $min_wp_version, '>='), 
                       "WordPress version {$wp_version} should be >= {$min_wp_version}");
               }
