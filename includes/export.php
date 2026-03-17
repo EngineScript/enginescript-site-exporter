@@ -256,8 +256,7 @@ function sse_export_database( string $export_dir ) {
 	// Only append --allow-root if we are actually running as root (hardening).
 	$allow_root_flag = '';
 	if ( function_exists( 'posix_geteuid' ) ) {
-		$uid = posix_geteuid();
-		if ( false !== $uid && 0 === $uid ) {
+		if ( 0 === posix_geteuid() ) {
 			$allow_root_flag = ' --allow-root';
 		}
 	}

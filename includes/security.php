@@ -36,9 +36,8 @@ function sse_check_path_traversal( string $normalized_file_path ): bool {
  * @since 2.0.0
  * @param string $normalized_file_path The normalized file path.
  * @return string|false Real file path on success, false on failure.
- *
- * @SuppressWarnings(PHPMD.CyclomaticComplexity)
  */
+// phpmd:suppress CyclomaticComplexity -- Consolidated from 7 single-use functions for readability.
 function sse_resolve_file_path( string $normalized_file_path ) { // phpcs:ignore Generic.Metrics.CyclomaticComplexity.TooHigh -- Consolidated from 7 single-use functions for readability.
 	// Security: Only allow files with safe extensions.
 	if ( ! sse_validate_file_extension( $normalized_file_path ) ) {
