@@ -1,8 +1,8 @@
 # This workflow performs comprehensive WordPress plugin compatibility and quality checks.
 # It runs multiple validation processes including:
 # - WordPress Plugin Check for WordPress.org compatibility
-# - PHPUnit tests across multiple PHP versions (7.4, 8.0-8.2 with PHPUnit 11; 8.3 with PHPUnit 12)
-# - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4)
+# - PHPUnit tests across multiple PHP versions (7.4 with PHPUnit 9; 8.0-8.1 with polyfills 4; 8.2 with PHPUnit 10; 8.3 with PHPUnit 12)
+# - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4, 8.5)
 # - WordPress compatibility testing across multiple WP versions (6.6, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
 # - WordPress security vulnerability scanning using pattern analysis
@@ -135,17 +135,25 @@ jobs:
           coverage: none
           tools: composer:v2
 
-      - name: Upgrade polyfills for PHP 8.0+
-        if: matrix.php-version >= '8.0'
+      - name: Upgrade PHPUnit & polyfills for PHP 8.0–8.1
+        if: matrix.php-version == '8.0' || matrix.php-version == '8.1'
         run: |
-          echo "🔧 Upgrading PHPUnit polyfills to v4.* for PHP 8.0+..."
+          echo "🔧 Upgrading polyfills to v4.* for PHP 8.0-8.1..."
           composer require-dev yoast/phpunit-polyfills:^4 --no-update
 
-      - name: Upgrade PHPUnit for PHP 8.3
+      - name: Upgrade PHPUnit & polyfills for PHP 8.2
+        if: matrix.php-version == '8.2'
+        run: |
+          echo "🔧 Upgrading to PHPUnit 10.* and polyfills 4.* for PHP 8.2..."
+          composer require-dev phpunit/phpunit:^10 --no-update
+          composer require-dev yoast/phpunit-polyfills:^4 --no-update
+
+      - name: Upgrade PHPUnit & polyfills for PHP 8.3
         if: matrix.php-version == '8.3'
         run: |
-          echo "🔧 Upgrading PHPUnit to v12.* for PHP 8.3..."
+          echo "🔧 Upgrading to PHPUnit 12.* and polyfills 4.* for PHP 8.3..."
           composer require-dev phpunit/phpunit:^12 --no-update
+          composer require-dev yoast/phpunit-polyfills:^4 --no-update
 
       - name: Install Composer dependencies
         uses: ramsey/composer-install@v3
@@ -643,7 +651,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4']
+        php-version: ['7.4', '8.0', '8.3', '8.4', '8.5']
         wp-version: ['6.6', 'latest', 'nightly']
       fail-fast: false
 
