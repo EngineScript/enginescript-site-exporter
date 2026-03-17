@@ -115,83 +115,6 @@ jobs:
           echo "::error::WordPress Plugin Check failed. Created issue for tracking."
           exit 1
 
-  unit-tests:
-    name: PHPUnit Tests (PHP ${{ matrix.php-version }})
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
-      fail-fast: false
-
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: wordpress_test
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping -proot --silent" --health-interval=10s --health-timeout=5s --health-retries=3
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-
-      - name: Setup PHP ${{ matrix.php-version }}
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: ${{ matrix.php-version }}
-          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
-          coverage: none
-          tools: composer:v2
-
-      - name: Install Subversion
-        run: sudo apt-get update && sudo apt-get install -y subversion
-
-      - name: Upgrade PHPUnit & polyfills for PHP 8.0–8.1
-        if: matrix.php-version == '8.0' || matrix.php-version == '8.1'
-        run: |
-          echo "🔧 Upgrading polyfills to v4.* for PHP 8.0-8.1..."
-          composer require --dev yoast/phpunit-polyfills:^4 --no-update
-
-      - name: Upgrade PHPUnit & polyfills for PHP 8.2
-        if: matrix.php-version == '8.2'
-        run: |
-          echo "🔧 Upgrading to PHPUnit 11.* and polyfills 4.* for PHP 8.2..."
-          composer require --dev phpunit/phpunit:^11 --no-update
-          composer require --dev yoast/phpunit-polyfills:^4 --no-update
-
-      - name: Upgrade PHPUnit & polyfills for PHP 8.3
-        if: matrix.php-version == '8.3'
-        run: |
-          echo "🔧 Upgrading to PHPUnit 12.* and polyfills 4.* for PHP 8.3..."
-          composer require --dev phpunit/phpunit:^12 --no-update
-          composer require --dev yoast/phpunit-polyfills:^4 --no-update
-
-      - name: Install Composer dependencies
-        uses: ramsey/composer-install@v3
-        with:
-          dependency-versions: highest
-          composer-options: "--prefer-dist --no-progress"
-
-      - name: Run PHPUnit Tests
-        run: |
-          echo "🧪 Running PHPUnit tests on PHP ${{ matrix.php-version }}..."
-          composer test
-          echo "✅ PHPUnit tests completed successfully!"
-
-      - name: Create issue on test failure
-        if: ${{ failure() }}
-        uses: JasonEtco/create-an-issue@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PHP_VERSION: ${{ matrix.php-version }}
-          RUN_ID: ${{ github.run_id }}
-          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        with:
-          filename: .github/ISSUE_TEMPLATE/phpunit-failure.md
-          update_existing: false
-
   phpcs:
     name: PHPCS (PHP 8.3)
     runs-on: ubuntu-latest
@@ -664,7 +587,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['7.4', '8.0', '8.3', '8.4', '8.5']
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3', '8.4', '8.5']
         wp-version: ['6.6', 'latest', 'nightly']
       fail-fast: false
 
