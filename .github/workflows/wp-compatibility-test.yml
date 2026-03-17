@@ -1,6 +1,7 @@
 # This workflow performs comprehensive WordPress plugin compatibility and quality checks.
 # It runs multiple validation processes including:
 # - WordPress Plugin Check for WordPress.org compatibility
+# - PHPUnit tests across multiple PHP versions (7.4, 8.0-8.2 with PHPUnit 11; 8.3 with PHPUnit 12)
 # - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4)
 # - WordPress compatibility testing across multiple WP versions (6.6, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
@@ -113,6 +114,62 @@ jobs:
         run: |
           echo "::error::WordPress Plugin Check failed. Created issue for tracking."
           exit 1
+
+  unit-tests:
+    name: PHPUnit Tests (PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          coverage: none
+          tools: composer:v2
+
+      - name: Upgrade polyfills for PHP 8.0+
+        if: matrix.php-version >= '8.0'
+        run: |
+          echo "🔧 Upgrading PHPUnit polyfills to v4.* for PHP 8.0+..."
+          composer require-dev yoast/phpunit-polyfills:^4 --no-update
+
+      - name: Upgrade PHPUnit for PHP 8.3
+        if: matrix.php-version == '8.3'
+        run: |
+          echo "🔧 Upgrading PHPUnit to v12.* for PHP 8.3..."
+          composer require-dev phpunit/phpunit:^12 --no-update
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          dependency-versions: highest
+          composer-options: "--prefer-dist --no-progress"
+
+      - name: Run PHPUnit Tests
+        run: |
+          echo "🧪 Running PHPUnit tests on PHP ${{ matrix.php-version }}..."
+          composer test
+          echo "✅ PHPUnit tests completed successfully!"
+
+      - name: Create issue on test failure
+        if: ${{ failure() }}
+        uses: JasonEtco/create-an-issue@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PHP_VERSION: ${{ matrix.php-version }}
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/phpunit-failure.md
+          update_existing: false
 
   phpcs:
     name: PHPCS (PHP 8.3)
