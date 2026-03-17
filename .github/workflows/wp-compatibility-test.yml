@@ -1,7 +1,7 @@
 # This workflow performs comprehensive WordPress plugin compatibility and quality checks.
 # It runs multiple validation processes including:
 # - WordPress Plugin Check for WordPress.org compatibility
-# - PHPUnit tests across multiple PHP versions (7.4 with PHPUnit 9; 8.0-8.1 with polyfills 4; 8.2 with PHPUnit 10; 8.3 with PHPUnit 12)
+# - PHPUnit tests across PHP versions (7.4/8.0: PHPUnit 9+polyfills2; 8.1: PHPUnit 9+polyfills4; 8.2: PHPUnit 11+polyfills4; 8.3: PHPUnit 12+polyfills4)
 # - PHP compatibility testing across multiple PHP versions (7.4, 8.0, 8.3, 8.4, 8.5)
 # - WordPress compatibility testing across multiple WP versions (6.6, latest, nightly)
 # - PHPStan static analysis for WordPress-specific code quality
@@ -123,6 +123,16 @@ jobs:
         php-version: ['7.4', '8.0', '8.1', '8.2', '8.3']
       fail-fast: false
 
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping -proot --silent" --health-interval=10s --health-timeout=5s --health-retries=3
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
@@ -135,6 +145,9 @@ jobs:
           coverage: none
           tools: composer:v2
 
+      - name: Install Subversion
+        run: sudo apt-get update && sudo apt-get install -y subversion
+
       - name: Upgrade PHPUnit & polyfills for PHP 8.0–8.1
         if: matrix.php-version == '8.0' || matrix.php-version == '8.1'
         run: |
@@ -144,8 +157,8 @@ jobs:
       - name: Upgrade PHPUnit & polyfills for PHP 8.2
         if: matrix.php-version == '8.2'
         run: |
-          echo "🔧 Upgrading to PHPUnit 10.* and polyfills 4.* for PHP 8.2..."
-          composer require --dev phpunit/phpunit:^10 --no-update
+          echo "🔧 Upgrading to PHPUnit 11.* and polyfills 4.* for PHP 8.2..."
+          composer require --dev phpunit/phpunit:^11 --no-update
           composer require --dev yoast/phpunit-polyfills:^4 --no-update
 
       - name: Upgrade PHPUnit & polyfills for PHP 8.3
