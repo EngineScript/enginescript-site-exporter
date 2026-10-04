@@ -1,6 +1,6 @@
 <?php
 /**
- * EngineScript archive operations: ZIP bundle creation, file iteration, exclusion logic.
+ * EngineScript archive operations: ZIP bundle creation, files archive writing, exclusion logic.
  *
  * @package EngineScript_Site_Exporter
  */
@@ -26,12 +26,32 @@ function sse_get_export_site_identifier(): string {
 		$site_host = get_bloginfo( 'name' );
 	}
 
-	$site_identifier = sanitize_file_name( strtolower( $site_host ) );
-	if ( '' === $site_identifier ) {
-		return 'wordpress-site';
+	return sse_build_export_site_identifier( $site_host );
+}
+
+/**
+ * Turns a host name into an identifier that the archive name pattern accepts.
+ *
+ * An ordinary host is kept as it is, in lower case. An international name is
+ * converted to its ASCII form when PHP can do so, and any other character
+ * becomes a hyphen, so the result always matches the pattern that download,
+ * delete, and cleanup validate against.
+ *
+ * @since 2.1.1
+ * @param string $site_host Host name, or another site label when no host is known.
+ * @return string Identifier made of lower-case letters, digits, dots, and hyphens.
+ */
+function sse_build_export_site_identifier( string $site_host ): string {
+	// Newer PHP versions throw on an empty name instead of returning false.
+	if ( '' !== $site_host && function_exists( 'idn_to_ascii' ) ) {
+		$ascii_host = idn_to_ascii( $site_host );
+		$site_host  = is_string( $ascii_host ) && '' !== $ascii_host ? $ascii_host : $site_host;
 	}
 
-	return $site_identifier;
+	$site_identifier = preg_replace( [ '/[^a-z0-9.-]+/', '/\.{2,}/' ], [ '-', '.' ], strtolower( $site_host ) );
+	$site_identifier = trim( substr( sse_normalize_string_value( $site_identifier ), 0, 100 ), '.-' );
+
+	return '' === $site_identifier ? 'wordpress-site' : $site_identifier;
 }
 
 /**
@@ -42,18 +62,6 @@ function sse_get_export_site_identifier(): string {
  */
 function sse_get_export_timestamp(): string {
 	return gmdate( 'Ymd_His' );
-}
-
-/**
- * Checks whether a resolved path stays within the export source directory.
- *
- * @since 2.0.0
- * @param string $path      Path to check.
- * @param string $directory Directory that must contain the path.
- * @return bool True if the path resolves inside the directory.
- */
-function sse_is_path_within_export_source( string $path, string $directory ): bool {
-	return sse_is_path_within_directory( $path, $directory );
 }
 
 /**
@@ -81,7 +89,7 @@ function sse_create_site_archive( array $export_paths, array $database_file, str
 	}
 
 	try {
-		$archive_result = sse_build_engine_script_bundle( $export_paths, $database_file, $bundle_paths, $site_identifier );
+		$archive_result = sse_build_engine_script_bundle( $database_file, $bundle_paths, $site_identifier );
 		if ( is_wp_error( $archive_result ) ) {
 			return $archive_result;
 		}
@@ -112,12 +120,13 @@ function sse_validate_archive_requirements(): true|WP_Error {
 		return new WP_Error( 'zip_not_available', __( 'Your server does not provide ZipArchive. Enable the PHP ZIP extension to create an export.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! class_exists( 'PharData' ) ) {
-		return new WP_Error( 'phar_not_available', __( 'Your server does not provide PharData. Enable the PHP Phar extension to create a files archive.', 'enginescript-site-exporter' ) );
+	if ( ! function_exists( 'gzopen' ) ) {
+		return new WP_Error( 'gzip_not_available', __( 'Your server does not provide gzip support. Enable the PHP zlib extension to create an export.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! function_exists( 'gzopen' ) ) {
-		return new WP_Error( 'gzip_not_available', __( 'Your server does not provide gzip support. Enable the PHP zlib extension to compress the database dump.', 'enginescript-site-exporter' ) );
+	// The free-space reserve is checked throughout the export, so fail here, not halfway.
+	if ( ! function_exists( 'disk_free_space' ) ) {
+		return new WP_Error( 'disk_free_space_not_available', __( 'Your server has disabled the PHP disk_free_space() function. Enable it to create an export.', 'enginescript-site-exporter' ) );
 	}
 
 	return true;
@@ -142,16 +151,14 @@ function sse_validate_export_integer_size( int $integer_size ): true|WP_Error {
  * Builds the staged EngineScript bundle payload.
  *
  * @since 2.0.0
- * @param array  $export_paths     Export directory paths.
  * @param array  $database_file    Database file information.
  * @param array  $bundle_paths     Bundle paths.
  * @param string $site_identifier Sanitized site identifier.
- * @psalm-param array{export_dir: string, export_dir_name: string} $export_paths
  * @psalm-param array{filename: string, filepath: string} $database_file
  * @psalm-param array{database_path: string, files_archive_path: string, manifest_path: string, database_gz_filename: string, files_archive_filename: string, combined_zip_path: string, combined_zip_filename: string, ...} $bundle_paths
  * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_build_engine_script_bundle( array $export_paths, array $database_file, array $bundle_paths, string $site_identifier ): true|WP_Error {
+function sse_build_engine_script_bundle( array $database_file, array $bundle_paths, string $site_identifier ): true|WP_Error {
 	$lease_check = sse_renew_current_export_lease( true );
 	if ( is_wp_error( $lease_check ) ) {
 		return $lease_check;
@@ -167,7 +174,7 @@ function sse_build_engine_script_bundle( array $export_paths, array $database_fi
 		return $lease_check;
 	}
 
-	$file_result = sse_create_wordpress_files_archive( $bundle_paths['files_archive_path'], $export_paths['export_dir'] );
+	$file_result = sse_create_wordpress_files_archive( $bundle_paths['files_archive_path'] );
 	if ( is_wp_error( $file_result ) ) {
 		return $file_result;
 	}
@@ -203,25 +210,22 @@ function sse_build_engine_script_bundle( array $export_paths, array $database_fi
  * @param string $site_identifier Sanitized site identifier.
  * @param string $timestamp       Export timestamp.
  * @psalm-param array{export_dir: string, export_dir_name: string} $export_paths
- * @return array{staging_dir: string, bundle_root_dir: string, database_dir: string, files_dir: string, manifest_path: string, database_filename: string, database_gz_filename: string, database_path: string, files_archive_filename: string, files_archive_path: string, combined_zip_filename: string, combined_zip_path: string}
+ * @return array{staging_dir: string, database_dir: string, files_dir: string, manifest_path: string, database_gz_filename: string, database_path: string, files_archive_filename: string, files_archive_path: string, combined_zip_filename: string, combined_zip_path: string}
  */
 function sse_prepare_engine_script_bundle_paths( array $export_paths, string $site_identifier, string $timestamp ): array {
 	$staging_dir            = trailingslashit( $export_paths['export_dir'] ) . 'staging-' . $timestamp;
 	$bundle_root_dir        = trailingslashit( $staging_dir ) . 'bundle';
 	$database_dir           = trailingslashit( $bundle_root_dir ) . 'database';
 	$files_dir              = trailingslashit( $bundle_root_dir ) . 'files';
-	$database_filename      = "{$site_identifier}_db_{$timestamp}.sql";
-	$database_gz_filename   = $database_filename . '.gz';
+	$database_gz_filename   = "{$site_identifier}_db_{$timestamp}.sql.gz";
 	$files_archive_filename = "{$site_identifier}_files_{$timestamp}.tar.gz";
 	$combined_zip_filename  = sse_get_engine_script_archive_filename( $site_identifier, $timestamp );
 
 	return [
 		'staging_dir'            => $staging_dir,
-		'bundle_root_dir'        => $bundle_root_dir,
 		'database_dir'           => $database_dir,
 		'files_dir'              => $files_dir,
 		'manifest_path'          => trailingslashit( $bundle_root_dir ) . 'manifest.txt',
-		'database_filename'      => $database_filename,
 		'database_gz_filename'   => $database_gz_filename,
 		'database_path'          => trailingslashit( $database_dir ) . $database_gz_filename,
 		'files_archive_filename' => $files_archive_filename,
@@ -244,7 +248,7 @@ function sse_create_bundle_staging_directories( array $bundle_paths ): true|WP_E
 		return true;
 	}
 
-	return new WP_Error( 'bundle_staging_failed', __( 'Could not create EngineScript export staging directories.', 'enginescript-site-exporter' ) );
+	return new WP_Error( 'bundle_staging_failed', __( 'Could not create the staging directories for the export.', 'enginescript-site-exporter' ) );
 }
 
 /**
@@ -259,7 +263,7 @@ function sse_get_generated_file_size( string $file_path ): int|WP_Error {
 	clearstatcache( true, $file_path );
 	$file_size = @filesize( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_filesize,WordPress.PHP.NoSilencedErrors.Discouraged -- A disappearing generated file must return a bounded error without leaking its private path.
 	if ( false === $file_size ) {
-		return new WP_Error( 'export_generated_size_unknown', __( 'Could not verify generated export size.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_generated_size_unknown', __( 'Could not verify the size of the generated export.', 'enginescript-site-exporter' ) );
 	}
 
 	return $file_size;
@@ -307,31 +311,26 @@ function sse_get_projected_zip_bytes( array $file_paths ): int|WP_Error {
 }
 
 /**
- * Projects a conservative TAR growth bound for one archive entry.
+ * Gets the TAR bytes that one archive entry adds, guarding against overflow.
  *
- * The reserve covers the fixed header, block padding, and extended-name
- * metadata that PharData may emit for long archive paths.
+ * The count covers the header, the content with its block padding, and the
+ * long-name record that precedes an entry whose path exceeds 100 bytes.
  *
  * @since 2.1.1
  * @param int    $source_bytes Source file size, or zero for a directory.
  * @param string $archive_path Relative path stored in the TAR.
- * @return int|WP_Error Projected growth or an overflow error.
+ * @return int|WP_Error TAR bytes for the entry, or an overflow error.
  */
 function sse_get_projected_tar_entry_bytes( int $source_bytes, string $archive_path ): int|WP_Error {
 	$source_bytes = max( 0, $source_bytes );
-	$path_bytes   = strlen( $archive_path );
-	$base_reserve = 8703;
 
-	if ( $path_bytes > intdiv( PHP_INT_MAX - $base_reserve, 2 ) ) {
-		return new WP_Error( 'export_generated_size_limit', __( 'The generated export exceeds the configured aggregate size limit.', 'enginescript-site-exporter' ) );
-	}
-
-	$metadata_reserve = $base_reserve + ( 2 * $path_bytes );
+	// Two headers and two paddings stay below 2,048 bytes; the long-name record adds the path once.
+	$metadata_reserve = 2048 + strlen( $archive_path );
 	if ( $source_bytes > PHP_INT_MAX - $metadata_reserve ) {
 		return new WP_Error( 'export_generated_size_limit', __( 'The generated export exceeds the configured aggregate size limit.', 'enginescript-site-exporter' ) );
 	}
 
-	return $source_bytes + $metadata_reserve;
+	return sse_tar_get_entry_bytes( $source_bytes, $archive_path );
 }
 
 /**
@@ -352,7 +351,7 @@ function sse_stream_database_to_gzip( $source_handle, $target_handle, string $ta
 
 		$chunk = fread( $source_handle, 1024 * 1024 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Streaming a large local SQL file.
 		if ( false === $chunk || false === gzwrite( $target_handle, $chunk ) || ! fflush( $target_handle ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Gzip streaming and flush are required for live output accounting.
-			return new WP_Error( 'db_compress_write_failed', __( 'Failed while compressing database dump.', 'enginescript-site-exporter' ) );
+			return new WP_Error( 'db_compress_write_failed', __( 'Could not compress the database dump.', 'enginescript-site-exporter' ) );
 		}
 
 		$budget_check = sse_record_generated_export_file( $target_path );
@@ -381,14 +380,14 @@ function sse_create_compressed_database_file( string $source_path, string $targe
 
 	$source_handle = @fopen( $source_path, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.PHP.NoSilencedErrors.Discouraged -- A missing private dump returns a bounded error without leaking its path.
 	if ( false === $source_handle ) {
-		return new WP_Error( 'db_compress_source_failed', __( 'Could not open database dump for compression.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'db_compress_source_failed', __( 'Could not open the database dump for compression.', 'enginescript-site-exporter' ) );
 	}
 
 	$target_handle = @gzopen( $target_path, 'wb9' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.PHP.NoSilencedErrors.Discouraged -- Gzip creation failures return a bounded error without leaking the private path.
 	if ( false === $target_handle ) {
 		fclose( $source_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing local file handle opened above.
 		sse_cleanup_files( [ $target_path ] );
-		return new WP_Error( 'db_compress_target_failed', __( 'Could not create compressed database file.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'db_compress_target_failed', __( 'Could not create the compressed database file.', 'enginescript-site-exporter' ) );
 	}
 
 	$stream_result = sse_stream_database_to_gzip( $source_handle, $target_handle, $target_path );
@@ -401,12 +400,12 @@ function sse_create_compressed_database_file( string $source_path, string $targe
 
 	if ( ! sse_filesystem_file_has_content( $target_path ) ) {
 		sse_cleanup_files( [ $target_path ] );
-		return new WP_Error( 'db_compress_verify_failed', __( 'Compressed database file was not created successfully.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'db_compress_verify_failed', __( 'The compressed database file was not created.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_chmod_private_file( $target_path ) ) {
 		sse_cleanup_files( [ $target_path ] );
-		return new WP_Error( 'db_compress_permissions_failed', __( 'Could not secure compressed database file permissions.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'db_compress_permissions_failed', __( 'Could not secure the permissions of the compressed database file.', 'enginescript-site-exporter' ) );
 	}
 
 	$budget_check = sse_record_generated_export_file( $target_path );
@@ -419,137 +418,47 @@ function sse_create_compressed_database_file( string $source_path, string $targe
 }
 
 /**
- * Builds the temporary uncompressed WordPress TAR.
+ * Creates a tar.gz archive of the WordPress files.
  *
- * @since 2.1.1
- * @param string $tar_path   Temporary TAR path.
- * @param string $export_dir Export directory to exclude.
- * @return true|WP_Error True on success, otherwise an archive error.
- */
-function sse_build_wordpress_tar( string $tar_path, string $export_dir ): true|WP_Error {
-	$tar_archive    = null;
-	$previous_umask = umask( 0077 );
-	try {
-		$tar_archive = new PharData( $tar_path );
-		$file_result = sse_add_wordpress_files_to_tar( $tar_archive, $export_dir, $tar_path );
-		if ( is_wp_error( $file_result ) ) {
-			return $file_result;
-		}
-
-		// PharData does not materialize a new TAR until its first entry is added.
-		if ( ! sse_chmod_private_file( $tar_path ) ) {
-			return new WP_Error( 'files_archive_permissions_failed', __( 'Could not secure files archive permissions.', 'enginescript-site-exporter' ) );
-		}
-
-		return true;
-	} catch ( Exception $e ) {
-		return new WP_Error(
-			'files_archive_failed',
-			sprintf(
-				/* translators: %s: error message */
-				__( 'Failed to create WordPress files archive: %s', 'enginescript-site-exporter' ),
-				$e->getMessage()
-			)
-		);
-	} finally {
-		unset( $tar_archive );
-		umask( $previous_umask );
-	}
-}
-
-/**
- * Preflights and compresses one completed temporary TAR.
+ * Every kept file is read once and written straight into the gzip stream, so
+ * the work grows with the bytes archived and no uncompressed copy is staged.
  *
- * @since 2.1.1
- * @param string $tar_path           Temporary TAR path.
+ * @since 2.0.0
  * @param string $files_archive_path Target tar.gz path.
- * @return true|WP_Error True on success, otherwise an archive error.
+ * @return true|WP_Error True on success, WP_Error on failure.
+ * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_compress_wordpress_tar( string $tar_path, string $files_archive_path ): true|WP_Error {
-	$tar_size = sse_get_generated_file_size( $tar_path );
-	if ( is_wp_error( $tar_size ) ) {
-		return $tar_size;
-	}
-
-	$projected_gzip_bytes = sse_get_projected_gzip_bytes( $tar_size );
-	if ( is_wp_error( $projected_gzip_bytes ) ) {
-		return $projected_gzip_bytes;
-	}
-
+function sse_create_wordpress_files_archive( string $files_archive_path ): true|WP_Error {
+	sse_cleanup_files( [ $files_archive_path ] );
 	$budget_check = sse_record_generated_export_file( $files_archive_path );
 	if ( is_wp_error( $budget_check ) ) {
 		return $budget_check;
 	}
 
-	$budget_check = sse_check_generated_export_capacity( $projected_gzip_bytes, dirname( $files_archive_path ) );
-	if ( is_wp_error( $budget_check ) ) {
-		return $budget_check;
-	}
-
-	$lease_check = sse_renew_current_export_lease( true );
-	if ( is_wp_error( $lease_check ) ) {
-		return $lease_check;
-	}
-
-	try {
-		$tar_archive = new PharData( $tar_path );
-		$tar_archive->compress( Phar::GZ );
-		unset( $tar_archive );
-	} catch ( Exception $e ) {
-		return new WP_Error(
-			'files_archive_failed',
-			sprintf(
-				/* translators: %s: error message */
-				__( 'Failed to create WordPress files archive: %s', 'enginescript-site-exporter' ),
-				$e->getMessage()
-			)
-		);
-	}
-
-	return sse_record_generated_export_file( $files_archive_path );
-}
-
-/**
- * Creates a tar.gz archive of the WordPress files.
- *
- * @since 2.0.0
- * @param string $files_archive_path Target tar.gz path.
- * @param string $export_dir         Export directory to exclude.
- * @return true|WP_Error True on success, WP_Error on failure.
- */
-function sse_create_wordpress_files_archive( string $files_archive_path, string $export_dir ): true|WP_Error {
-	$tar_path = preg_replace( '/\.gz$/', '', $files_archive_path );
-	if ( ! is_string( $tar_path ) || '' === $tar_path ) {
-		return new WP_Error( 'files_archive_path_failed', __( 'Could not determine files archive path.', 'enginescript-site-exporter' ) );
-	}
-
-	sse_cleanup_files( [ $tar_path, $files_archive_path ] );
-	$budget_check = sse_record_generated_export_file( $tar_path );
-	if ( is_wp_error( $budget_check ) ) {
-		return $budget_check;
-	}
-
-	$tar_result = sse_build_wordpress_tar( $tar_path, $export_dir );
-	if ( is_wp_error( $tar_result ) ) {
-		sse_cleanup_files( [ $tar_path, $files_archive_path ] );
-		return $tar_result;
-	}
-
-	$compression_result = sse_compress_wordpress_tar( $tar_path, $files_archive_path );
-	if ( is_wp_error( $compression_result ) ) {
-		sse_cleanup_files( [ $tar_path, $files_archive_path ] );
-		return $compression_result;
-	}
-	sse_cleanup_files( [ $tar_path ] );
-
-	if ( ! sse_filesystem_file_has_content( $files_archive_path ) ) {
+	$archive_handle = @gzopen( $files_archive_path, 'wb6' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Gzip creation failures return a bounded error without leaking the private path.
+	if ( false === $archive_handle ) {
 		sse_cleanup_files( [ $files_archive_path ] );
-		return new WP_Error( 'files_archive_verify_failed', __( 'WordPress files archive was not created successfully.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'files_archive_verify_failed', __( 'The WordPress files archive was not created.', 'enginescript-site-exporter' ) );
+	}
+
+	// The file exists as soon as it is opened, so secure it before any content is written.
+	$write_result = sse_chmod_private_file( $files_archive_path )
+		? sse_write_wordpress_files_to_tar( $archive_handle, $files_archive_path )
+		: new WP_Error( 'files_archive_permissions_failed', __( 'Could not secure the permissions of the files archive.', 'enginescript-site-exporter' ) );
+	$closed       = gzclose( $archive_handle );
+	if ( is_wp_error( $write_result ) ) {
+		sse_cleanup_files( [ $files_archive_path ] );
+		return $write_result;
+	}
+
+	if ( ! $closed || ! sse_filesystem_file_has_content( $files_archive_path ) ) {
+		sse_cleanup_files( [ $files_archive_path ] );
+		return new WP_Error( 'files_archive_verify_failed', __( 'The WordPress files archive was not created.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_chmod_private_file( $files_archive_path ) ) {
 		sse_cleanup_files( [ $files_archive_path ] );
-		return new WP_Error( 'files_archive_permissions_failed', __( 'Could not secure files archive permissions.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'files_archive_permissions_failed', __( 'Could not secure the permissions of the files archive.', 'enginescript-site-exporter' ) );
 	}
 
 	$budget_check = sse_record_generated_export_file( $files_archive_path );
@@ -588,12 +497,15 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
 		return $filesystem;
 	}
 
+	// Later keys are informational. The lines above keep their text and order for existing importers.
+	$manifest_content .= sse_get_engine_script_manifest_site_lines( $filesystem->exists( ABSPATH . 'wp-config.php' ) );
+
 	if ( ! $filesystem->put_contents( $bundle_paths['manifest_path'], $manifest_content, SSE_PRIVATE_FILE_MODE ) ) {
-		return new WP_Error( 'manifest_write_failed', __( 'Could not write EngineScript export manifest.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'manifest_write_failed', __( 'Could not write the EngineScript export manifest.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_chmod_private_file( $bundle_paths['manifest_path'] ) ) {
-		return new WP_Error( 'manifest_permissions_failed', __( 'Could not secure EngineScript export manifest permissions.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'manifest_permissions_failed', __( 'Could not secure the permissions of the EngineScript export manifest.', 'enginescript-site-exporter' ) );
 	}
 
 	$budget_check = sse_record_generated_export_file( $bundle_paths['manifest_path'] );
@@ -602,6 +514,31 @@ function sse_write_engine_script_manifest( array $bundle_paths, string $site_ide
 	}
 
 	return true;
+}
+
+/**
+ * Builds the informational manifest lines that describe the exported site.
+ *
+ * @since 2.1.1
+ * @param bool $has_wp_config Whether wp-config.php is in the WordPress directory, and so in the files archive.
+ * @return string Manifest lines, each ending in a line break.
+ */
+function sse_get_engine_script_manifest_site_lines( bool $has_wp_config ): string {
+	$database = sse_get_wordpress_database();
+	$values   = [
+		'home_url'             => home_url(),
+		'site_url'             => site_url(),
+		'table_prefix'         => null === $database ? '' : $database->prefix,
+		'wp_config_in_archive' => $has_wp_config ? 'yes' : 'no',
+	];
+
+	$lines = '';
+	foreach ( $values as $key => $value ) {
+		// One value per line: drop anything that could start a new one.
+		$lines .= $key . '=' . sse_normalize_string_value( preg_replace( '/[\x00-\x1F\x7F]+/', '', $value ) ) . "\n";
+	}
+
+	return $lines;
 }
 
 /**
@@ -644,10 +581,10 @@ function sse_prepare_combined_zip_output( array $entries, string $zip_path ): in
  */
 function sse_add_combined_zip_entries( ZipArchive $zip, array $entries, string $zip_path ): true|WP_Error {
 	if ( ! $zip->addEmptyDir( 'database' ) ) {
-		return new WP_Error( 'zip_directory_add_failed', __( 'Failed to add EngineScript directories to ZIP archive.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'zip_directory_add_failed', __( 'Could not add the EngineScript directories to the ZIP archive.', 'enginescript-site-exporter' ) );
 	}
 	if ( ! $zip->addEmptyDir( 'files' ) ) {
-		return new WP_Error( 'zip_directory_add_failed', __( 'Failed to add EngineScript directories to ZIP archive.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'zip_directory_add_failed', __( 'Could not add the EngineScript directories to the ZIP archive.', 'enginescript-site-exporter' ) );
 	}
 
 	foreach ( $entries as $entry_name => $entry_path ) {
@@ -657,11 +594,11 @@ function sse_add_combined_zip_entries( ZipArchive $zip, array $entries, string $
 		}
 
 		if ( ! $zip->addFile( $entry_path, $entry_name ) ) {
-			return new WP_Error( 'zip_payload_add_failed', __( 'Failed to add EngineScript payload file to ZIP archive.', 'enginescript-site-exporter' ) );
+			return new WP_Error( 'zip_payload_add_failed', __( 'Could not add an EngineScript payload file to the ZIP archive.', 'enginescript-site-exporter' ) );
 		}
 
 		if ( ! $zip->setCompressionName( $entry_name, ZipArchive::CM_STORE ) ) {
-			return new WP_Error( 'zip_store_mode_failed', __( 'Failed to store EngineScript ZIP payload without recompression.', 'enginescript-site-exporter' ) );
+			return new WP_Error( 'zip_store_mode_failed', __( 'Could not store an EngineScript payload file in the ZIP archive without recompression.', 'enginescript-site-exporter' ) );
 		}
 	}
 
@@ -708,12 +645,12 @@ function sse_finalize_combined_zip( ZipArchive $zip, string $zip_path ): true|WP
 
 	if ( ! $zip_close_status || ! sse_filesystem_file_has_content( $zip_path ) ) {
 		sse_cleanup_files( [ $zip_path ] );
-		return new WP_Error( 'zip_finalize_failed', __( 'Failed to finalize or save the ZIP archive after processing files.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'zip_finalize_failed', __( 'Could not finalize or save the ZIP archive.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_chmod_private_file( $zip_path ) ) {
 		sse_cleanup_files( [ $zip_path ] );
-		return new WP_Error( 'zip_permissions_failed', __( 'Could not secure ZIP archive permissions.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'zip_permissions_failed', __( 'Could not secure the permissions of the ZIP archive.', 'enginescript-site-exporter' ) );
 	}
 
 	$budget_check = sse_record_generated_export_file( $zip_path );
@@ -751,8 +688,8 @@ function sse_create_combined_engine_script_zip( array $bundle_paths ): true|WP_E
 		return new WP_Error(
 			'zip_create_failed',
 			sprintf(
-				/* translators: %s: ZIP file path. */
-				__( 'Could not create the ZIP file at %s.', 'enginescript-site-exporter' ),
+				/* translators: %s: ZIP file name. */
+				__( 'Could not create the ZIP file %s.', 'enginescript-site-exporter' ),
 				wp_basename( $bundle_paths['combined_zip_path'] )
 			)
 		);
@@ -790,42 +727,89 @@ function sse_discard_combined_zip( ZipArchive $zip, string $zip_path ): void {
 /**
  * Deletes a directory tree created during export staging.
  *
+ * A symbolic link is removed as a link. Its target is never entered, so a link
+ * planted inside an export directory cannot make cleanup delete anything
+ * outside it.
+ *
  * @since 2.0.0
- * @param string $directory Directory to delete.
+ * @param string      $directory      Directory to delete.
+ * @param string|null $base_directory Export base directory that must contain it; the current one when null.
  * @return bool True if deleted or absent, false on failure.
  */
-function sse_delete_directory_tree( string $directory ): bool {
+function sse_delete_directory_tree( string $directory, ?string $base_directory = null ): bool {
 	$filesystem = sse_get_filesystem();
-	if ( is_wp_error( $filesystem ) ) {
+	$export_dir = $base_directory ?? sse_get_export_directory_path();
+	if ( is_wp_error( $filesystem ) || is_wp_error( $export_dir ) ) {
 		return false;
 	}
 
-	$export_dir = sse_get_export_directory_path();
-	if ( is_wp_error( $export_dir ) ) {
+	// The path must name something below the base before anything is looked at or removed.
+	$directory = untrailingslashit( wp_normalize_path( $directory ) );
+	if ( ! sse_check_path_traversal( $directory ) || ! str_starts_with( $directory, untrailingslashit( wp_normalize_path( $export_dir ) ) . '/' ) ) {
 		return false;
 	}
 
-	if ( ! sse_is_path_within_directory( $directory, $export_dir ) ) {
-		return false;
+	if ( is_link( $directory ) ) {
+		return wp_delete_file( $directory );
 	}
 
+	clearstatcache( true, $directory );
 	if ( ! $filesystem->exists( $directory ) ) {
 		return true;
 	}
 
-	return $filesystem->delete( $directory, true, 'd' );
+	if ( ! $filesystem->is_dir( $directory ) || ! sse_is_path_within_directory( $directory, $export_dir ) ) {
+		return false;
+	}
+
+	return sse_delete_directory_contents( $directory, $filesystem ) && $filesystem->rmdir( $directory );
 }
 
 /**
- * Adds WordPress files to a TAR archive.
+ * Deletes everything inside a directory, children before parents, without following links.
  *
- * @since 1.0.0
- * @param PharData $tar        The tar archive object.
- * @param string   $export_dir The export directory to exclude.
- * @param string   $tar_path   Temporary uncompressed TAR path.
+ * @since 2.1.1
+ * @param string               $directory  Resolved directory whose contents are deleted.
+ * @param WP_Filesystem_Direct $filesystem Direct filesystem instance.
+ * @return bool True when every entry was removed.
+ */
+function sse_delete_directory_contents( string $directory, WP_Filesystem_Direct $filesystem ): bool {
+	$all_removed = true;
+
+	try {
+		// The directory iterator does not descend into a symbolic link unless asked to.
+		$entries = new RecursiveIteratorIterator(
+			new RecursiveDirectoryIterator( $directory, FilesystemIterator::SKIP_DOTS | FilesystemIterator::UNIX_PATHS ),
+			RecursiveIteratorIterator::CHILD_FIRST
+		);
+
+		foreach ( $entries as $entry ) {
+			if ( ! $entry instanceof SplFileInfo ) {
+				continue;
+			}
+
+			$path    = $entry->getPathname();
+			$removed = $entry->isDir() && ! $entry->isLink() ? $filesystem->rmdir( $path ) : wp_delete_file( $path );
+			if ( ! $removed ) {
+				$all_removed = false;
+			}
+		}
+	} catch ( Exception ) {
+		return false;
+	}
+
+	return $all_removed;
+}
+
+/**
+ * Walks the WordPress directory and writes each kept entry into the archive.
+ *
+ * @since 2.1.1
+ * @param resource $archive_handle Open gzip output handle.
+ * @param string   $archive_path   Generated tar.gz path.
  * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir, string $tar_path ): true|WP_Error {
+function sse_write_wordpress_files_to_tar( $archive_handle, string $archive_path ): true|WP_Error {
 	$source_path = realpath( ABSPATH );
 	if ( false === $source_path ) {
 		sse_log( 'Could not resolve real path for ABSPATH. Using ABSPATH directly.', 'warning' );
@@ -834,251 +818,386 @@ function sse_add_wordpress_files_to_tar( PharData $tar, string $export_dir, stri
 	$source_path = untrailingslashit( wp_normalize_path( $source_path ) );
 
 	try {
-		$files               = new RecursiveIteratorIterator(
-			new RecursiveDirectoryIterator( $source_path, RecursiveDirectoryIterator::SKIP_DOTS | FilesystemIterator::UNIX_PATHS ),
-			RecursiveIteratorIterator::SELF_FIRST
+		// The filter decides both whether an entry is archived and whether a directory
+		// is entered, so nothing below a rejected directory is read. A directory that
+		// cannot be opened after all is passed over instead of ending the walk.
+		$filter = new RecursiveCallbackFilterIterator(
+			new RecursiveDirectoryIterator( $source_path, FilesystemIterator::SKIP_DOTS | FilesystemIterator::UNIX_PATHS ),
+			static function ( mixed $file_info ) use ( $source_path ): bool {
+				return $file_info instanceof SplFileInfo && sse_should_walk_export_source_entry( $file_info, $source_path );
+			}
 		);
-		$projected_tar_bytes = 0;
-		$tar->startBuffering();
+		$files  = new RecursiveIteratorIterator( $filter, RecursiveIteratorIterator::SELF_FIRST, RecursiveIteratorIterator::CATCH_GET_CHILD );
 
-		/**
-		 * Current filesystem entry.
-		 *
-		 * @var SplFileInfo $file_info
-		 */
 		foreach ( $files as $file_info ) {
-			$file_result = sse_process_file_for_tar( $tar, $file_info, $source_path, $export_dir, $tar_path, $projected_tar_bytes );
-			if ( is_wp_error( $file_result ) ) {
-				$tar->stopBuffering();
-				return $file_result;
+			if ( ! $file_info instanceof SplFileInfo ) {
+				continue;
+			}
+
+			$entry_result = sse_write_tar_entry( $archive_handle, $file_info, $source_path, $archive_path );
+			if ( is_wp_error( $entry_result ) ) {
+				return $entry_result;
 			}
 		}
-		$tar->stopBuffering();
-	} catch ( RuntimeException $e ) {
-		if ( $tar->isBuffering() ) {
-			$tar->stopBuffering();
-		}
-		return new WP_Error(
-			'file_iteration_failed',
-			sprintf(
-				/* translators: %s: error message */
-				__( 'Error during file processing: %s', 'enginescript-site-exporter' ),
-				$e->getMessage()
-			)
-		);
 	} catch ( Exception $e ) {
-		if ( $tar->isBuffering() ) {
-			$tar->stopBuffering();
-		}
 		return new WP_Error(
 			'file_iteration_failed',
 			sprintf(
 				/* translators: %s: error message */
-				__( 'Error during file processing: %s', 'enginescript-site-exporter' ),
+				__( 'The files archive could not be completed: %s', 'enginescript-site-exporter' ),
 				$e->getMessage()
 			)
 		);
 	}
 
-	return sse_record_generated_export_file( $tar_path );
+	if ( ! sse_write_tar_bytes( $archive_handle, sse_tar_get_end_of_archive() ) ) {
+		return new WP_Error( 'files_archive_verify_failed', __( 'The WordPress files archive was not created.', 'enginescript-site-exporter' ) );
+	}
+
+	return sse_record_generated_export_file( $archive_path );
 }
 
 /**
- * Processes a single file for addition to the TAR archive.
- *
- * @since 2.0.0
- * @param PharData    $tar         Tar archive object.
- * @param SplFileInfo $file_info   File information object.
- * @param string      $source_path Source directory path.
- * @param string      $export_dir  Export directory to exclude.
- * @param string      $tar_path    Temporary uncompressed TAR path.
- * @param int         $projected_tar_bytes Cumulative projected TAR bytes.
- * @return true|null|WP_Error True on success, null if skipped, WP_Error on failure.
- */
-function sse_process_file_for_tar( PharData $tar, SplFileInfo $file_info, string $source_path, string $export_dir, string $tar_path, int &$projected_tar_bytes ): true|null|WP_Error {
-	if ( ! $file_info->isReadable() ) {
-		sse_log( 'Skipping unreadable file or directory: ' . $file_info->getPathname(), 'warning' );
-		return null;
-	}
-
-	if ( $file_info->isLink() ) {
-		sse_log( 'Skipping symbolic link during export: ' . $file_info->getPathname(), 'warning' );
-		return null;
-	}
-
-	$file          = $file_info->getRealPath();
-	$pathname      = wp_normalize_path( $file_info->getPathname() );
-	$relative_path = ltrim( substr( $pathname, strlen( $source_path ) ), '/' );
-
-	if ( false === $file || ! sse_is_path_within_export_source( $file, $source_path ) ) {
-		sse_log( 'Skipping file outside export source: ' . $pathname, 'warning' );
-		return null;
-	}
-
-	if ( empty( $relative_path ) ) {
-		return null;
-	}
-
-	if ( sse_should_exclude_file( $pathname, $relative_path, $export_dir, $file_info ) ) {
-		return null;
-	}
-
-	$source_bytes = $file_info->isFile() ? $file_info->getSize() : 0;
-	$budget_check = sse_record_export_source_entry( $source_bytes, $source_path );
-	if ( is_wp_error( $budget_check ) ) {
-		return $budget_check;
-	}
-
-	return sse_add_file_to_tar( $tar, $file_info, $file, $pathname, $relative_path, $tar_path, $projected_tar_bytes );
-}
-
-/**
- * Reserves aggregate capacity for one buffered TAR entry.
+ * Gets an entry's path relative to the export source.
  *
  * @since 2.1.1
- * @param int    $entry_bytes         Projected bytes for the next entry.
- * @param int    $projected_tar_bytes Cumulative projected TAR bytes.
- * @param string $tar_path            Temporary uncompressed TAR path.
- * @return true|WP_Error True when the cumulative projection fits.
+ * @param SplFileInfo $file_info   File information object.
+ * @param string      $source_path Normalized export source directory, without a trailing slash.
+ * @return string Relative path with forward slashes and no leading slash.
  */
-function sse_reserve_tar_entry_capacity( int $entry_bytes, int &$projected_tar_bytes, string $tar_path ): true|WP_Error {
-	if ( $entry_bytes > PHP_INT_MAX - $projected_tar_bytes ) {
-		return new WP_Error( 'export_generated_size_limit', __( 'The generated export exceeds the configured aggregate size limit.', 'enginescript-site-exporter' ) );
+function sse_get_export_relative_path( SplFileInfo $file_info, string $source_path ): string {
+	return ltrim( substr( wp_normalize_path( $file_info->getPathname() ), strlen( $source_path ) ), '/' );
+}
+
+/**
+ * Decides whether the walk keeps an entry and, for a directory, enters it.
+ *
+ * @since 2.1.1
+ * @param SplFileInfo $file_info   File information object.
+ * @param string      $source_path Normalized export source directory, without a trailing slash.
+ * @return bool True to keep the entry, false to skip it and everything below it.
+ */
+function sse_should_walk_export_source_entry( SplFileInfo $file_info, string $source_path ): bool {
+	if ( $file_info->isLink() ) {
+		sse_count_skipped_export_entry( 'links' );
+		sse_log( 'Skipping symbolic link during export: ' . $file_info->getPathname(), 'warning' );
+		return false;
 	}
 
-	$next_projection = $projected_tar_bytes + $entry_bytes;
-	$budget_check    = sse_check_generated_export_capacity( $next_projection, dirname( $tar_path ) );
+	if ( ! $file_info->isReadable() ) {
+		sse_count_skipped_export_entry( 'unreadable' );
+		sse_log( 'Skipping unreadable file or directory: ' . $file_info->getPathname(), 'warning' );
+		return false;
+	}
+
+	return ! sse_should_exclude_file( sse_get_export_relative_path( $file_info, $source_path ) );
+}
+
+/**
+ * Determines if a path should be excluded from the export.
+ *
+ * A rule that matches a directory also excludes everything below it, because
+ * the walk does not enter a rejected directory.
+ *
+ * @since 1.0.0
+ * @param string $relative_path The relative path of the file or directory.
+ * @return bool True if the path should be excluded, false otherwise.
+ */
+function sse_should_exclude_file( string $relative_path ): bool {
+	// Exclude the contents of cache and temporary directories; the directories themselves are kept.
+	if ( 1 === preg_match( '#^wp-content/(cache|upgrade|temp)/#', $relative_path ) ) {
+		return true;
+	}
+
+	// Exclude version control directories and system files.
+	return 1 === preg_match( '#(^|/)\.(git|svn|hg|DS_Store|htaccess|user\.ini)$#i', $relative_path );
+}
+
+/**
+ * Checks a file against the per-file size limit of the current request.
+ *
+ * @since 2.1.1
+ * @param int    $file_size     File size in bytes.
+ * @param string $relative_path Relative path in the archive, for the log.
+ * @return bool True when the file is larger than the limit and must be skipped.
+ */
+function sse_is_over_export_file_size_limit( int $file_size, string $relative_path ): bool {
+	$max_file_size = sse_get_export_max_file_size();
+	if ( $max_file_size <= 0 || $file_size <= $max_file_size ) {
+		return false;
+	}
+
+	$file_size_label  = sse_normalize_string_value( size_format( $file_size ), (string) $file_size . ' B' );
+	$limit_size_label = sse_normalize_string_value( size_format( $max_file_size ), (string) $max_file_size . ' B' );
+
+	sse_count_skipped_export_entry( 'large' );
+	sse_log( 'Excluding large file: ' . $relative_path . ' (Size: ' . $file_size_label . ', Limit: ' . $limit_size_label . ')', 'info' );
+	return true;
+}
+
+/**
+ * Writes one walked entry into the archive, or skips it.
+ *
+ * @since 2.1.1
+ * @param resource    $archive_handle Open gzip output handle.
+ * @param SplFileInfo $file_info      File information object.
+ * @param string      $source_path    Normalized export source directory, without a trailing slash.
+ * @param string      $archive_path   Generated tar.gz path.
+ * @return true|WP_Error True when written or skipped, WP_Error when the export must stop.
+ */
+function sse_write_tar_entry( $archive_handle, SplFileInfo $file_info, string $source_path, string $archive_path ): true|WP_Error {
+	$relative_path = sse_get_export_relative_path( $file_info, $source_path );
+	if ( '' === $relative_path ) {
+		return true;
+	}
+
+	$real_path = $file_info->getRealPath();
+	if ( false === $real_path || ! sse_is_path_within_directory( $real_path, $source_path ) ) {
+		sse_log( 'Skipping file outside export source: ' . $file_info->getPathname(), 'warning' );
+		return true;
+	}
+
+	if ( $file_info->isDir() ) {
+		return sse_write_tar_directory_entry( $archive_handle, $file_info, $relative_path . '/', $archive_path );
+	}
+
+	// A FIFO, socket, or device is never opened: opening one can block for ever.
+	if ( ! $file_info->isFile() ) {
+		sse_count_skipped_export_entry( 'special' );
+		sse_log( 'Skipping special file during export: ' . $file_info->getPathname(), 'warning' );
+		return true;
+	}
+
+	return sse_write_tar_file_entry( $archive_handle, wp_normalize_path( $real_path ), $relative_path, $archive_path );
+}
+
+/**
+ * Counts one entry against the export limits and reserves room for it.
+ *
+ * Free space is measured on the volume that holds the archive, which is where
+ * the bytes are written.
+ *
+ * @since 2.1.1
+ * @param int    $source_bytes Source file size, or zero for a directory.
+ * @param string $archive_name Path stored in the TAR, with the trailing slash for a directory.
+ * @param string $archive_path Generated tar.gz path.
+ * @return true|WP_Error True when the entry fits, otherwise a limit error.
+ */
+function sse_reserve_tar_entry( int $source_bytes, string $archive_name, string $archive_path ): true|WP_Error {
+	$volume_path  = dirname( $archive_path );
+	$budget_check = sse_record_export_source_entry( $source_bytes, $volume_path );
 	if ( is_wp_error( $budget_check ) ) {
 		return $budget_check;
 	}
 
-	$projected_tar_bytes = $next_projection;
-	return true;
+	$entry_bytes = sse_get_projected_tar_entry_bytes( $source_bytes, $archive_name );
+	if ( is_wp_error( $entry_bytes ) ) {
+		return $entry_bytes;
+	}
+
+	$gzip_bytes = sse_get_projected_gzip_bytes( $entry_bytes );
+	if ( is_wp_error( $gzip_bytes ) ) {
+		return $gzip_bytes;
+	}
+
+	return sse_check_generated_export_capacity( $gzip_bytes, $volume_path );
 }
 
 /**
- * Adds a file or directory to the TAR archive.
+ * Writes a directory entry.
  *
- * @since 1.0.0
- * @param PharData     $tar           The tar archive object.
- * @param SplFileInfo  $file_info     File information object.
- * @param string|false $file          Real file path or false if getRealPath() failed.
- * @param string       $pathname      Original pathname.
- * @param string       $relative_path Relative path in archive.
- * @param string       $tar_path      Temporary uncompressed TAR path.
- * @param int          $projected_tar_bytes Cumulative projected TAR bytes.
- * @return true|WP_Error True on success, WP_Error on failure.
+ * @since 2.1.1
+ * @param resource    $archive_handle Open gzip output handle.
+ * @param SplFileInfo $file_info      File information object.
+ * @param string      $archive_name   Path stored in the TAR, with its trailing slash.
+ * @param string      $archive_path   Generated tar.gz path.
+ * @return true|WP_Error True when written or skipped, WP_Error when the export must stop.
  */
-function sse_add_file_to_tar( PharData $tar, SplFileInfo $file_info, string|false $file, string $pathname, string $relative_path, string $tar_path, int &$projected_tar_bytes ): true|WP_Error {
+function sse_write_tar_directory_entry( $archive_handle, SplFileInfo $file_info, string $archive_name, string $archive_path ): true|WP_Error {
 	try {
-		if ( $file_info->isDir() ) {
-			$projected_bytes = sse_get_projected_tar_entry_bytes( 0, $relative_path );
-			if ( is_wp_error( $projected_bytes ) ) {
-				return $projected_bytes;
-			}
+		$mode  = (int) $file_info->getPerms();
+		$mtime = (int) $file_info->getMTime();
+	} catch ( RuntimeException ) {
+		// The directory vanished or became unreadable after it was listed.
+		sse_count_skipped_export_entry( 'unreadable' );
+		return true;
+	}
 
-			$budget_check = sse_reserve_tar_entry_capacity( $projected_bytes, $projected_tar_bytes, $tar_path );
-			if ( is_wp_error( $budget_check ) ) {
-				return $budget_check;
-			}
+	$reserve_result = sse_reserve_tar_entry( 0, $archive_name, $archive_path );
+	if ( is_wp_error( $reserve_result ) ) {
+		return $reserve_result;
+	}
 
-			$tar->addEmptyDir( $relative_path );
-			return true;
-		}
-
-		if ( $file_info->isFile() ) {
-			// Use real path (getRealPath() must succeed for security).
-			if ( false === $file ) {
-				sse_log( 'Skipping file with unresolvable real path: ' . $pathname, 'warning' );
-				return true; // Skip this file but continue processing.
-			}
-
-			$projected_bytes = sse_get_projected_tar_entry_bytes( $file_info->getSize(), $relative_path );
-			if ( is_wp_error( $projected_bytes ) ) {
-				return $projected_bytes;
-			}
-
-			$budget_check = sse_reserve_tar_entry_capacity( $projected_bytes, $projected_tar_bytes, $tar_path );
-			if ( is_wp_error( $budget_check ) ) {
-				return $budget_check;
-			}
-
-			$tar->addFile( wp_normalize_path( $file ), $relative_path );
-			return true;
-		}
-	} catch ( Exception $e ) {
-		sse_log( 'Failed to add file to TAR archive: ' . $relative_path . ' (source: ' . $pathname . '): ' . $e->getMessage(), 'error' );
-		return new WP_Error(
-			'file_add_failed',
-			sprintf(
-				/* translators: %s: file path */
-				__( 'Failed to add file to archive: %s', 'enginescript-site-exporter' ),
-				$relative_path
-			)
-		);
+	if ( ! sse_write_tar_bytes( $archive_handle, sse_tar_build_entry_header( $archive_name, 0, $mode, $mtime, '5' ) ) ) {
+		return sse_get_tar_write_error( $archive_name );
 	}
 
 	return true;
 }
 
 /**
- * Determines if a file should be excluded from the export.
+ * Opens a file and writes it as one archive entry.
  *
- * @since 1.0.0
- * @param string      $pathname      The full pathname.
- * @param string      $relative_path The relative path.
- * @param string      $export_dir    The export directory to exclude.
- * @param SplFileInfo $file_info     File information object.
- * @return bool True if file should be excluded.
+ * @since 2.1.1
+ * @param resource $archive_handle Open gzip output handle.
+ * @param string   $file_path      Resolved source file path.
+ * @param string   $relative_path  Relative path in the archive.
+ * @param string   $archive_path   Generated tar.gz path.
+ * @return true|WP_Error True when written or skipped, WP_Error when the export must stop.
+ * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_should_exclude_file( string $pathname, string $relative_path, string $export_dir, SplFileInfo $file_info ): bool {
-	// Exclude export directory.
-	if ( str_starts_with( $pathname, $export_dir ) ) {
+function sse_write_tar_file_entry( $archive_handle, string $file_path, string $relative_path, string $archive_path ): true|WP_Error {
+	$source_handle = @fopen( $file_path, 'rb' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.PHP.NoSilencedErrors.Discouraged -- A site file that cannot be opened is skipped and counted; large files must be streamed.
+	if ( false === $source_handle ) {
+		sse_count_skipped_export_entry( 'unreadable' );
+		sse_log( 'Skipping file that could not be opened: ' . $file_path, 'warning' );
 		return true;
 	}
 
-	// Exclude cache and temporary directories.
-	if ( preg_match( '#^wp-content/(cache|upgrade|temp)/#', $relative_path ) ) {
+	try {
+		return sse_write_open_file_to_tar( $archive_handle, $source_handle, $relative_path, $archive_path );
+	} finally {
+		fclose( $source_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the local file handle opened above; WP_Filesystem cannot stream.
+	}
+}
+
+/**
+ * Writes an open file as one archive entry.
+ *
+ * Type, size, mode, and time are read from the open handle, so they describe
+ * the file that is actually streamed, not the one that was listed earlier.
+ *
+ * @since 2.1.1
+ * @param resource $archive_handle Open gzip output handle.
+ * @param resource $source_handle  Open source file handle.
+ * @param string   $relative_path  Relative path in the archive.
+ * @param string   $archive_path   Generated tar.gz path.
+ * @return true|WP_Error True when written or skipped, WP_Error when the export must stop.
+ */
+function sse_write_open_file_to_tar( $archive_handle, $source_handle, string $relative_path, string $archive_path ): true|WP_Error {
+	$stat = fstat( $source_handle );
+	if ( false === $stat || 0100000 !== ( $stat['mode'] & 0170000 ) ) {
+		sse_count_skipped_export_entry( 'special' );
+		sse_log( 'Skipping file that is not a regular file: ' . $relative_path, 'warning' );
 		return true;
 	}
 
-	// Exclude version control and system files.
-	if ( preg_match( '#(^|/)\.(git|svn|hg|DS_Store|htaccess|user\.ini)$#i', $relative_path ) ) {
+	if ( sse_is_over_export_file_size_limit( $stat['size'], $relative_path ) ) {
 		return true;
 	}
 
-	// Exclude files based on size.
-	if ( $file_info->isFile() ) {
-		// Cache the max file size to avoid repeated transient/filter lookups per file.
-		/**
-		 * Maximum file size for this request.
-		 *
-		 * @var int|null $cached_max_file_size
-		 */
-		static $cached_max_file_size = null;
+	$reserve_result = sse_reserve_tar_entry( $stat['size'], $relative_path, $archive_path );
+	if ( is_wp_error( $reserve_result ) ) {
+		return $reserve_result;
+	}
 
-		/**
-		 * Filters the maximum allowed file size for inclusion in the export.
-		 *
-		 * @since 1.8.5
-		 *
-		 * @param int $max_file_size Maximum file size in bytes. Default is user's selection or 0 (no limit).
-		 */
-		if ( null === $cached_max_file_size ) {
-			$selected_max_file_size = sse_normalize_nonnegative_integer( get_transient( 'sse_export_max_file_size_' . get_current_user_id() ) );
-			$selected_max_file_size = false === $selected_max_file_size ? 0 : $selected_max_file_size;
-			$filtered_max_file_size = sse_normalize_nonnegative_integer( apply_filters( SSE_FILTER_MAX_FILE_SIZE, $selected_max_file_size ) );
-			$cached_max_file_size   = false === $filtered_max_file_size ? $selected_max_file_size : $filtered_max_file_size;
+	if ( ! sse_write_tar_bytes( $archive_handle, sse_tar_build_entry_header( $relative_path, $stat['size'], $stat['mode'], $stat['mtime'], '0' ) ) ) {
+		return sse_get_tar_write_error( $relative_path );
+	}
+
+	return sse_stream_file_to_tar( $archive_handle, $source_handle, $stat['size'], $relative_path, $archive_path );
+}
+
+/**
+ * Streams a file's content into the archive while checking live export limits.
+ *
+ * The entry always holds exactly the size its header declares. A file that
+ * ends early is completed with NUL bytes, and one that has grown is cut at
+ * the declared size, so a changing file cannot shift the entries after it.
+ *
+ * @since 2.1.1
+ * @param resource $archive_handle Open gzip output handle.
+ * @param resource $source_handle  Open source file handle.
+ * @param int      $declared_size  Size written in the entry header.
+ * @param string   $relative_path  Relative path in the archive.
+ * @param string   $archive_path   Generated tar.gz path.
+ * @return true|WP_Error True when the entry is complete, WP_Error when the export must stop.
+ */
+function sse_stream_file_to_tar( $archive_handle, $source_handle, int $declared_size, string $relative_path, string $archive_path ): true|WP_Error {
+	$remaining   = $declared_size;
+	$since_check = 0;
+	while ( $remaining > 0 ) {
+		$chunk = fread( $source_handle, min( 1048576, $remaining ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Streaming a large local file.
+		if ( false === $chunk || '' === $chunk ) {
+			break;
 		}
 
-		if ( $cached_max_file_size > 0 && $file_info->getSize() > $cached_max_file_size ) {
-			$file_size_label  = sse_normalize_string_value( size_format( $file_info->getSize() ), (string) $file_info->getSize() . ' B' );
-			$limit_size_label = sse_normalize_string_value( size_format( $cached_max_file_size ), (string) $cached_max_file_size . ' B' );
+		if ( ! sse_write_tar_bytes( $archive_handle, $chunk ) ) {
+			return sse_get_tar_write_error( $relative_path );
+		}
 
-			sse_log( 'Excluding large file: ' . $pathname . ' (Size: ' . $file_size_label . ', Limit: ' . $limit_size_label . ')', 'info' );
-			return true;
+		$remaining   -= strlen( $chunk );
+		$since_check += strlen( $chunk );
+		if ( $since_check >= 8388608 ) {
+			$since_check  = 0;
+			$budget_check = sse_check_export_resource_budget( dirname( $archive_path ) );
+			if ( is_wp_error( $budget_check ) ) {
+				return $budget_check;
+			}
 		}
 	}
 
-	return false;
+	if ( $remaining > 0 ) {
+		sse_count_skipped_export_entry( 'changed' );
+		sse_log( 'File ended early while it was archived; the rest is stored as zero bytes: ' . $relative_path, 'warning' );
+	}
+
+	if ( ! sse_write_tar_zero_bytes( $archive_handle, $remaining ) || ! sse_write_tar_bytes( $archive_handle, sse_tar_get_padding( $declared_size ) ) ) {
+		return sse_get_tar_write_error( $relative_path );
+	}
+
+	return true;
+}
+
+/**
+ * Writes bytes to the archive stream.
+ *
+ * @since 2.1.1
+ * @param resource $archive_handle Open gzip output handle.
+ * @param string   $bytes          Bytes to write.
+ * @return bool True when every byte was accepted.
+ */
+function sse_write_tar_bytes( $archive_handle, string $bytes ): bool {
+	return '' === $bytes || strlen( $bytes ) === gzwrite( $archive_handle, $bytes );
+}
+
+/**
+ * Writes a run of NUL bytes to the archive stream in bounded pieces.
+ *
+ * @since 2.1.1
+ * @param resource $archive_handle Open gzip output handle.
+ * @param int      $count          Number of NUL bytes to write.
+ * @return bool True when every byte was accepted.
+ */
+function sse_write_tar_zero_bytes( $archive_handle, int $count ): bool {
+	while ( $count > 0 ) {
+		$length = min( 1048576, $count );
+		if ( ! sse_write_tar_bytes( $archive_handle, str_repeat( "\0", $length ) ) ) {
+			return false;
+		}
+
+		$count -= $length;
+	}
+
+	return true;
+}
+
+/**
+ * Builds the error for a failed archive write and records it.
+ *
+ * @since 2.1.1
+ * @param string $relative_path Relative path of the entry that could not be written.
+ * @return WP_Error Archive write error.
+ */
+function sse_get_tar_write_error( string $relative_path ): WP_Error {
+	sse_log( 'Failed to add file to TAR archive: ' . $relative_path, 'error' );
+
+	return new WP_Error(
+		'file_add_failed',
+		sprintf(
+			/* translators: %s: file path */
+			__( 'Could not add a file to the archive: %s', 'enginescript-site-exporter' ),
+			$relative_path
+		)
+	);
 }

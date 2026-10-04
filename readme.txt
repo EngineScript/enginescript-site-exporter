@@ -45,11 +45,17 @@ The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 3. On a single-site installation, navigate to Tools → Site Exporter. On multisite, use Settings → Site Exporter in Network Admin.
 4. Click the "Export Site" button to create a site archive.
 
-Exports require 64-bit PHP 8.2 or higher with ZipArchive, PharData, and gzip support, plus direct local filesystem access through the WordPress Filesystem API and a private writable temporary directory outside the WordPress web root.
+Exports require 64-bit PHP 8.2 or higher with ZipArchive and gzip (zlib) support, plus direct local filesystem access through the WordPress Filesystem API and a private writable temporary directory outside every web-served directory (the WordPress directory, the content and uploads directories, and the document root).
 
 Database exports require a POSIX host with PHP's POSIX functions, a trusted `/usr/bin/setsid` or `/bin/setsid` executable, and WP-CLI at a trusted configured path. These prerequisites let the exporter stop the complete WP-CLI/database-client process group on failure or timeout; unsupported hosts fail closed before process launch.
 
 == Frequently Asked Questions ==
+
+= Who can create an export, and what does it contain? =
+
+On a single site, any user with the `manage_options` capability, which by default means every administrator. On a multisite network, only a super admin or a user with `manage_network_options`. There is no separate export capability and no second confirmation.
+
+An export contains the whole site: every eligible file under the WordPress directory, including `wp-config.php` when it is stored there, and the complete database, including user password hashes and every secret stored in the options. Treat an export like the server itself, and give that capability only to people you would trust with it.
 
 = How large of a site can I export? =
 
@@ -57,28 +63,32 @@ Default limits are 250,000 source entries, 50 GiB of source data, 100 GiB of gen
 
 = Where are the export files stored? =
 
-Exports are staged in WordPress' temporary directory under:
-`<temp-dir>/enginescript-site-exporter-exports/`
+Exports are stored in WordPress' temporary directory, in a directory whose name is specific to the installation:
+`<temp-dir>/enginescript-site-exporter-exports-<16 characters>/`
 
-Each export is written inside a random private child directory with private filesystem permissions. For security, the plugin refuses to export if the export directory resolves inside the WordPress web root. Configure `WP_TEMP_DIR` to a private writable path if your host's default temporary directory is public.
+Each export is written inside a random private child directory with private filesystem permissions. The plugin refuses to export if the temporary directory resolves inside a web-served directory: the WordPress directory, the content or uploads directory, or the document root. In that case, define `WP_TEMP_DIR` in `wp-config.php` as a private writable path outside the web root. The plugin does not fall back to the uploads directory.
 
 = When are export files deleted? =
 
-The plugin schedules deletion for 5 minutes after creation to reduce the time sensitive data remains on the server. Actual deletion depends on WordPress cron running successfully, so it may occur later. Download the archive promptly and delete it manually when finished. If `DISABLE_WP_CRON` is enabled, configure an external cron runner.
+The plugin schedules deletion for 5 minutes after creation to reduce the time sensitive data remains on the server. Actual deletion depends on WordPress cron running successfully, so it may occur later. Download the archive promptly and delete it manually when finished. If `DISABLE_WP_CRON` is enabled, configure an external cron runner. Deactivating the plugin deletes every export at once, because an inactive plugin can no longer delete them.
 
 = Can I create multiple exports? =
 
-Yes, sequentially. Only one export can run at a time within a single-site installation or the current multisite network. Each export uses a separate random private directory.
+Yes, sequentially. Only one export can run at a time within a single-site installation or the current multisite network. Each export uses a separate random private directory. The one-at-a-time rule relies on a database lock and on reading the current state of the database, so it is not supported on installations that send reads to database replicas.
 
 = Does this include my themes and plugins? =
 
-The export includes eligible themes, plugins, uploads, and other files under the WordPress installation directory, plus the database dump. It skips symbolic links, unreadable entries, selected cache and temporary paths, certain hidden files, and files excluded by the chosen per-file size limit. Files outside that directory, such as a parent-directory `wp-config.php`, are not included. On multisite, the export covers the network database and shared installation, not just one blog.
+The export includes eligible themes, plugins, uploads, and other files under the WordPress installation directory, plus the database dump. It skips symbolic links, unreadable entries, special files such as sockets and named pipes, version-control directories (`.git`, `.svn`, `.hg`), selected cache and temporary paths, certain hidden files, and files excluded by the chosen per-file size limit. Files outside that directory, such as a parent-directory `wp-config.php`, are not included. On multisite, the export covers the network database and shared installation, not just one blog.
 
 = What information is logged? =
 
-When both `WP_DEBUG` and `WP_DEBUG_LOG` are enabled, the plugin writes diagnostic messages to the WordPress debug log. It also stores up to 20 error or security records per site in the database, including the time, severity, message, user ID, and client IP address when available. Stored messages redact local absolute paths and are limited to 1,000 bytes.
+The plugin stores up to 20 records per site in the database: each export, download, and deletion, and any error or security event. A record holds the time, the type, the message, and the user ID. No IP address is stored. Stored messages redact local absolute paths and are limited to 1,000 bytes. These records are kept whether or not debug logging is on, and the exporter page shows them. Their text is in English. When both `WP_DEBUG` and `WP_DEBUG_LOG` are enabled, the plugin also writes diagnostic messages to the WordPress debug log.
 
-Database records older than seven days are removed when housekeeping, recovery, or a later log write runs; cron delays can extend that period. The WordPress debug log is separate: messages there can include local paths, and its retention and access controls are managed by the host. Review and redact logs before sharing them.
+Database records older than seven days are removed when housekeeping, recovery, or a later log write runs; cron delays can extend that period. The WordPress debug log is separate: messages there can include local paths, though never the random name of a private export directory, and its retention and access controls are managed by the host. While the database is dumped, other local users of the server can see the path of the dump, which includes the private directory name, in the process list; they still cannot read the directory or its files. Review and redact logs before sharing them.
+
+= What does the EngineScript importer need from an export? =
+
+EngineScript's `vhost-import.sh` finds the site through a `wp-config.php` inside the files archive and reads the site address from `WP_HOME` or `WP_SITEURL` in that file. An export from a site that keeps `wp-config.php` above the WordPress directory, or that defines neither constant, is still a complete backup, but the importer stops on it. The exporter page warns when either is the case. For reference, `manifest.txt` also records `home_url`, `site_url`, `table_prefix`, and `wp_config_in_archive`.
 
 = Can I use this plugin with non-EngineScript servers? =
 
@@ -128,7 +138,30 @@ Released entries describe their historical versions, including earlier tool resu
 * **Architecture**: Export operations now require WordPress' direct local filesystem transport and cleanup cron scheduling records native `WP_Error` diagnostics
 * **Architecture**: Filesystem and database callers now use typed WordPress boundary accessors, including the native `%i` database-table identifier placeholder, instead of rereading mixed globals
 * **Architecture**: The exporter remains beneath Tools on single-site installations and appears only beneath Settings in Network Admin on multisite; redirects and page-scoped assets use the matching canonical WordPress admin contract
-* **Architecture**: TAR creation now uses a private umask, buffers entry mutations to avoid per-file archive rewrites, enforces cumulative projected capacity, and verifies permissions after PharData materializes the archive
+* **Performance**: The files archive is now written in one pass straight into a gzip stream instead of through PharData; each file is read once, no uncompressed copy is staged, and the PHP Phar extension is no longer required
+* **Security**: A file whose path is longer than 100 bytes, which any user who can upload media could create, no longer stops the export
+* **Security**: The lease lock is now taken on single sites too; an invalid or duplicate lease row is removed at the next export attempt, never a valid unexpired one; a backward clock step can no longer block exports; the lease is decoded with classes disallowed, and scheduled handlers check their stored argument
+* **Security**: The download and delete handlers no longer rewrite the requested file name before validating it
+* **Privacy**: Exports, downloads, and deletions are now recorded with time and user whether or not debug logging is on; the client IP address is no longer stored
+* **Architecture**: An unopenable directory is skipped instead of stopping the export; `.git`, `.svn`, and `.hg` contents are left out; a file named `0` is kept; only regular files are archived; free space is measured on the archive's volume; skipped entries are counted
+* **Architecture**: The per-file size limit travels with the export request, and only the sizes offered on the form are accepted before the `sse_max_file_size_for_export` filter
+* **Architecture**: Archive names use the site's host unchanged (`www.example.com`, not `www.example_.com`); `manifest.txt` gains `home_url`, `site_url`, `table_prefix`, and `wp_config_in_archive` lines after the unchanged existing ones
+* **Compatibility**: The exporter page warns when `wp-config.php` is outside the WordPress directory or neither `WP_HOME` nor `WP_SITEURL` is defined, which the EngineScript importer requires; a missing `disk_free_space()` is reported before the export starts
+* **Architecture**: A WP-CLI executable that fails a safety check is reported with that reason; removed dead and legacy code with no behavior change
+* **Bug Fix**: An export of a site with a small database could fail about one time in twenty with "WP-CLI could not create the database export" although the dump had been written; the generated-file check now reads fresh file metadata
+* **Feature**: The exporter page lists every finished archive with size, creation time, and download and delete controls for as long as it exists, and shows recent exports, downloads, deletions, errors, and security events
+* **Feature**: Submitting the export form disables the button, shows a status line, and does not send a second submission
+* **Compatibility**: The plugin header declares `Network: true`, so a multisite network offers network activation only
+* **Architecture**: The download rate limit starts when the file has been opened; a request for an archive that no longer exists gets a plain "expired or was deleted" message
+* **Security**: The exporter page warns when it is not served over HTTPS
+* **Security**: Deactivating the plugin deletes every export archive, clears all scheduled events, and removes the export lease; deleting the plugin also removes its stored records and its export directory
+* **Security**: The export directory name is now specific to the installation and cannot be predicted by another local user; archives left in the earlier directory are still cleaned up on schedule
+* **Security**: An export is refused when the temporary directory resolves inside the WordPress directory, the content directory, the uploads directory, or the document root
+* **Security**: Removing an export directory no longer follows a symbolic link placed inside it
+* **Security**: WP-CLI starts in the filesystem root with packages skipped and no project or home configuration, and receives the server process's environment, never request values
+* **Privacy**: Debug-log lines and stored records no longer contain private export directory names, and a file name with a line break cannot forge a log line
+* **Architecture**: On a network, the daily housekeeping event is scheduled on the main site only
+* **Accessibility**: Presentational settings table, a described size control, an announced new-tab link, per-archive control labels, and an announced running-export status
 * **Architecture**: PHP's request timer now aligns with the filterable export-time policy, capped at 30 minutes, instead of allowing a default 30-second limit to abort valid archive work
 * **PHP**: Added native PHP 8.2 union types and modern syntax, and moved 64-bit/archive prerequisite checks before directory, WP-CLI, resource-limit, or database work
 * **Accessibility**: Updated warning text for WCAG AA normal-text contrast and forced-colors support while preserving keyboard focus and responsive action wrapping
@@ -137,6 +170,7 @@ Released entries describe their historical versions, including earlier tool resu
 * **Tooling**: Added a Composer-managed semantic versioning library for future version-related tests
 * **Documentation**: Updated WP-CLI, multisite authorization, canonical admin navigation, and private export storage guidance
 * **Text and Localization**: Clarified scheduled cleanup, file exclusions, size limits, runtime requirements, and debug-log privacy; corrected user messages and developer comments; regenerated the translation catalog
+* **Text and Localization**: Error messages are now complete sentences with one wording for failures, and user messages no longer use internal terms; the exporter page and the documentation state that an export contains the whole site and who can create one; documented what the EngineScript importer requires, the installation-specific export directory, and the known limits; regenerated the translation catalog
 
 = 2.1.0 =
 * **Security**: Added `.htaccess` file to export directory with `Deny from all` rules to prevent direct HTTP access to export files

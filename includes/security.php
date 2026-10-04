@@ -35,69 +35,22 @@ function sse_check_path_traversal( string $normalized_file_path ): bool {
 }
 
 /**
- * Resolves the real file path, handling nonexistent files securely.
+ * Resolves the real path of an existing file with an allowed extension.
  *
- * For existing files, returns realpath() directly. For nonexistent files (e.g., during
- * pre-creation validation), validates that the parent directory is within the supplied base
- * directory and constructs a safe path from the resolved parent and sanitized filename.
+ * A file that does not exist does not resolve. Every caller checks that the
+ * file exists first, so nothing is ever validated before it is created.
  *
  * @since 2.0.0
  * @param string $normalized_file_path The normalized file path.
- * @param string $normalized_base_dir  The normalized base directory.
  * @return string|false Real file path on success, false on failure.
  */
-function sse_resolve_file_path( string $normalized_file_path, string $normalized_base_dir ): string|false {
+function sse_resolve_file_path( string $normalized_file_path ): string|false {
 	// Security: Only allow files with safe extensions.
 	if ( ! sse_validate_file_extension( $normalized_file_path ) ) {
 		return false;
 	}
 
-	// Fast path: file exists, realpath resolves directly.
-	$real_file_path = realpath( $normalized_file_path );
-	if ( false !== $real_file_path ) {
-		return $real_file_path;
-	}
-
-	// Validate non-existent files by resolving their parent directory.
-	$base_real_path = realpath( $normalized_base_dir );
-	if ( false === $base_real_path ) {
-		sse_log( 'Could not resolve the export base directory path.', 'error' );
-		return false;
-	}
-	$base_real_path = wp_normalize_path( $base_real_path );
-
-	$parent_dir = dirname( $normalized_file_path );
-	$filename   = wp_basename( $normalized_file_path );
-
-	// Pre-validate parent directory path safety.
-	if ( str_contains( $parent_dir, '..' ) || str_contains( $parent_dir, 'wp-config' ) ) {
-		sse_log( 'Rejected unsafe parent directory path: ' . $parent_dir, 'security' );
-		return false;
-	}
-
-	$norm_parent_dir = wp_normalize_path( $parent_dir );
-	$norm_base_dir   = wp_normalize_path( $normalized_base_dir );
-
-	if ( ! str_starts_with( trailingslashit( $norm_parent_dir ), trailingslashit( $norm_base_dir ) ) ) {
-		sse_log( 'Parent directory not within export directory: ' . $parent_dir, 'security' );
-		return false;
-	}
-
-	// Resolve parent directory and validate it is still within the base after symlink resolution.
-	$real_parent_dir = realpath( $norm_parent_dir );
-	if ( false === $real_parent_dir || ! sse_is_path_within_directory( $real_parent_dir, $base_real_path ) ) {
-		sse_log( 'Parent directory path validation failed.', 'security' );
-		return false;
-	}
-
-	// Sanitize filename to prevent directory traversal.
-	$filename = sanitize_file_name( $filename );
-	if ( str_contains( $filename, '..' ) || str_contains( $filename, '/' ) || str_contains( $filename, '\\' ) ) {
-		sse_log( 'Filename contains invalid characters: ' . $filename, 'security' );
-		return false;
-	}
-
-	return trailingslashit( $real_parent_dir ) . $filename;
+	return realpath( $normalized_file_path );
 }
 
 /**
@@ -192,7 +145,7 @@ function sse_check_path_within_base( string|false $real_file_path, string $real_
  */
 function sse_validate_filepath( string $file_path, string $base_dir ): bool {
 	// Sanitize and normalize paths to handle different separators and resolve . and ..
-	$normalized_file_path = wp_normalize_path( wp_unslash( $file_path ) );
+	$normalized_file_path = wp_normalize_path( $file_path );
 	$normalized_base_dir  = wp_normalize_path( $base_dir );
 
 	// Check for directory traversal attempts.
@@ -201,7 +154,7 @@ function sse_validate_filepath( string $file_path, string $base_dir ): bool {
 	}
 
 	// Resolve real paths to prevent directory traversal.
-	$real_file_path = sse_resolve_file_path( $normalized_file_path, $normalized_base_dir );
+	$real_file_path = sse_resolve_file_path( $normalized_file_path );
 	$real_base_dir  = realpath( $normalized_base_dir );
 
 	// Base directory must be resolvable for security.
@@ -293,13 +246,13 @@ function sse_normalize_native_file_identity( array|false $metadata ): ?array {
 function sse_get_export_file_native_identity( string $file_path ): array|WP_Error {
 	clearstatcache( true, $file_path );
 	if ( is_link( $file_path ) ) {
-		return new WP_Error( 'file_identity_error', __( 'Could not verify export file identity.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'file_identity_error', __( 'Could not verify the identity of the export file.', 'enginescript-site-exporter' ) );
 	}
 
 	$link_identity = sse_normalize_native_file_identity( @lstat( $file_path ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_lstat,WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
 	$file_identity = sse_normalize_native_file_identity( @stat( $file_path ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_stat,WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
 	if ( null === $link_identity || null === $file_identity || $link_identity !== $file_identity ) {
-		return new WP_Error( 'file_identity_error', __( 'Could not verify export file identity.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'file_identity_error', __( 'Could not verify the identity of the export file.', 'enginescript-site-exporter' ) );
 	}
 
 	return $file_identity;
@@ -309,27 +262,18 @@ function sse_get_export_file_native_identity( string $file_path ): array|WP_Erro
  * Performs basic validation common to both download and deletion operations.
  *
  * @since 2.0.0
- * @param string $filename        The filename to validate.
- * @param string $export_dir_name Private export directory basename.
+ * @param string      $filename        The filename to validate.
+ * @param string      $export_dir_name Private export directory basename.
+ * @param string|null $base_directory  Export base directory; the current one when null.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_basic_export_file( string $filename, string $export_dir_name ): array|WP_Error {
+function sse_validate_basic_export_file( string $filename, string $export_dir_name, ?string $base_directory = null ): array|WP_Error {
 	$basic_checks = sse_validate_filename_format( $filename );
 	if ( is_wp_error( $basic_checks ) ) {
 		return $basic_checks;
 	}
 
-	$path_validation = sse_validate_export_file_path( $filename, $export_dir_name );
-	if ( is_wp_error( $path_validation ) ) {
-		return $path_validation;
-	}
-
-	$existence_check = sse_validate_file_existence( $path_validation['filepath'] );
-	if ( is_wp_error( $existence_check ) ) {
-		return $existence_check;
-	}
-
-	return $path_validation;
+	return sse_validate_export_file_path( $filename, $export_dir_name, $base_directory );
 }
 
 /**
@@ -384,13 +328,14 @@ function sse_validate_export_directory_name_format( string $export_dir_name ): t
  * Validates export file path and directory security.
  *
  * @since 2.0.0
- * @param string $filename        The filename to validate.
- * @param string $export_dir_name Private export directory basename.
+ * @param string      $filename        The filename to validate.
+ * @param string      $export_dir_name Private export directory basename.
+ * @param string|null $base_directory  Export base directory; the current one when null.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_export_file_path( string $filename, string $export_dir_name ): array|WP_Error {
+function sse_validate_export_file_path( string $filename, string $export_dir_name, ?string $base_directory = null ): array|WP_Error {
 	// Get the full path to the file.
-	$export_dir = sse_get_export_directory_path();
+	$export_dir = $base_directory ?? sse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}
@@ -400,7 +345,24 @@ function sse_validate_export_file_path( string $filename, string $export_dir_nam
 		return $dir_validation;
 	}
 
+	$format_validation = sse_validate_filename_format( $filename );
+	if ( is_wp_error( $format_validation ) ) {
+		return $format_validation;
+	}
+
+	$filesystem = sse_get_filesystem();
+	if ( is_wp_error( $filesystem ) ) {
+		return $filesystem;
+	}
+
 	$file_path = trailingslashit( trailingslashit( $export_dir ) . $export_dir_name ) . $filename;
+
+	// Both names matched their anchored patterns, so this path names one file in one private
+	// directory. When that file is gone, the export has expired; that is not a suspicious request.
+	clearstatcache( true, $file_path );
+	if ( ! $filesystem->exists( $file_path ) ) {
+		return new WP_Error( 'export_expired', __( 'This export has expired or was deleted. Create a new export.', 'enginescript-site-exporter' ) );
+	}
 
 	// Validate the file path is within our export directory.
 	if ( ! sse_validate_filepath( $file_path, $export_dir ) ) {
@@ -411,24 +373,4 @@ function sse_validate_export_file_path( string $filename, string $export_dir_nam
 		'filepath' => $file_path,
 		'filename' => wp_basename( $file_path ),
 	];
-}
-
-/**
- * Validates file existence using WordPress filesystem.
- *
- * @since 2.0.0
- * @param string $file_path The file path to check.
- * @return true|WP_Error True on success, WP_Error on failure.
- */
-function sse_validate_file_existence( string $file_path ): true|WP_Error {
-	$filesystem = sse_get_filesystem();
-	if ( is_wp_error( $filesystem ) ) {
-		return $filesystem;
-	}
-
-	if ( ! $filesystem->exists( $file_path ) ) {
-		return new WP_Error( 'file_not_found', __( 'Export file not found.', 'enginescript-site-exporter' ) );
-	}
-
-	return true;
 }

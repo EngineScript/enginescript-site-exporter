@@ -1,6 +1,6 @@
 <?php
 /**
- * Helper utilities: logging, IP detection, export paths, redirects, and filesystem initialization.
+ * Helper utilities: logging, stored records, export paths, redirects, and filesystem initialization.
  *
  * @package EngineScript_Site_Exporter
  */
@@ -12,22 +12,6 @@
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
-}
-
-/**
- * Safely gets the client IP address.
- *
- * @since 1.0.0
- * @return string Client IP address or 'unknown' if not available.
- */
-function sse_get_client_ip(): string {
-	$client_ip = filter_input( INPUT_SERVER, 'REMOTE_ADDR', FILTER_VALIDATE_IP );
-
-	if ( is_string( $client_ip ) ) {
-		return $client_ip;
-	}
-
-	return 'unknown';
 }
 
 /**
@@ -83,21 +67,37 @@ function sse_normalize_filesystem_scalar( mixed $value ): int|string|false {
 /**
  * Stores important log messages in the database for review.
  *
+ * A record holds the time, the level, the message, and the acting user. No
+ * client address is stored.
+ *
  * @since 1.0.0
  * @param string $message The log message.
  * @param string $level   The log level.
  * @return void
  */
 function sse_store_log_in_database( string $message, string $level ): void {
-	$logs = sse_get_retained_stored_logs( get_option( 'sse_error_logs', [] ), time() - ( 7 * DAY_IN_SECONDS ) );
-
-	$logs[] = [
+	$logs   = sse_get_retained_stored_logs( get_option( 'sse_error_logs', [] ), time() - ( 7 * DAY_IN_SECONDS ) );
+	$record = [
 		'time'    => time(),
 		'level'   => sanitize_key( $level ),
 		'message' => sse_sanitize_stored_log_message( $message ),
 		'user_id' => get_current_user_id(),
-		'ip'      => sse_get_client_ip(),
 	];
+
+	// A fault that repeats on every request must not cause a database write each time.
+	$previous = end( $logs );
+	if (
+		'activity' !== $record['level']
+		&& is_array( $previous )
+		&& $previous['level'] === $record['level']
+		&& $previous['message'] === $record['message']
+		&& $previous['user_id'] === $record['user_id']
+		&& $record['time'] - $previous['time'] < HOUR_IN_SECONDS
+	) {
+		return;
+	}
+
+	$logs[] = $record;
 
 	// Keep only the most recent 20 logs.
 	if ( count( $logs ) > 20 ) {
@@ -108,12 +108,30 @@ function sse_store_log_in_database( string $message, string $level ): void {
 }
 
 /**
- * Normalizes stored error/security logs and removes expired records.
+ * Records an export, a download, or a deletion for later review.
+ *
+ * Activity is stored whatever the debug settings, and is also sent to the
+ * debug log when that is enabled.
+ *
+ * @since 2.1.1
+ * @param string $message What happened, and to which archive.
+ * @return void
+ */
+function sse_record_activity( string $message ): void {
+	sse_store_log_in_database( $message, 'activity' );
+	sse_log( $message, 'info' );
+}
+
+/**
+ * Normalizes stored records and removes expired ones.
+ *
+ * Records written by earlier versions carry a client address; it is dropped
+ * here, so it disappears the next time the records are written.
  *
  * @since 2.1.1
  * @param mixed $stored_logs Untrusted option value.
  * @param int   $cutoff      Oldest retained Unix timestamp.
- * @return array<int,array{time:int,level:string,message:string,user_id:int,ip:string}> Retained records.
+ * @return array<int,array{time:int,level:string,message:string,user_id:int}> Retained records.
  */
 function sse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array {
 	$logs     = sse_normalize_array_value( $stored_logs );
@@ -122,13 +140,12 @@ function sse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array 
 	foreach ( $logs as $log ) {
 		if (
 			! is_array( $log )
-			|| ! isset( $log['time'], $log['level'], $log['message'], $log['user_id'], $log['ip'] )
+			|| ! isset( $log['time'], $log['level'], $log['message'], $log['user_id'] )
 			|| ! is_numeric( $log['time'] )
 			|| (int) $log['time'] < $cutoff
 			|| ! is_string( $log['level'] )
 			|| ! is_string( $log['message'] )
 			|| ! is_numeric( $log['user_id'] )
-			|| ! is_string( $log['ip'] )
 		) {
 			continue;
 		}
@@ -138,7 +155,6 @@ function sse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array 
 			'level'   => sanitize_key( $log['level'] ),
 			'message' => sse_sanitize_stored_log_message( $log['message'] ),
 			'user_id' => (int) $log['user_id'],
-			'ip'      => sanitize_text_field( $log['ip'] ),
 		];
 	}
 
@@ -194,16 +210,36 @@ function sse_sanitize_stored_log_message( string $message ): string {
  * @return void
  */
 function sse_output_log_message( string $formatted_message ): void {
-	if ( function_exists( 'wp_debug_log' ) ) {
-		wp_debug_log( $formatted_message );
-		return;
-	}
-
 	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WordPress has no universally available arbitrary debug-log wrapper; sse_log() already checks WP_DEBUG_LOG.
 }
 
 /**
- * Logs plugin messages when WordPress debug logging is enabled.
+ * Makes a message safe to write to a log.
+ *
+ * Control characters are replaced, so a file name with a line break cannot
+ * start a forged log line. The random part of a private export directory name
+ * is removed: that name is what keeps an archive from being guessed, and a log
+ * is read by more people than the directory is.
+ *
+ * @since 2.1.1
+ * @param string $message Log message.
+ * @return string Message on one line, without private directory names.
+ */
+function sse_prepare_log_message( string $message ): string {
+	$message = sse_normalize_string_value( preg_replace( '/[\x00-\x1F\x7F]+/', ' ', $message ) );
+
+	return sse_normalize_string_value(
+		preg_replace( '/' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}/', SSE_EXPORT_PRIVATE_DIR_PREFIX . '[private]', $message ),
+		$message
+	);
+}
+
+/**
+ * Logs plugin messages.
+ *
+ * Errors and security events are always kept as bounded database records.
+ * Every message also goes to the debug log when WordPress debug logging is
+ * enabled.
  *
  * @since 1.0.0
  * @param string $message The message to log.
@@ -211,6 +247,12 @@ function sse_output_log_message( string $formatted_message ): void {
  * @return void
  */
 function sse_log( string $message, string $level = 'info' ): void {
+	$message = sse_prepare_log_message( $message );
+
+	if ( 'error' === $level || 'security' === $level ) {
+		sse_store_log_in_database( $message, $level );
+	}
+
 	// Check if WP_DEBUG is enabled.
 	if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
 		return;
@@ -231,11 +273,6 @@ function sse_log( string $message, string $level = 'info' ): void {
 	}
 
 	sse_output_log_message( $formatted_message );
-
-	// Store only errors and security events as bounded database records.
-	if ( 'error' === $level || 'security' === $level ) {
-		sse_store_log_in_database( $message, $level );
-	}
 }
 
 /**
@@ -316,13 +353,37 @@ function sse_is_engine_script_archive_filename( string $filename ): bool {
  *
  * Exports contain a full database dump and site files, so they should not live
  * in the public uploads tree. WordPress supplies the temporary directory;
- * export setup rejects it if it resolves inside the web root. Hosts can set
- * WP_TEMP_DIR to a private writable location.
+ * export setup rejects it if it resolves inside a web-served directory. Hosts
+ * can set WP_TEMP_DIR to a private writable location.
+ *
+ * The directory name ends in a value derived from this installation's secret
+ * salts and its path. Another local user cannot predict or pre-create it, two
+ * installations never share it, and a clone of the site in another directory
+ * gets its own even though it keeps the same salts.
  *
  * @since 2.0.0
  * @return string|WP_Error Export directory path on success, WP_Error on failure.
  */
 function sse_get_export_directory_path(): string|WP_Error {
+	$temp_dir = get_temp_dir();
+	if ( '' === $temp_dir ) {
+		return new WP_Error( 'temp_dir_unavailable', __( 'Could not determine a private temporary directory for exports.', 'enginescript-site-exporter' ) );
+	}
+
+	return trailingslashit( $temp_dir ) . SSE_EXPORT_DIR_NAME . '-' . substr( wp_hash( 'sse-export-base|' . ABSPATH ), 0, 16 );
+}
+
+/**
+ * Gets the export directory path that earlier versions used.
+ *
+ * The fixed name was shared by every installation with the same temporary
+ * directory. Cleanup still looks there, with the same age rules as before, so
+ * that archives made before an update are removed on schedule.
+ *
+ * @since 2.1.1
+ * @return string|WP_Error Earlier export directory path on success, WP_Error on failure.
+ */
+function sse_get_legacy_export_directory_path(): string|WP_Error {
 	$temp_dir = get_temp_dir();
 	if ( '' === $temp_dir ) {
 		return new WP_Error( 'temp_dir_unavailable', __( 'Could not determine a private temporary directory for exports.', 'enginescript-site-exporter' ) );
@@ -442,11 +503,16 @@ function sse_get_filesystem_mode( string $path ): int|false {
 /**
  * Checks whether a file exists and has content using the WordPress Filesystem API.
  *
+ * The export reads a generated file's size while the file is still being
+ * written, and PHP caches that reading. The cache is cleared here so that the
+ * check sees the finished file, not a size from before it was written.
+ *
  * @since 2.1.1
  * @param string $file_path File path to inspect.
  * @return bool True when the file exists and is non-empty.
  */
 function sse_filesystem_file_has_content( string $file_path ): bool {
+	clearstatcache( true, $file_path );
 	$filesystem = sse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return false;
@@ -512,28 +578,22 @@ function sse_chmod_private_file( string $file_path ): bool {
  * network-level page registered beneath Network Settings.
  *
  * @since 2.1.1
- * @param array<string, string> $args Optional query arguments.
  * @return string Canonical exporter admin URL.
  */
-function sse_get_exporter_admin_page_url( array $args = [] ): string {
-	$page_args = array_merge(
-		$args,
-		[ 'page' => 'enginescript-site-exporter' ]
-	);
+function sse_get_exporter_admin_page_url(): string {
 	$admin_url = is_multisite() ? network_admin_url( 'settings.php' ) : admin_url( 'tools.php' );
 
-	return add_query_arg( $page_args, $admin_url );
+	return add_query_arg( [ 'page' => 'enginescript-site-exporter' ], $admin_url );
 }
 
 /**
  * Redirects back to the exporter admin page.
  *
  * @since 2.0.0
- * @param array<string, string> $args Optional query args.
  * @return never
  */
-function sse_redirect_to_exporter_page( array $args = [] ): never {
-	wp_safe_redirect( sse_get_exporter_admin_page_url( $args ) );
+function sse_redirect_to_exporter_page(): never {
+	wp_safe_redirect( sse_get_exporter_admin_page_url() );
 	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required after wp_safe_redirect().
 }
 
@@ -610,7 +670,7 @@ function sse_get_filesystem(): WP_Filesystem_Direct|WP_Error {
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	if ( ! WP_Filesystem() ) {
 		sse_log( 'Failed to initialize the WordPress Filesystem API.', 'error' );
-		return new WP_Error( 'filesystem_init_failed', __( 'Failed to initialize the WordPress Filesystem API.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'filesystem_init_failed', __( 'Could not initialize the WordPress Filesystem API.', 'enginescript-site-exporter' ) );
 	}
 
 	$filesystem = sse_get_direct_global_filesystem();

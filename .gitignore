@@ -1,5 +1,7 @@
 # Local private files
 AGENTS.md
+CLAUDE.md
+.github/copilot-instructions.md
 .private/
 .vscode/
 
@@ -42,6 +44,8 @@ tmp/
 
 # Dependencies, tests, and build artifacts
 build/
+composer.lock
+package.lock
 coverage/
 dist/
 node_modules/

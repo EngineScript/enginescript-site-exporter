@@ -34,10 +34,7 @@ jobs:
     name: WP Plugin Check (PHP 8.3)
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    
-    strategy:
-      fail-fast: false
-    
+
     steps:
       - name: Checkout code
         id: checkout_code
@@ -1272,6 +1269,10 @@ jobs:
           class EngineScriptSiteExporterTest extends WP_UnitTestCase {
               public function tear_down() {
                   sse_clear_current_export_lease();
+                  sse_clear_export_resource_budget();
+                  $_GET = [];
+                  $_POST = [];
+                  $_REQUEST = [];
                   wp_set_current_user(0);
                   parent::tear_down();
               }
@@ -1438,7 +1439,7 @@ jobs:
                       $this->assertSame([$zip], sse_get_export_files_from_private_directory($root));
                       $this->assertSame([], sse_get_export_files_from_private_directory($root . '/missing'));
                       // This helper independently accepts broad arrays; retain its guards.
-                      $this->assertSame([], sse_get_export_files_from_directory_entry('fallback', ['name' => null, 'type' => null], $root, ''));
+                      $this->assertSame([], sse_get_export_files_from_directory_entry(['name' => null, 'type' => null], $root, ''));
                   } finally {
                       foreach ([$zip, $root . '/123', $root . '/unrelated.txt'] as $file) {
                           if (is_file($file)) {
@@ -1504,6 +1505,8 @@ jobs:
                       $this->assertSame(7, file_put_contents($file, 'fixture'));
                       $this->assertTrue(sse_validate_filepath($file, $base_dir));
                       $this->assertFalse(sse_validate_filepath($base_dir . '/../' . basename($file), $base_dir));
+                      // A file that does not exist is never valid, also inside the base.
+                      $this->assertFalse(sse_validate_filepath($base_dir . '/site_enginescript_site_export_20260513_999999.zip', $base_dir));
                   } finally {
                       if (is_file($file)) {
                           unlink($file);
@@ -1520,6 +1523,578 @@ jobs:
                   $min_wp_version = '6.8';
                   $this->assertTrue(version_compare(preg_replace('/-src$/', '', $wp_version), $min_wp_version, '>='),
                       "WordPress version {$wp_version} should be >= {$min_wp_version}");
+              }
+
+              /**
+               * Signs in a user who may export on this kind of installation.
+               */
+              private function sse_sign_in_exporter() {
+                  $user_id = self::factory()->user->create(['role' => 'administrator']);
+                  if (is_multisite()) {
+                      grant_super_admin($user_id);
+                  }
+                  wp_set_current_user($user_id);
+                  return $user_id;
+              }
+
+              /**
+               * Requires that a request handler stops through wp_die().
+               */
+              private function sse_assert_refused(callable $request, $expected_message = '') {
+                  try {
+                      $request();
+                  } catch (WPDieException $refusal) {
+                      $this->assertStringContainsString($expected_message, $refusal->getMessage());
+                      return;
+                  }
+                  $this->fail('The request was not refused.');
+              }
+
+              /**
+               * Removes a fixture tree without following links.
+               */
+              private function sse_remove_fixture_tree($path) {
+                  if (is_link($path) || is_file($path)) {
+                      unlink($path);
+                      return;
+                  }
+                  if (!is_dir($path)) {
+                      return;
+                  }
+                  chmod($path, 0700);
+                  foreach (array_diff(scandir($path), ['.', '..']) as $entry) {
+                      $this->sse_remove_fixture_tree($path . '/' . $entry);
+                  }
+                  rmdir($path);
+              }
+
+              /**
+               * Lists every scheduled event that belongs to the plugin.
+               */
+              private function sse_get_scheduled_plugin_hooks() {
+                  $hooks = [];
+                  foreach ((array) _get_cron_array() as $events) {
+                      foreach (array_keys((array) $events) as $hook) {
+                          if (str_starts_with((string) $hook, 'sse_')) {
+                              $hooks[] = (string) $hook;
+                          }
+                      }
+                  }
+                  return $hooks;
+              }
+
+              public function test_tar_header_layout_and_checksum() {
+                  $header = sse_tar_build_header('dir/file.txt', 5, 0104755, 1700000000, '0');
+                  $this->assertSame(512, strlen($header));
+                  $this->assertSame('dir/file.txt', rtrim(substr($header, 0, 100), "\0"));
+                  // Only the nine permission bits are stored, and the owner and group are zero.
+                  $this->assertSame("0000755\0", substr($header, 100, 8));
+                  $this->assertSame("0000000\0", substr($header, 108, 8));
+                  $this->assertSame("0000000\0", substr($header, 116, 8));
+                  $this->assertSame("00000000005\0", substr($header, 124, 12));
+                  $this->assertSame(sprintf("%011o\0", 1700000000), substr($header, 136, 12));
+                  $this->assertSame('0', $header[156]);
+                  $this->assertSame("ustar  \0", substr($header, 257, 8));
+                  $checksum = array_sum(unpack('C*', substr_replace($header, '        ', 148, 8)));
+                  $this->assertSame(sprintf("%06o\0 ", $checksum), substr($header, 148, 8));
+              }
+
+              public function test_tar_size_field_padding_and_entry_lengths() {
+                  $this->assertSame("77777777777\0", sse_tar_format_size_field(077777777777));
+                  // From 8 GiB on, the size is stored in the GNU binary form.
+                  $this->assertSame("\x80\0\0\0" . pack('J', 8589934592), sse_tar_format_size_field(8589934592));
+                  $this->assertSame(12, strlen(sse_tar_format_size_field(PHP_INT_MAX)));
+                  $this->assertSame('', sse_tar_get_padding(0));
+                  $this->assertSame(511, strlen(sse_tar_get_padding(1)));
+                  $this->assertSame('', sse_tar_get_padding(1024));
+                  $this->assertSame(str_repeat("\0", 1024), sse_tar_get_end_of_archive());
+                  // A path of up to 100 bytes needs one header; a longer one needs a long-name record first.
+                  foreach ([100 => 512, 101 => 1536, 300 => 1536, 600 => 2048] as $length => $expected) {
+                      $path = str_repeat('n', $length);
+                      $this->assertSame($expected, strlen(sse_tar_build_entry_header($path, 0, 0644, 0, '0')));
+                      $this->assertSame($expected, sse_tar_get_entry_bytes(0, $path));
+                  }
+                  $this->assertSame(512 + 1024, sse_tar_get_entry_bytes(513, 'f'));
+                  $long_name = sse_tar_build_long_name_record(str_repeat('n', 101));
+                  $this->assertSame('L', $long_name[156]);
+                  $this->assertSame('././@LongLink', rtrim(substr($long_name, 0, 100), "\0"));
+              }
+
+              public function test_tar_output_is_read_by_gnu_tar() {
+                  $root = sys_get_temp_dir() . '/sse-test-' . wp_generate_uuid4();
+                  $entries = [
+                      'd/' => null,
+                      'd/empty.txt' => '',
+                      str_repeat('e', 100) => 'exactly one hundred bytes',
+                      'd/' . str_repeat('m', 99) => 'one byte over',
+                      'd/' . str_repeat('L', 120) . '/' . str_repeat('L', 170) . '.txt' => str_repeat('x', 513),
+                      "d/\u{00FC}n\u{00EF}-\u{2713}.txt" => 'not ASCII',
+                  ];
+                  $archive = '';
+                  foreach ($entries as $name => $content) {
+                      if (null === $content) {
+                          $archive .= sse_tar_build_entry_header($name, 0, 0755, 1700000000, '5');
+                          continue;
+                      }
+                      $archive .= sse_tar_build_entry_header($name, strlen($content), 0640, 1700000000, '0')
+                          . $content . sse_tar_get_padding(strlen($content));
+                  }
+                  $archive .= sse_tar_get_end_of_archive();
+                  $this->assertTrue(mkdir($root . '/out', 0700, true));
+                  try {
+                      $this->assertSame(strlen($archive), file_put_contents($root . '/fixture.tar', $archive));
+                      exec(
+                          'tar --extract --preserve-permissions --file ' . escapeshellarg($root . '/fixture.tar')
+                          . ' --directory ' . escapeshellarg($root . '/out') . ' 2>&1',
+                          $output,
+                          $status
+                      );
+                      $this->assertSame(0, $status, implode("\n", $output));
+                      $this->assertSame([], $output);
+                      foreach ($entries as $name => $content) {
+                          if (null === $content) {
+                              $this->assertDirectoryExists($root . '/out/' . $name);
+                              continue;
+                          }
+                          $this->assertSame($content, file_get_contents($root . '/out/' . $name));
+                      }
+                      $this->assertSame(0640, fileperms($root . '/out/d/empty.txt') & 0777);
+                      $this->assertSame(1700000000, filemtime($root . '/out/d/empty.txt'));
+                  } finally {
+                      $this->sse_remove_fixture_tree($root);
+                  }
+              }
+
+              public function test_export_exclusion_rules() {
+                  $excluded = ['.git', 'a/.git', 'a/.GIT', 'wp-content/.svn', '.hg', 'a/.DS_Store', '.htaccess',
+                      'wp-content/.user.ini', 'wp-content/cache/page.html', 'wp-content/upgrade/a/b', 'wp-content/temp/c'];
+                  foreach ($excluded as $path) {
+                      $this->assertTrue(sse_should_exclude_file($path), $path);
+                  }
+                  // A file named "0", and names that only begin like an excluded one, are kept.
+                  $kept = ['0', 'a/0', '.gitignore', 'a/.github', 'a/b.git', 'git', 'wp-config.php',
+                      'wp-content/cache', 'wp-content/cachefoo/page.html', 'a/wp-content/cache/page.html'];
+                  foreach ($kept as $path) {
+                      $this->assertFalse(sse_should_exclude_file($path), $path);
+                  }
+              }
+
+              public function test_files_archive_walk_contents_and_single_pass() {
+                  $fixture = 'sse-walk-' . wp_generate_uuid4();
+                  $source = ABSPATH . $fixture;
+                  $out = sys_get_temp_dir() . '/sse-test-' . wp_generate_uuid4();
+                  $long_name = str_repeat('p', 150) . '.txt';
+                  $utf8_name = "\u{00FC}n\u{00EF}-\u{2713}.txt";
+                  $export_paths = null;
+                  $lease = sse_acquire_export_lease();
+                  $this->assertIsArray($lease);
+                  sse_set_current_export_lease($lease);
+                  sse_initialize_export_resource_budget(0);
+                  try {
+                      foreach (['/kept', '/.git', '/locked'] as $directory) {
+                          $this->assertTrue(mkdir($source . $directory, 0755, true));
+                      }
+                      $files = [
+                          '/0' => 'zero',
+                          '/empty.txt' => '',
+                          '/kept/' . $long_name => str_repeat('y', 700),
+                          '/' . $utf8_name => 'not ASCII',
+                          '/.git/config' => 'left out',
+                          '/.htaccess' => 'left out',
+                          '/locked/inside.txt' => 'left out',
+                      ];
+                      foreach ($files as $name => $content) {
+                          $this->assertSame(strlen($content), file_put_contents($source . $name, $content));
+                      }
+                      $this->assertTrue(symlink($source . '/0', $source . '/link'));
+                      $this->assertTrue(chmod($source . '/locked', 0000));
+
+                      $export_paths = sse_setup_export_directories();
+                      $this->assertIsArray($export_paths);
+                      $archive = $export_paths['export_dir'] . '/files.tar.gz';
+                      $this->assertTrue(sse_create_wordpress_files_archive($archive));
+                      $this->assertSame(0600, fileperms($archive) & 0777);
+                      $skipped = sse_get_skipped_export_entry_counts();
+                      $this->assertSame(1, $skipped['links']);
+                      $this->assertSame(1, $skipped['unreadable']);
+                      $this->assertSame(0, $skipped['large'] + $skipped['special'] + $skipped['changed']);
+
+                      exec(
+                          'tar --list --verbose --gzip --quoting-style=literal --file ' . escapeshellarg($archive) . ' 2>&1',
+                          $listing,
+                          $status
+                      );
+                      $this->assertSame(0, $status, implode("\n", array_slice($listing, -5)));
+                      $names = [];
+                      $tar_bytes = strlen(sse_tar_get_end_of_archive());
+                      $file_bytes = 0;
+                      foreach ($listing as $line) {
+                          $this->assertSame(1, preg_match('/^.{10}\s+\S+\s+(\d+)\s+\S+\s+\S+\s(.+)$/', $line, $match), $line);
+                          $names[] = $match[2];
+                          $file_bytes += (int) $match[1];
+                          $tar_bytes += sse_tar_get_entry_bytes((int) $match[1], $match[2]);
+                      }
+                      $this->assertGreaterThan(1000, count($names));
+                      $this->assertSame(count($names), count(array_unique($names)));
+
+                      // Single pass: every entry is counted once, and the stream holds one
+                      // header and one copy of the content per entry and nothing else.
+                      $budget = sse_get_export_resource_budget();
+                      $this->assertSame(count($names), $budget['entries']);
+                      $this->assertSame($file_bytes, $budget['source_bytes']);
+                      $stream = gzopen($archive, 'rb');
+                      $this->assertNotFalse($stream);
+                      $stream_bytes = 0;
+                      while (!gzeof($stream)) {
+                          $stream_bytes += strlen((string) gzread($stream, 1048576));
+                      }
+                      gzclose($stream);
+                      $this->assertSame($tar_bytes, $stream_bytes);
+
+                      $prefix = $fixture . '/';
+                      $expected = [$prefix, $prefix . '0', $prefix . 'empty.txt', $prefix . 'kept/',
+                          $prefix . 'kept/' . $long_name, $prefix . $utf8_name];
+                      $archived = array_values(array_filter($names, static function ($name) use ($prefix) {
+                          return str_starts_with($name, $prefix);
+                      }));
+                      sort($expected);
+                      sort($archived);
+                      $this->assertSame($expected, $archived);
+
+                      $this->assertTrue(mkdir($out, 0700));
+                      exec(
+                          'tar --extract --gzip --file ' . escapeshellarg($archive) . ' --directory ' . escapeshellarg($out)
+                          . ' ' . escapeshellarg($fixture) . ' 2>&1',
+                          $messages,
+                          $status
+                      );
+                      $this->assertSame(0, $status, implode("\n", $messages));
+                      foreach (['/0', '/empty.txt', '/kept/' . $long_name, '/' . $utf8_name] as $name) {
+                          $this->assertSame($files[$name], file_get_contents($out . '/' . $fixture . $name));
+                      }
+                  } finally {
+                      $this->sse_remove_fixture_tree($source);
+                      $this->sse_remove_fixture_tree($out);
+                      if (is_array($export_paths)) {
+                          sse_delete_directory_tree($export_paths['export_dir']);
+                      }
+                      sse_release_export_lease(sse_get_current_export_lease() ?? $lease);
+                  }
+              }
+
+              public function test_per_file_size_limit_travels_with_the_request() {
+                  $user_id = $this->sse_sign_in_exporter();
+                  // An earlier version kept the limit in this transient; it no longer has any effect.
+                  set_transient('sse_export_max_file_size_' . $user_id, 1, HOUR_IN_SECONDS);
+                  $this->assertSame(0, sse_get_export_max_file_size());
+                  sse_initialize_export_resource_budget(104857600);
+                  $this->assertSame(104857600, sse_get_export_max_file_size());
+                  $this->assertFalse(sse_is_over_export_file_size_limit(104857600, 'at-the-limit.bin'));
+                  $this->assertTrue(sse_is_over_export_file_size_limit(104857601, 'over-the-limit.bin'));
+                  $this->assertSame(1, sse_get_skipped_export_entry_counts()['large']);
+                  sse_initialize_export_resource_budget(0);
+                  $this->assertFalse(sse_is_over_export_file_size_limit(PHP_INT_MAX, 'no-limit.bin'));
+                  $this->assertSame(0, sse_get_skipped_export_entry_counts()['large']);
+              }
+
+              public function test_lease_recovers_from_unusable_rows() {
+                  foreach ([null, 'not serialized', 'O:8:"stdClass":0:{}', serialize(['owner' => 'incomplete'])] as $row) {
+                      $this->assertNull(sse_decode_export_lease_row($row));
+                  }
+                  delete_option('sse_error_logs');
+
+                  // A row that fails validation cannot belong to a running export, so it is removed.
+                  $this->assertTrue(sse_add_export_lease_option(['owner' => 'incomplete']));
+                  $invalid = sse_get_stored_export_lease();
+                  $this->assertWPError($invalid);
+                  $this->assertSame('export_lease_invalid', $invalid->get_error_code());
+                  $lease = sse_acquire_export_lease();
+                  $this->assertIsArray($lease);
+                  $this->assertSame($lease, sse_get_stored_export_lease());
+                  $records = get_option('sse_error_logs');
+                  $this->assertCount(1, $records);
+                  $this->assertSame('security', $records[0]['level']);
+                  $this->assertTrue(sse_release_export_lease($lease));
+
+                  // A valid lease that has expired is reclaimed.
+                  $expired = $lease;
+                  $expired['owner'] = wp_generate_uuid4();
+                  $expired['started_at'] = time() - 7200;
+                  $expired['heartbeat_at'] = time() - 7200;
+                  $expired['expires_at'] = time() - 1;
+                  $this->assertTrue(sse_add_export_lease_option($expired));
+                  $this->assertSame($expired, sse_get_stored_export_lease());
+                  $next = sse_acquire_export_lease();
+                  $this->assertIsArray($next);
+                  $this->assertNotSame($expired['owner'], $next['owner']);
+                  $this->assertTrue(sse_release_export_lease($next));
+                  $this->assertNull(sse_get_stored_export_lease());
+              }
+
+              public function test_lease_renewal_never_moves_the_heartbeat_backward() {
+                  $lease = sse_acquire_export_lease();
+                  $this->assertIsArray($lease);
+                  try {
+                      // The stored heartbeat is ahead of the clock, as after a backward clock step.
+                      $ahead = $lease;
+                      $ahead['heartbeat_at'] = time() + 600;
+                      $ahead['expires_at'] = $ahead['heartbeat_at'] + 30;
+                      $this->assertTrue(sse_compare_and_update_export_lease($lease, $ahead));
+                      sse_set_current_export_lease($ahead);
+                      $this->assertTrue(sse_renew_current_export_lease(true));
+                      $renewed = sse_get_current_export_lease();
+                      $this->assertSame($ahead['heartbeat_at'], $renewed['heartbeat_at']);
+                      $this->assertSame($ahead['heartbeat_at'] + sse_get_export_lease_lifetime(), $renewed['expires_at']);
+                      $this->assertSame($renewed, sse_get_stored_export_lease());
+                  } finally {
+                      sse_release_export_lease(sse_get_current_export_lease() ?? $lease);
+                  }
+              }
+
+              public function test_site_identifier_always_fits_the_archive_name_pattern() {
+                  $cases = [
+                      'example.com' => 'example.com',
+                      'WWW.Example.COM' => 'www.example.com',
+                      'localhost:8080' => 'localhost-8080',
+                      'my site!' => 'my-site',
+                      'a..b' => 'a.b',
+                      '.leading.and.trailing-' => 'leading.and.trailing',
+                      '' => 'wordpress-site',
+                      '...' => 'wordpress-site',
+                      // Without the intl extension the two bytes of the letter become one hyphen.
+                      "b\u{00FC}cher.example" => function_exists('idn_to_ascii') ? 'xn--bcher-kva.example' : 'b-cher.example',
+                  ];
+                  $identifiers = [sse_build_export_site_identifier(str_repeat('a', 150) . '.example'), sse_get_export_site_identifier()];
+                  $this->assertLessThanOrEqual(100, strlen($identifiers[0]));
+                  foreach ($cases as $host => $expected) {
+                      $identifiers[] = sse_build_export_site_identifier((string) $host);
+                      $this->assertSame($expected, end($identifiers), (string) $host);
+                  }
+                  foreach ($identifiers as $identifier) {
+                      $this->assertTrue(sse_validate_filename_format(sse_get_engine_script_archive_filename($identifier, '20260513_123456')), $identifier);
+                  }
+              }
+
+              public function test_deactivation_and_uninstall_leave_nothing_behind() {
+                  $export_paths = sse_setup_export_directories();
+                  $this->assertIsArray($export_paths);
+                  $base = sse_get_export_directory_path();
+                  $zip = $export_paths['export_dir'] . '/site_enginescript_site_export_20260513_123456.zip';
+                  $this->assertSame(7, file_put_contents($zip, 'fixture'));
+                  $this->assertIsArray(sse_acquire_export_lease());
+                  delete_option('sse_error_logs');
+                  sse_store_log_in_database('kept until the plugin is deleted', 'error');
+                  foreach (sse_get_scheduled_hook_names() as $hook) {
+                      $this->assertTrue(wp_schedule_single_event(time() + 600, $hook, [$zip]));
+                  }
+                  $this->assertCount(4, array_unique($this->sse_get_scheduled_plugin_hooks()));
+
+                  sse_deactivate_plugin();
+
+                  clearstatcache();
+                  $this->assertFileDoesNotExist($zip);
+                  $this->assertDirectoryDoesNotExist($export_paths['export_dir']);
+                  $this->assertNull(sse_get_stored_export_lease());
+                  $this->assertSame([], $this->sse_get_scheduled_plugin_hooks());
+                  // The records stay until the plugin is deleted.
+                  $this->assertCount(1, get_option('sse_error_logs'));
+
+                  sse_uninstall_plugin();
+
+                  clearstatcache();
+                  $this->assertFalse(get_option('sse_error_logs'));
+                  $this->assertDirectoryDoesNotExist($base);
+              }
+
+              public function test_tree_deletion_does_not_follow_links() {
+                  $root = sys_get_temp_dir() . '/sse-test-' . wp_generate_uuid4();
+                  $base = $root . '/base';
+                  $tree = $base . '/export-fixture';
+                  $this->assertTrue(mkdir($tree . '/nested', 0700, true));
+                  $this->assertTrue(mkdir($root . '/outside', 0700));
+                  try {
+                      $this->assertSame(4, file_put_contents($root . '/outside/keep.txt', 'keep'));
+                      $this->assertSame(4, file_put_contents($tree . '/nested/gone.txt', 'gone'));
+                      $this->assertTrue(symlink($root . '/outside', $tree . '/directory-link'));
+                      $this->assertTrue(symlink($root . '/outside/keep.txt', $tree . '/nested/file-link'));
+                      $this->assertTrue(symlink($root . '/outside', $base . '/linked-tree'));
+                      $this->assertTrue(symlink($root . '/outside', $root . '/outside-link'));
+                      // A path outside the base is refused, also when it is written through the base.
+                      $this->assertFalse(sse_delete_directory_tree($root . '/outside', $base));
+                      $this->assertFalse(sse_delete_directory_tree($base . '/../outside', $base));
+                      // A link outside the base is left in place.
+                      $this->assertFalse(sse_delete_directory_tree($root . '/outside-link', $base));
+                      $this->assertTrue(is_link($root . '/outside-link'));
+                      $this->assertTrue(sse_delete_directory_tree($tree, $base));
+                      // A link in place of the directory is removed as a link.
+                      $this->assertTrue(sse_delete_directory_tree($base . '/linked-tree', $base));
+                      clearstatcache();
+                      $this->assertDirectoryDoesNotExist($tree);
+                      $this->assertFalse(is_link($base . '/linked-tree'));
+                      $this->assertSame('keep', file_get_contents($root . '/outside/keep.txt'));
+                  } finally {
+                      $this->sse_remove_fixture_tree($root);
+                  }
+              }
+
+              public function test_export_base_is_refused_inside_web_served_directories() {
+                  $had_root = array_key_exists('DOCUMENT_ROOT', $_SERVER);
+                  $previous_root = $_SERVER['DOCUMENT_ROOT'] ?? null;
+                  $root = sys_get_temp_dir() . '/sse-test-' . wp_generate_uuid4();
+                  $upload_dir = wp_get_upload_dir();
+                  $this->assertTrue(wp_mkdir_p($upload_dir['basedir']));
+                  $this->assertTrue(mkdir($root . '/public/inner', 0700, true));
+                  $this->assertTrue(mkdir($root . '/private', 0700));
+                  try {
+                      $this->assertTrue(symlink($root . '/public/inner', $root . '/private/alias'));
+                      $_SERVER['DOCUMENT_ROOT'] = $root . '/public';
+                      $served = [ABSPATH . 'wp-admin', WP_CONTENT_DIR, $upload_dir['basedir'],
+                          $root . '/public', $root . '/public/inner', $root . '/private/alias'];
+                      foreach ($served as $path) {
+                          $this->assertTrue(sse_is_path_web_served($path), $path);
+                      }
+                      $this->assertFalse(sse_is_path_web_served($root . '/private'));
+                      // An empty document root, or the filesystem root, says nothing about what is served.
+                      foreach (['', '/'] as $ignored_root) {
+                          $_SERVER['DOCUMENT_ROOT'] = $ignored_root;
+                          $this->assertFalse(sse_is_path_web_served($root . '/public'));
+                      }
+                      $_SERVER['DOCUMENT_ROOT'] = untrailingslashit(get_temp_dir());
+                      $refused = sse_setup_export_directories();
+                      $this->assertWPError($refused);
+                      $this->assertSame('export_dir_public', $refused->get_error_code());
+                  } finally {
+                      if ($had_root) {
+                          $_SERVER['DOCUMENT_ROOT'] = $previous_root;
+                      } else {
+                          unset($_SERVER['DOCUMENT_ROOT']);
+                      }
+                      $this->sse_remove_fixture_tree($root);
+                  }
+              }
+
+              public function test_export_base_name_is_specific_to_the_installation() {
+                  $base = sse_get_export_directory_path();
+                  $this->assertSame(1, preg_match('#/' . preg_quote(SSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $base));
+                  $this->assertNotSame($base, sse_get_legacy_export_directory_path());
+                  // Another installation has other secret salts, and so another directory.
+                  $other_salt = static function () {
+                      return 'the salt of another installation';
+                  };
+                  add_filter('salt', $other_salt);
+                  $other_base = sse_get_export_directory_path();
+                  remove_filter('salt', $other_salt);
+                  $this->assertSame(1, preg_match('#/' . preg_quote(SSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $other_base));
+                  $this->assertNotSame($base, $other_base);
+                  $this->assertSame($base, sse_get_export_directory_path());
+              }
+
+              public function test_export_request_is_refused_without_action_nonce_or_capability() {
+                  delete_option('sse_error_logs');
+                  // A request that is not the export form is ignored.
+                  $this->assertFalse(sse_validate_export_request());
+                  $_POST = ['action' => 'another_action'];
+                  $this->assertFalse(sse_validate_export_request());
+
+                  $_POST = ['action' => 'sse_export_site'];
+                  $this->sse_assert_refused('sse_validate_export_request');
+                  $_REQUEST['sse_export_nonce'] = 'invalid';
+                  $this->sse_assert_refused('sse_validate_export_request');
+
+                  wp_set_current_user(self::factory()->user->create(['role' => 'subscriber']));
+                  $_REQUEST['sse_export_nonce'] = wp_create_nonce('sse_export_action');
+                  $this->sse_assert_refused('sse_validate_export_request', 'You do not have permission to perform this action.');
+                  $this->assertSame([], get_option('sse_error_logs', []));
+
+                  $this->sse_sign_in_exporter();
+                  $_REQUEST['sse_export_nonce'] = wp_create_nonce('sse_export_action');
+                  $this->assertSame(0, sse_validate_export_request());
+                  // Only a size that the form offers is accepted; anything else means no limit.
+                  $sizes = ['104857600' => 104857600, '524288000' => 524288000, '1073741824' => 1073741824,
+                      '0' => 0, '12345' => 0, '-1' => 0, '1e9' => 0, ' 104857600' => 104857600];
+                  foreach ($sizes as $posted => $accepted) {
+                      $_POST['sse_max_file_size'] = (string) $posted;
+                      $this->assertSame($accepted, sse_validate_export_request(), (string) $posted);
+                  }
+                  $_POST['sse_max_file_size'] = ['104857600'];
+                  $this->assertSame(0, sse_validate_export_request());
+              }
+
+              public function test_download_and_delete_requests_are_refused_before_any_file_access() {
+                  delete_option('sse_error_logs');
+                  $file = 'site_enginescript_site_export_20260513_123456.zip';
+                  $directory = sse_generate_private_export_directory_name();
+                  $download_action = 'sse_secure_download_' . $file . '_' . $directory;
+                  $delete_action = 'sse_delete_export_' . $file . '_' . $directory;
+                  $request = ['file' => $file, 'export_dir' => $directory];
+
+                  // The download reads the query string and the deletion reads the form body, and nothing else.
+                  $this->sse_assert_refused('sse_handle_secure_download', 'Invalid download request.');
+                  $this->sse_assert_refused('sse_handle_export_deletion', 'Invalid deletion request.');
+                  $_POST = $request;
+                  $this->sse_assert_refused('sse_handle_secure_download', 'Invalid download request.');
+                  $_POST = [];
+                  $_GET = $request;
+                  $this->sse_assert_refused('sse_handle_export_deletion', 'Invalid deletion request.');
+
+                  $_POST = $request;
+                  foreach ([null, 'invalid'] as $nonce) {
+                      if (null !== $nonce) {
+                          $_REQUEST['_wpnonce'] = $nonce;
+                      }
+                      $this->sse_assert_refused('sse_handle_secure_download');
+                      $this->sse_assert_refused('sse_handle_export_deletion');
+                  }
+
+                  wp_set_current_user(self::factory()->user->create(['role' => 'subscriber']));
+                  $_REQUEST['_wpnonce'] = wp_create_nonce($download_action);
+                  $this->sse_assert_refused('sse_handle_secure_download', 'You do not have permission to download export files.');
+                  $_REQUEST['_wpnonce'] = wp_create_nonce($delete_action);
+                  $this->sse_assert_refused('sse_handle_export_deletion', 'You do not have permission to delete export files.');
+                  // A refusal before or at the authorization checks stores no record.
+                  $this->assertSame([], get_option('sse_error_logs', []));
+
+                  $this->sse_sign_in_exporter();
+                  // The nonce of one action does not authorize the other.
+                  $_REQUEST['_wpnonce'] = wp_create_nonce($download_action);
+                  $this->sse_assert_refused('sse_handle_export_deletion');
+                  $this->assertSame([], get_option('sse_error_logs', []));
+                  $this->sse_assert_refused('sse_handle_secure_download', 'This export has expired or was deleted.');
+                  $_REQUEST['_wpnonce'] = wp_create_nonce($delete_action);
+                  $this->sse_assert_refused('sse_handle_export_deletion', 'This export has expired or was deleted.');
+                  $records = get_option('sse_error_logs');
+                  $this->assertSame(['activity', 'activity'], wp_list_pluck($records, 'level'));
+                  $this->assertStringStartsWith('Export download refused:', $records[0]['message']);
+                  $this->assertStringStartsWith('Export deletion refused:', $records[1]['message']);
+              }
+
+              public function test_activity_and_error_records() {
+                  $user_id = $this->sse_sign_in_exporter();
+                  $failure = "Same failure\nforged line in " . SSE_EXPORT_PRIVATE_DIR_PREFIX . '20260513_123456-' . str_repeat('a', 32);
+                  // A record written by an earlier version carries a client address.
+                  update_option('sse_error_logs', [[
+                      'time' => time(), 'level' => 'error', 'message' => 'from an earlier version',
+                      'user_id' => 0, 'ip' => '203.0.113.7',
+                  ]], false);
+                  sse_record_activity('Export created: site.zip');
+                  sse_record_activity('Export created: site.zip');
+                  sse_log($failure, 'error');
+                  sse_log($failure, 'error');
+                  sse_log('Not stored', 'info');
+                  sse_log('Not stored', 'warning');
+                  $records = get_option('sse_error_logs');
+                  // Activity is always stored; an identical error is stored once per hour.
+                  $this->assertSame(['error', 'activity', 'activity', 'error'], wp_list_pluck($records, 'level'));
+                  foreach ($records as $record) {
+                      $this->assertSame(['time', 'level', 'message', 'user_id'], array_keys($record));
+                  }
+                  $this->assertSame($user_id, $records[1]['user_id']);
+                  // The line break and the random directory name do not reach the record.
+                  $this->assertSame('Same failure forged line in ' . SSE_EXPORT_PRIVATE_DIR_PREFIX . '[private]', $records[3]['message']);
+                  $records[3]['time'] -= HOUR_IN_SECONDS;
+                  update_option('sse_error_logs', $records, false);
+                  sse_log($failure, 'error');
+                  $this->assertCount(5, get_option('sse_error_logs'));
               }
           }
           EOF

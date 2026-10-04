@@ -16,9 +16,6 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
-    # Assign reviewers automatically
-    reviewers:
-      - "EngineScript"
     # Create a group of updates for all actions
     groups:
       actions:
@@ -40,9 +37,6 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
-    # Assign reviewers automatically
-    reviewers:
-      - "EngineScript"
     # Group updates by dependency type
     groups:
       # Group all dev dependencies together

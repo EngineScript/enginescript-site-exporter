@@ -72,7 +72,7 @@ function sse_normalize_export_lease( mixed $lease ): ?array {
 function sse_get_export_lease_repository(): array|WP_Error {
 	$database = sse_get_wordpress_database();
 	if ( null === $database ) {
-		return new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	$option_name = sse_get_export_lease_option_name();
@@ -90,7 +90,7 @@ function sse_get_export_lease_repository(): array|WP_Error {
 
 	$network_id = get_current_network_id();
 	if ( $network_id <= 0 || ! is_string( $database->sitemeta ) || '' === $database->sitemeta ) {
-		return new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	return [
@@ -117,22 +117,26 @@ function sse_invalidate_export_lease_cache( array $repository ): void {
 }
 
 /**
- * Reads exactly one persisted lease without trusting a potentially stale cache.
+ * Reads the raw persisted lease rows without trusting a potentially stale cache.
+ *
+ * A healthy installation has no row or one row. More can exist only on a
+ * network, where the sitemeta table has no unique key, so a bounded number of
+ * rows is read.
  *
  * @since 2.1.1
- * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error|null Lease, error, or null when absent.
+ * @return array<int,string|null>|WP_Error Raw stored values, or a storage error.
  */
-function sse_get_stored_export_lease(): array|WP_Error|null {
+function sse_get_stored_export_lease_rows(): array|WP_Error {
 	$repository = sse_get_export_lease_repository();
 	$database   = sse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
-		return is_wp_error( $repository ) ? $repository : new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return is_wp_error( $repository ) ? $repository : new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( '' === $repository['scope_column'] ) {
 		$query = sse_normalize_string_value(
 			$database->prepare(
-				'SELECT %i FROM %i WHERE %i = %s LIMIT 2',
+				'SELECT %i FROM %i WHERE %i = %s LIMIT 50',
 				$repository['value_column'],
 				$repository['table'],
 				$repository['key_column'],
@@ -142,7 +146,7 @@ function sse_get_stored_export_lease(): array|WP_Error|null {
 	} else {
 		$query = sse_normalize_string_value(
 			$database->prepare(
-				'SELECT %i FROM %i WHERE %i = %d AND %i = %s LIMIT 2',
+				'SELECT %i FROM %i WHERE %i = %d AND %i = %s LIMIT 50',
 				$repository['value_column'],
 				$repository['table'],
 				$repository['scope_column'],
@@ -154,25 +158,66 @@ function sse_get_stored_export_lease(): array|WP_Error|null {
 	}
 
 	if ( '' === $query ) {
-		return new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	$rows = $database->get_col( $query );
 	if ( '' !== $database->last_error ) {
-		return new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+	}
+
+	$raw_values = [];
+	foreach ( $rows as $row ) {
+		$raw_values[] = is_string( $row ) ? $row : null;
+	}
+
+	return $raw_values;
+}
+
+/**
+ * Decodes one raw lease row without instantiating any class.
+ *
+ * The lease is always a plain array, so a row that names a class is treated
+ * like any other row that fails validation.
+ *
+ * @since 2.1.1
+ * @param string|null $raw_value Raw stored value, or null for a NULL column.
+ * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|null Canonical lease, or null when invalid.
+ * @SuppressWarnings("PHPMD.ErrorControlOperator")
+ */
+function sse_decode_export_lease_row( ?string $raw_value ): ?array {
+	if ( null === $raw_value || ! is_serialized( $raw_value ) ) {
+		return null;
+	}
+
+	$value = @unserialize( trim( $raw_value ), [ 'allowed_classes' => false ] ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize,WordPress.PHP.NoSilencedErrors.Discouraged -- The row was written by add_option(); classes are disallowed, and a corrupt row must fail validation quietly.
+
+	return sse_normalize_export_lease( $value );
+}
+
+/**
+ * Reads exactly one persisted lease without trusting a potentially stale cache.
+ *
+ * @since 2.1.1
+ * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error|null Lease, error, or null when absent.
+ */
+function sse_get_stored_export_lease(): array|WP_Error|null {
+	$rows = sse_get_stored_export_lease_rows();
+	if ( is_wp_error( $rows ) ) {
+		return $rows;
 	}
 
 	if ( [] === $rows ) {
 		return null;
 	}
 
-	if ( 1 !== count( $rows ) || ! is_string( $rows[0] ) ) {
-		return new WP_Error( 'export_lease_ambiguous', __( 'Export state is inconsistent, so the export was not started.', 'enginescript-site-exporter' ) );
+	if ( 1 !== count( $rows ) ) {
+		return new WP_Error( 'export_lease_ambiguous', __( 'The export state is inconsistent, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
-	$lease = sse_normalize_export_lease( maybe_unserialize( $rows[0] ) );
+	$lease = sse_decode_export_lease_row( $rows[0] );
 	if ( null === $lease ) {
-		return new WP_Error( 'export_lease_invalid', __( 'Export state is invalid, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_invalid', __( 'The export state is invalid, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	return $lease;
@@ -181,8 +226,9 @@ function sse_get_stored_export_lease(): array|WP_Error|null {
 /**
  * Inserts a lease through the matching native WordPress option API.
  *
- * Multisite acquisition is serialized separately because the sitemeta table
- * does not enforce a unique network-option key.
+ * Callers hold the repository lock: add_option() reads and then upserts, and
+ * the sitemeta table does not enforce a unique network-option key, so neither
+ * insert is atomic on its own.
  *
  * @since 2.1.1
  * @param array $lease Lease data.
@@ -205,26 +251,22 @@ function sse_add_export_lease_option( array $lease ): bool {
 }
 
 /**
- * Acquires a short database mutex for atomic multisite lease creation.
+ * Acquires a short database mutex for atomic lease creation.
  *
  * @since 2.1.1
  * @return string|WP_Error Lock name on success.
  */
 function sse_acquire_export_lease_repository_lock(): string|WP_Error {
-	if ( ! is_multisite() ) {
-		return '';
-	}
-
 	$repository = sse_get_export_lease_repository();
 	$database   = sse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
-		return is_wp_error( $repository ) ? $repository : new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return is_wp_error( $repository ) ? $repository : new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	$lock_name = 'sse:' . substr( hash( 'sha256', $repository['table'] . ':' . $repository['scope_id'] . ':' . sse_get_export_lease_option_name() ), 0, 48 );
 	$query     = sse_normalize_string_value( $database->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, 5 ) );
 	if ( '' === $query || '1' !== (string) $database->get_var( $query ) ) {
-		return new WP_Error( 'export_lease_lock_unavailable', __( 'Export state is busy or unavailable. Please try again.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lock_unavailable', __( 'The export state is busy or unavailable. Please try again.', 'enginescript-site-exporter' ) );
 	}
 
 	return $lock_name;
@@ -267,7 +309,7 @@ function sse_compare_and_update_export_lease( array $expected_lease, array $upda
 	$repository = sse_get_export_lease_repository();
 	$database   = sse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( '' === $repository['scope_column'] ) {
@@ -301,34 +343,50 @@ function sse_compare_and_update_export_lease( array $expected_lease, array $upda
 	}
 
 	if ( '' === $query || 1 !== $database->query( $query ) ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	sse_invalidate_export_lease_cache( $repository );
 	$stored_lease = sse_get_stored_export_lease();
 	if ( is_wp_error( $stored_lease ) || $stored_lease !== $updated_lease ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	return true;
 }
 
 /**
- * Deletes an exact owned lease without removing a replacement owner's row.
+ * Deletes the lease rows whose stored value matches byte for byte.
  *
  * @since 2.1.1
- * @param array $expected_lease Exact lease value to delete.
- * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $expected_lease
- * @return bool True when exactly one row was deleted.
+ * @param string|null $raw_value Exact stored value, or null for a NULL column.
+ * @return int|false Number of rows deleted, or false when the query failed.
  */
-function sse_compare_and_delete_export_lease( array $expected_lease ): bool {
+function sse_delete_export_lease_rows_by_value( ?string $raw_value ): int|false {
 	$repository = sse_get_export_lease_repository();
 	$database   = sse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
 		return false;
 	}
 
-	if ( '' === $repository['scope_column'] ) {
+	if ( null === $raw_value ) {
+		// Only the network table allows a NULL value.
+		if ( '' === $repository['scope_column'] ) {
+			return 0;
+		}
+
+		$query = sse_normalize_string_value(
+			$database->prepare(
+				'DELETE FROM %i WHERE %i = %d AND %i = %s AND %i IS NULL',
+				$repository['table'],
+				$repository['scope_column'],
+				$repository['scope_id'],
+				$repository['key_column'],
+				sse_get_export_lease_option_name(),
+				$repository['value_column']
+			)
+		);
+	} elseif ( '' === $repository['scope_column'] ) {
 		$query = sse_normalize_string_value(
 			$database->prepare(
 				'DELETE FROM %i WHERE %i = %s AND BINARY %i = BINARY %s',
@@ -336,7 +394,7 @@ function sse_compare_and_delete_export_lease( array $expected_lease ): bool {
 				$repository['key_column'],
 				sse_get_export_lease_option_name(),
 				$repository['value_column'],
-				maybe_serialize( $expected_lease )
+				$raw_value
 			)
 		);
 	} else {
@@ -349,17 +407,35 @@ function sse_compare_and_delete_export_lease( array $expected_lease ): bool {
 				$repository['key_column'],
 				sse_get_export_lease_option_name(),
 				$repository['value_column'],
-				maybe_serialize( $expected_lease )
+				$raw_value
 			)
 		);
 	}
 
-	if ( '' === $query || 1 !== $database->query( $query ) ) {
+	$deleted = '' === $query ? false : $database->query( $query );
+	if ( ! is_int( $deleted ) ) {
 		return false;
 	}
 
-	sse_invalidate_export_lease_cache( $repository );
-	return true;
+	if ( $deleted > 0 ) {
+		sse_invalidate_export_lease_cache( $repository );
+	}
+
+	return $deleted;
+}
+
+/**
+ * Deletes an exact owned lease without removing a replacement owner's row.
+ *
+ * @since 2.1.1
+ * @param array $expected_lease Exact lease value to delete.
+ * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $expected_lease
+ * @return bool True when exactly one row was deleted.
+ */
+function sse_compare_and_delete_export_lease( array $expected_lease ): bool {
+	$raw_value = sse_normalize_string_value( maybe_serialize( $expected_lease ) );
+
+	return '' !== $raw_value && 1 === sse_delete_export_lease_rows_by_value( $raw_value );
 }
 
 /**
@@ -386,7 +462,7 @@ function sse_acquire_export_lease(): array|WP_Error {
 	$lifetime = sse_get_export_lease_lifetime();
 	$owner    = sse_normalize_string_value( wp_generate_uuid4() );
 	if ( ! wp_is_uuid( $owner, 4 ) || $lifetime >= PHP_INT_MAX - $now ) {
-		return new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	$lease = [
@@ -410,7 +486,55 @@ function sse_acquire_export_lease(): array|WP_Error {
 }
 
 /**
- * Reclaims an expired lease and inserts one new lease while holding the mutex.
+ * Removes lease rows that cannot belong to a running export.
+ *
+ * A row that fails validation is never owned by a live request: the owner
+ * normalizes its own copy before every renewal and stops when that fails. A
+ * valid row that has expired is reclaimed as before. A valid, unexpired row is
+ * never removed, also when it is one of several.
+ *
+ * @since 2.1.1
+ * @param int $now Current wall-clock timestamp.
+ * @return int|WP_Error Number of rows left in place, or a storage error.
+ */
+function sse_remove_unusable_export_lease_rows( int $now ): int|WP_Error {
+	$rows = sse_get_stored_export_lease_rows();
+	if ( is_wp_error( $rows ) ) {
+		return $rows;
+	}
+
+	$remaining = 0;
+	$seen      = [];
+	foreach ( $rows as $raw_value ) {
+		// One delete removes every row with the same stored value.
+		$seen_key = null === $raw_value ? 'null' : 'value:' . $raw_value;
+		if ( isset( $seen[ $seen_key ] ) ) {
+			continue;
+		}
+		$seen[ $seen_key ] = true;
+
+		$lease = sse_decode_export_lease_row( $raw_value );
+		if ( null !== $lease && $lease['expires_at'] > $now ) {
+			++$remaining;
+			continue;
+		}
+
+		$deleted = sse_delete_export_lease_rows_by_value( $raw_value );
+		if ( false === $deleted || 0 === $deleted ) {
+			++$remaining;
+			continue;
+		}
+
+		if ( null === $lease ) {
+			sse_log( 'Removed an invalid stored export lease.', 'security' );
+		}
+	}
+
+	return $remaining;
+}
+
+/**
+ * Clears unusable rows and inserts one new lease while holding the mutex.
  *
  * @since 2.1.1
  * @param array $lease Canonical lease to insert.
@@ -419,27 +543,19 @@ function sse_acquire_export_lease(): array|WP_Error {
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error Inserted lease or error.
  */
 function sse_insert_export_lease_under_lock( array $lease, int $now ): array|WP_Error {
-	$current = sse_get_stored_export_lease();
-	if ( is_wp_error( $current ) ) {
-		return $current;
+	$remaining = sse_remove_unusable_export_lease_rows( $now );
+	if ( is_wp_error( $remaining ) ) {
+		return $remaining;
 	}
 
-	if ( is_array( $current ) && $current['expires_at'] > $now ) {
-		return new WP_Error( 'export_lease_conflict', __( 'An export process is already running. Please wait for it to complete before starting a new one.', 'enginescript-site-exporter' ) );
-	}
-
-	if ( is_array( $current ) && ! sse_compare_and_delete_export_lease( $current ) ) {
-		return new WP_Error( 'export_lease_conflict', __( 'An export process is already running. Please wait for it to complete before starting a new one.', 'enginescript-site-exporter' ) );
-	}
-
-	if ( ! sse_add_export_lease_option( $lease ) ) {
+	if ( $remaining > 0 || ! sse_add_export_lease_option( $lease ) ) {
 		return new WP_Error( 'export_lease_conflict', __( 'An export process is already running. Please wait for it to complete before starting a new one.', 'enginescript-site-exporter' ) );
 	}
 
 	$stored_lease = sse_get_stored_export_lease();
 	if ( is_wp_error( $stored_lease ) || $stored_lease !== $lease ) {
 		sse_compare_and_delete_export_lease( $lease );
-		return new WP_Error( 'export_lease_storage_unavailable', __( 'Export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	return $lease;
@@ -487,7 +603,7 @@ function sse_clear_current_export_lease(): void {
 function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
 	$lease = sse_get_current_export_lease();
 	if ( null === $lease ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	$now              = time();
@@ -498,21 +614,23 @@ function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
 	}
 
 	if ( $lease['expires_at'] <= $now ) {
-		return new WP_Error( 'export_lease_expired', __( 'The export lease expired, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_expired', __( 'The lock of the export expired, so the export was stopped.', 'enginescript-site-exporter' ) );
 	}
 
-	$lifetime = sse_get_export_lease_lifetime();
-	if ( $lifetime >= PHP_INT_MAX - $now ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+	// A backward clock step must not produce a heartbeat earlier than the last one.
+	$heartbeat = max( $now, $lease['heartbeat_at'] );
+	$lifetime  = sse_get_export_lease_lifetime();
+	if ( $lifetime >= PHP_INT_MAX - $heartbeat ) {
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	$updated_lease                 = $lease;
-	$updated_lease['heartbeat_at'] = $now;
-	$updated_lease['expires_at']   = $now + $lifetime;
+	$updated_lease['heartbeat_at'] = $heartbeat;
+	$updated_lease['expires_at']   = $heartbeat + $lifetime;
 
 	if ( $updated_lease === $lease ) {
 		$stored_lease = sse_get_stored_export_lease();
-		return $stored_lease === $lease ? true : new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return $stored_lease === $lease ? true : new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	$renewed = sse_compare_and_update_export_lease( $lease, $updated_lease );
@@ -535,7 +653,7 @@ function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
  */
 function sse_update_export_lease_directory( array $lease, string $export_dir_name ): array|WP_Error {
 	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	$updated_lease                    = $lease;
@@ -572,20 +690,138 @@ function sse_get_monotonic_time(): float {
 }
 
 /**
- * Initializes aggregate resource accounting for one export request.
+ * Gets the per-file size limits offered on the export form.
+ *
+ * The form markup and the request validation both read this list, so a
+ * submitted value is accepted only when the form could have sent it.
  *
  * @since 2.1.1
+ * @return array<int,string> Labels keyed by the limit in bytes; zero means no limit.
+ */
+function sse_get_export_file_size_options(): array {
+	return [
+		0          => __( 'No per-file limit', 'enginescript-site-exporter' ),
+		104857600  => __( '100 MiB', 'enginescript-site-exporter' ),
+		524288000  => __( '500 MiB', 'enginescript-site-exporter' ),
+		1073741824 => __( '1 GiB', 'enginescript-site-exporter' ),
+	];
+}
+
+/**
+ * Initializes aggregate resource accounting for one export request.
+ *
+ * The per-file size limit travels with the request from here on, so another
+ * submission by the same user cannot change or remove it.
+ *
+ * @since 2.1.1
+ * @param int $selected_max_file_size Per-file size limit selected on the form, in bytes; zero means no limit.
  * @return void
  */
-function sse_initialize_export_resource_budget(): void {
+function sse_initialize_export_resource_budget( int $selected_max_file_size = 0 ): void {
+	$selected_max_file_size = max( 0, $selected_max_file_size );
+
+	/**
+	 * Filters the maximum allowed file size for inclusion in the export.
+	 *
+	 * @since 1.8.5
+	 *
+	 * @param int $max_file_size Maximum file size in bytes. Default is user's selection or 0 (no limit).
+	 */
+	$filtered_max_file_size = sse_normalize_nonnegative_integer( apply_filters( SSE_FILTER_MAX_FILE_SIZE, $selected_max_file_size ) );
+
 	sse_set_export_resource_budget(
 		[
 			'started_at'      => sse_get_monotonic_time(),
 			'entries'         => 0,
 			'source_bytes'    => 0,
 			'generated_paths' => [],
+			'max_file_size'   => false === $filtered_max_file_size ? $selected_max_file_size : $filtered_max_file_size,
+			'skipped'         => sse_get_empty_skipped_export_entry_counts(),
 		]
 	);
+}
+
+/**
+ * Gets the zeroed counters for entries the files archive leaves out.
+ *
+ * @since 2.1.1
+ * @return array{unreadable:int,links:int,special:int,large:int,changed:int} Counters keyed by reason.
+ */
+function sse_get_empty_skipped_export_entry_counts(): array {
+	return [
+		'unreadable' => 0,
+		'links'      => 0,
+		'special'    => 0,
+		'large'      => 0,
+		'changed'    => 0,
+	];
+}
+
+/**
+ * Narrows the stored skipped-entry counters to their canonical shape.
+ *
+ * @since 2.1.1
+ * @param mixed $skipped Untrusted request-local value.
+ * @return array{unreadable:int,links:int,special:int,large:int,changed:int}|null Canonical counters, or null.
+ */
+function sse_normalize_skipped_export_entry_counts( mixed $skipped ): ?array {
+	if ( ! is_array( $skipped ) ) {
+		return null;
+	}
+
+	$counts = sse_get_empty_skipped_export_entry_counts();
+	foreach ( array_keys( $counts ) as $reason ) {
+		$count = sse_normalize_nonnegative_integer( $skipped[ $reason ] ?? null );
+		if ( false === $count ) {
+			return null;
+		}
+
+		$counts[ $reason ] = $count;
+	}
+
+	return $counts;
+}
+
+/**
+ * Counts one entry that the files archive leaves out or stores incomplete.
+ *
+ * @since 2.1.1
+ * @param string $reason Counter to raise.
+ * @psalm-param 'unreadable'|'links'|'special'|'large'|'changed' $reason
+ * @return void
+ */
+function sse_count_skipped_export_entry( string $reason ): void {
+	$budget = sse_get_export_resource_budget();
+	if ( null === $budget ) {
+		return;
+	}
+
+	++$budget['skipped'][ $reason ];
+	sse_set_export_resource_budget( $budget );
+}
+
+/**
+ * Gets the counters for entries the files archive left out so far.
+ *
+ * @since 2.1.1
+ * @return array{unreadable:int,links:int,special:int,large:int,changed:int} Counters keyed by reason.
+ */
+function sse_get_skipped_export_entry_counts(): array {
+	$budget = sse_get_export_resource_budget();
+
+	return null === $budget ? sse_get_empty_skipped_export_entry_counts() : $budget['skipped'];
+}
+
+/**
+ * Gets the per-file size limit that applies to the current export request.
+ *
+ * @since 2.1.1
+ * @return int Limit in bytes; zero means no limit.
+ */
+function sse_get_export_max_file_size(): int {
+	$budget = sse_get_export_resource_budget();
+
+	return null === $budget ? 0 : $budget['max_file_size'];
 }
 
 /**
@@ -603,12 +839,12 @@ function sse_clear_export_resource_budget(): void {
  *
  * @since 2.1.1
  * @param mixed $budget Untrusted request-local global value.
- * @return array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>}|null Canonical budget, or null.
+ * @return array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>,max_file_size:int,skipped:array{unreadable:int,links:int,special:int,large:int,changed:int}}|null Canonical budget, or null.
  */
 function sse_normalize_export_resource_budget( mixed $budget ): ?array {
 	if (
 		! is_array( $budget )
-		|| ! isset( $budget['started_at'], $budget['entries'], $budget['source_bytes'], $budget['generated_paths'] )
+		|| ! isset( $budget['started_at'], $budget['entries'], $budget['source_bytes'], $budget['generated_paths'], $budget['max_file_size'], $budget['skipped'] )
 		|| ! is_array( $budget['generated_paths'] )
 		|| ( ! is_int( $budget['started_at'] ) && ! is_float( $budget['started_at'] ) )
 	) {
@@ -622,26 +858,45 @@ function sse_normalize_export_resource_budget( mixed $budget ): ?array {
 		return null;
 	}
 
-	$generated_paths = [];
-	foreach ( array_keys( $budget['generated_paths'] ) as $path ) {
-		if ( is_string( $path ) && true === $budget['generated_paths'][ $path ] ) {
-			$generated_paths[ $path ] = true;
-		}
+	$max_file_size = sse_normalize_nonnegative_integer( $budget['max_file_size'] );
+	$skipped       = sse_normalize_skipped_export_entry_counts( $budget['skipped'] );
+	if ( false === $max_file_size || null === $skipped ) {
+		return null;
 	}
 
 	return [
 		'started_at'      => $started_at,
 		'entries'         => $entries,
 		'source_bytes'    => $source_bytes,
-		'generated_paths' => $generated_paths,
+		'generated_paths' => sse_normalize_generated_export_paths( $budget['generated_paths'] ),
+		'max_file_size'   => $max_file_size,
+		'skipped'         => $skipped,
 	];
+}
+
+/**
+ * Narrows the tracked generated paths to their canonical shape.
+ *
+ * @since 2.1.1
+ * @param array<array-key,mixed> $paths Untrusted request-local value.
+ * @return array<string,true> Tracked paths.
+ */
+function sse_normalize_generated_export_paths( array $paths ): array {
+	$generated_paths = [];
+	foreach ( array_keys( $paths ) as $path ) {
+		if ( is_string( $path ) && true === $paths[ $path ] ) {
+			$generated_paths[ $path ] = true;
+		}
+	}
+
+	return $generated_paths;
 }
 
 /**
  * Gets canonical request-local export resource accounting.
  *
  * @since 2.1.1
- * @return array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>}|null Canonical budget, or null.
+ * @return array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>,max_file_size:int,skipped:array{unreadable:int,links:int,special:int,large:int,changed:int}}|null Canonical budget, or null.
  */
 function sse_get_export_resource_budget(): ?array {
 	return sse_normalize_export_resource_budget( $GLOBALS['sse_export_resource_budget'] ?? null );
@@ -652,7 +907,7 @@ function sse_get_export_resource_budget(): ?array {
  *
  * @since 2.1.1
  * @param array $budget Canonical export resource budget.
- * @psalm-param array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>} $budget
+ * @psalm-param array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>,max_file_size:int,skipped:array{unreadable:int,links:int,special:int,large:int,changed:int}} $budget
  * @return void
  */
 function sse_set_export_resource_budget( array $budget ): void {
@@ -705,7 +960,7 @@ function sse_raise_export_execution_time_limit(): void {
 function sse_get_remaining_export_seconds(): float|WP_Error {
 	$budget = sse_get_export_resource_budget();
 	if ( null === $budget ) {
-		return new WP_Error( 'export_budget_uninitialized', __( 'Export resource accounting was not initialized.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_budget_uninitialized', __( 'The resource accounting of the export was not initialized.', 'enginescript-site-exporter' ) );
 	}
 
 	$max_seconds = sse_get_export_resource_limit( 'sse_max_export_seconds', SSE_DEFAULT_MAX_EXPORT_SECONDS );
@@ -764,6 +1019,12 @@ function sse_check_export_resource_budget( string $path, int $additional_bytes =
 		return $remaining;
 	}
 
+	// Deactivating the plugin removes the working directory of an export that is still running.
+	clearstatcache( true, $path );
+	if ( ! is_dir( $path ) ) {
+		return new WP_Error( 'export_directory_missing', __( 'The export stopped because its working directory was removed.', 'enginescript-site-exporter' ) );
+	}
+
 	$free_bytes = disk_free_space( $path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_disk_free_space -- Native free-space reporting is required for the local direct filesystem.
 	$minimum    = sse_get_export_resource_limit( 'sse_min_export_free_disk_bytes', SSE_DEFAULT_MIN_FREE_DISK_BYTES );
 	if ( false === $free_bytes || $free_bytes < (float) $minimum || (float) max( 0, $additional_bytes ) > $free_bytes - (float) $minimum ) {
@@ -784,7 +1045,7 @@ function sse_check_export_resource_budget( string $path, int $additional_bytes =
 function sse_check_generated_export_capacity( int $additional_bytes, string $volume_path ): true|WP_Error {
 	$budget = sse_get_export_resource_budget();
 	if ( null === $budget ) {
-		return new WP_Error( 'export_budget_uninitialized', __( 'Export resource accounting was not initialized.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_budget_uninitialized', __( 'The resource accounting of the export was not initialized.', 'enginescript-site-exporter' ) );
 	}
 
 	$generated_bytes = sse_get_generated_export_bytes( $budget );
@@ -812,7 +1073,7 @@ function sse_check_generated_export_capacity( int $additional_bytes, string $vol
 function sse_record_export_source_entry( int $source_bytes, string $volume_path ): true|WP_Error {
 	$budget = sse_get_export_resource_budget();
 	if ( null === $budget ) {
-		return new WP_Error( 'export_budget_uninitialized', __( 'Export resource accounting was not initialized.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_budget_uninitialized', __( 'The resource accounting of the export was not initialized.', 'enginescript-site-exporter' ) );
 	}
 
 	$source_bytes = max( 0, $source_bytes );
@@ -843,7 +1104,7 @@ function sse_record_export_source_entry( int $source_bytes, string $volume_path 
 function sse_record_generated_export_file( string $file_path ): true|WP_Error {
 	$budget = sse_get_export_resource_budget();
 	if ( null === $budget ) {
-		return new WP_Error( 'export_budget_uninitialized', __( 'Export resource accounting was not initialized.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_budget_uninitialized', __( 'The resource accounting of the export was not initialized.', 'enginescript-site-exporter' ) );
 	}
 
 	$budget['generated_paths'][ $file_path ] = true;
@@ -859,13 +1120,13 @@ function sse_record_generated_export_file( string $file_path ): true|WP_Error {
  * @return void
  */
 function sse_handle_export(): void {
-	if ( ! sse_validate_export_request() ) {
+	$selected_max_file_size = sse_validate_export_request();
+	if ( false === $selected_max_file_size ) {
 		sse_redirect_to_exporter_page();
 	}
 
 	$lease = sse_acquire_export_lease();
 	if ( is_wp_error( $lease ) ) {
-		delete_transient( 'sse_export_max_file_size_' . get_current_user_id() );
 		sse_show_error_notice( $lease->get_error_message() );
 		sse_redirect_to_exporter_page();
 	}
@@ -875,12 +1136,11 @@ function sse_handle_export(): void {
 	if ( is_wp_error( $recovery_schedule ) ) {
 		sse_release_export_lease( $lease );
 		sse_clear_current_export_lease();
-		delete_transient( 'sse_export_max_file_size_' . get_current_user_id() );
 		sse_show_error_notice( $recovery_schedule->get_error_message() );
 		sse_redirect_to_exporter_page();
 	}
 
-	sse_initialize_export_resource_budget();
+	sse_initialize_export_resource_budget( $selected_max_file_size );
 	sse_cleanup_stale_export_directories();
 
 	$previous_umask = umask( 0077 );
@@ -901,14 +1161,13 @@ function sse_handle_export(): void {
 		}
 
 		umask( $previous_umask );
-		// Always release the owned lease and clean up request-local preferences.
+		// Always release the owned lease and clear request-local state.
 		$current_lease = sse_get_current_export_lease();
 		if ( null !== $current_lease && ! sse_release_export_lease( $current_lease ) ) {
 			sse_log( 'The owned export lease was not present during final release.', 'warning' );
 		}
 		sse_clear_current_export_lease();
 		sse_clear_export_resource_budget();
-		delete_transient( 'sse_export_max_file_size_' . get_current_user_id() );
 	}
 
 	sse_redirect_to_exporter_page();
@@ -955,7 +1214,7 @@ function sse_prepare_export_workflow_directory( array &$lease ): array|WP_Error 
 	}
 	$current_lease = sse_get_current_export_lease();
 	if ( null === $current_lease ) {
-		return new WP_Error( 'export_lease_lost', __( 'The export lease could not be maintained, so the export was stopped.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 	$lease = $current_lease;
 
@@ -1064,9 +1323,9 @@ function sse_validate_exported_database_file( array $database_file ): true|WP_Er
  * Validates the export request for security and permissions.
  *
  * @since 1.0.0
- * @return bool True if request is valid, false otherwise.
+ * @return int|false Selected per-file size limit in bytes when the request is valid, false otherwise.
  */
-function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+function sse_validate_export_request(): int|false { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 	$post_action = isset( $_POST['action'] ) && is_string( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verification happens below
 	if ( 'sse_export_site' !== $post_action ) {
 		return false;
@@ -1078,12 +1337,75 @@ function sse_validate_export_request(): bool { // phpcs:ignore WordPress.Securit
 		sse_wp_die( __( 'You do not have permission to perform this action.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	// Store the user's max file size selection for use during export.
-	$max_file_size = isset( $_POST['sse_max_file_size'] ) && is_string( $_POST['sse_max_file_size'] ) ? sse_normalize_nonnegative_integer( sanitize_text_field( wp_unslash( $_POST['sse_max_file_size'] ) ) ) : false; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified above
-	$max_file_size = false === $max_file_size ? 0 : $max_file_size;
-	set_transient( 'sse_export_max_file_size_' . get_current_user_id(), $max_file_size, HOUR_IN_SECONDS );
+	// Accept only a size that the form offers; anything else means no limit.
+	$requested_size = isset( $_POST['sse_max_file_size'] ) && is_string( $_POST['sse_max_file_size'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_max_file_size'] ) ) : '';
+	foreach ( array_keys( sse_get_export_file_size_options() ) as $offered_size ) {
+		if ( (string) $offered_size === $requested_size ) {
+			return $offered_size;
+		}
+	}
 
-	return true;
+	return 0;
+}
+
+/**
+ * Gets warnings about conditions that EngineScript's importer does not accept.
+ *
+ * The importer finds the site through a wp-config.php inside the files archive
+ * and reads the site address from WP_HOME or WP_SITEURL in that file. An
+ * export from a site that does not meet this is still a complete backup, so
+ * these are warnings and never stop the export.
+ *
+ * @since 2.1.1
+ * @return string[] Warning messages; empty when the archive can be imported.
+ */
+function sse_get_import_requirement_warnings(): array {
+	$warnings   = [];
+	$filesystem = sse_get_filesystem();
+	if ( ! is_wp_error( $filesystem ) && ! $filesystem->exists( ABSPATH . 'wp-config.php' ) ) {
+		$warnings[] = __( 'This site keeps wp-config.php outside the WordPress directory, so the file is not part of the export. The EngineScript importer needs wp-config.php in the export.', 'enginescript-site-exporter' );
+	}
+
+	if ( ! defined( 'WP_HOME' ) && ! defined( 'WP_SITEURL' ) ) {
+		$warnings[] = __( 'Neither WP_HOME nor WP_SITEURL is defined in wp-config.php. The EngineScript importer reads the site address from one of them.', 'enginescript-site-exporter' );
+	}
+
+	return $warnings;
+}
+
+/**
+ * Checks whether a path lies inside a directory that the web server may serve.
+ *
+ * The WordPress directory is not the only such place: the content directory
+ * and the uploads directory can live outside it, and the document root can be
+ * above it. Paths are compared after symbolic links are resolved.
+ *
+ * @since 2.1.1
+ * @param string $path Path to check.
+ * @return bool True when the path resolves inside a web-served directory.
+ */
+function sse_is_path_web_served( string $path ): bool {
+	$upload_dir = wp_get_upload_dir();
+	$server     = sse_normalize_array_value( $_SERVER );
+	$roots      = [
+		ABSPATH,
+		defined( 'WP_CONTENT_DIR' ) ? sse_normalize_string_value( constant( 'WP_CONTENT_DIR' ) ) : '',
+		sse_normalize_string_value( $upload_dir['basedir'] ),
+		sanitize_text_field( sse_normalize_string_value( $server['DOCUMENT_ROOT'] ?? '' ) ),
+	];
+
+	foreach ( $roots as $root ) {
+		// An empty value, or the filesystem root, says nothing about what is served.
+		if ( '' === untrailingslashit( wp_normalize_path( $root ) ) ) {
+			continue;
+		}
+
+		if ( sse_is_path_within_directory( $path, $root ) ) {
+			return true;
+		}
+	}
+
+	return false;
 }
 
 /**
@@ -1098,9 +1420,9 @@ function sse_setup_export_directories(): array|WP_Error {
 		return $export_base_dir;
 	}
 
-	if ( sse_is_path_within_directory( dirname( $export_base_dir ), ABSPATH ) ) {
-		sse_log( 'Private export base directory parent resolved inside the WordPress web root: ' . $export_base_dir, 'security' );
-		return new WP_Error( 'export_dir_public', __( 'The export directory is inside the WordPress web root. Configure WP_TEMP_DIR to a private, non-public directory and try again.', 'enginescript-site-exporter' ) );
+	if ( sse_is_path_web_served( dirname( $export_base_dir ) ) ) {
+		sse_log( 'Private export base directory parent resolved inside a web-served directory: ' . $export_base_dir, 'security' );
+		return new WP_Error( 'export_dir_public', __( 'The temporary directory is inside a web-served directory, so an export cannot be stored there safely. Define WP_TEMP_DIR in wp-config.php as a private, writable directory outside the web root, then try again.', 'enginescript-site-exporter' ) );
 	}
 
 	$base_dir_result = sse_prepare_export_base_directory( $export_base_dir );
@@ -1108,9 +1430,9 @@ function sse_setup_export_directories(): array|WP_Error {
 		return $base_dir_result;
 	}
 
-	if ( sse_is_path_within_directory( $export_base_dir, ABSPATH ) ) {
-		sse_log( 'Private export base directory resolved inside the WordPress web root: ' . $export_base_dir, 'security' );
-		return new WP_Error( 'export_dir_public', __( 'The export directory is inside the WordPress web root. Configure WP_TEMP_DIR to a private, non-public directory and try again.', 'enginescript-site-exporter' ) );
+	if ( sse_is_path_web_served( $export_base_dir ) ) {
+		sse_log( 'Private export base directory resolved inside a web-served directory: ' . $export_base_dir, 'security' );
+		return new WP_Error( 'export_dir_public', __( 'The export directory is inside a web-served directory. Define WP_TEMP_DIR in wp-config.php as a private, writable directory outside the web root, then try again.', 'enginescript-site-exporter' ) );
 	}
 
 	$export_dir = sse_create_private_export_directory( $export_base_dir );
@@ -1139,7 +1461,7 @@ function sse_setup_export_directories(): array|WP_Error {
 }
 
 /**
- * Creates or verifies the fixed private export base directory.
+ * Creates or verifies the private export base directory.
  *
  * @since 2.1.1
  * @param string $export_base_dir Export base directory path.
@@ -1298,24 +1620,29 @@ function sse_get_safe_wp_cli_path(): string|WP_Error {
 		'/usr/bin/wp',
 	];
 
+	$refusal = null;
 	foreach ( $trusted_system_paths as $path ) {
 		$validation = sse_validate_wp_cli_executable_path( $path );
 		if ( ! is_wp_error( $validation ) ) {
 			return $validation;
 		}
+
+		// Remember the first executable that exists but fails a safety check.
+		if ( null === $refusal && 'wp_cli_not_executable' !== $validation->get_error_code() ) {
+			$refusal = $validation;
+		}
 	}
 
 	$configured_path = sse_get_configured_wp_cli_path();
 	if ( '' !== $configured_path ) {
-		$validation = sse_validate_wp_cli_executable_path( $configured_path );
-		if ( ! is_wp_error( $validation ) ) {
-			return $validation;
-		}
-
-		return $validation;
+		return sse_validate_wp_cli_executable_path( $configured_path );
 	}
 
-	return new WP_Error( 'wp_cli_not_found', __( 'WP-CLI executable not found in a trusted system location. Install WP-CLI at /usr/local/bin/wp or /usr/bin/wp, or explicitly configure a trusted executable with SSE_WP_CLI_PATH or the sse_wp_cli_path filter.', 'enginescript-site-exporter' ) );
+	if ( null !== $refusal ) {
+		return $refusal;
+	}
+
+	return new WP_Error( 'wp_cli_not_found', __( 'The WP-CLI executable was not found in a trusted system location. Install WP-CLI at /usr/local/bin/wp or /usr/bin/wp, or explicitly configure a trusted executable with SSE_WP_CLI_PATH or the sse_wp_cli_path filter.', 'enginescript-site-exporter' ) );
 }
 
 /**
@@ -1349,12 +1676,12 @@ function sse_get_configured_wp_cli_path(): string {
  */
 function sse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
 	if ( '' === $path || ! sse_is_absolute_path( $path ) ) {
-		return new WP_Error( 'wp_cli_invalid_path', __( 'Configured WP-CLI path must be absolute.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'wp_cli_invalid_path', __( 'The configured WP-CLI path must be absolute.', 'enginescript-site-exporter' ) );
 	}
 
 	$resolved_path = realpath( $path );
 	if ( false === $resolved_path ) {
-		return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'wp_cli_not_executable', __( 'The WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
 	}
 
 	$filesystem = sse_get_filesystem();
@@ -1363,19 +1690,19 @@ function sse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
 	}
 
 	if ( ! $filesystem->is_file( $resolved_path ) || ! is_executable( $resolved_path ) ) {
-		return new WP_Error( 'wp_cli_not_executable', __( 'WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'wp_cli_not_executable', __( 'The WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_wp_cli_has_safe_mode( $resolved_path ) ) {
-		return new WP_Error( 'wp_cli_unsafe_mode', __( 'WP-CLI executable has unsafe writable permissions.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'wp_cli_unsafe_mode', __( 'The WP-CLI executable has unsafe writable permissions.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_wp_cli_has_safe_owner( $resolved_path ) ) {
-		return new WP_Error( 'wp_cli_unsafe_owner', __( 'WP-CLI executable ownership is not trusted.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'wp_cli_unsafe_owner', __( 'The ownership of the WP-CLI executable is not trusted.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( ! sse_wp_cli_has_safe_parent_directories( $resolved_path ) ) {
-		return new WP_Error( 'wp_cli_unsafe_parent', __( 'WP-CLI executable is located below an untrusted writable directory.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'wp_cli_unsafe_parent', __( 'The WP-CLI executable is located below an untrusted writable directory.', 'enginescript-site-exporter' ) );
 	}
 
 	return $resolved_path;
@@ -1591,15 +1918,47 @@ function sse_terminate_wp_cli_process( $process, int $process_group_id, array $p
 }
 
 /**
- * Starts a WP-CLI child and configures its pipes for bounded monitoring.
+ * Builds the environment for the WP-CLI child process.
+ *
+ * The child receives this process's own environment, which is what it
+ * inherited before, read variable by variable from the process and never from
+ * the request: under PHP-FPM a plain getenv() also returns the request's
+ * headers. WP-CLI's global configuration file is pointed at a name inside the
+ * private export directory that is never created, so no configuration from the
+ * home directory is read.
  *
  * @since 2.1.1
- * @param array $command Command and arguments.
+ * @param string $private_directory Private export directory of this export.
+ * @return array<string,string> Environment for the child process.
+ */
+function sse_get_wp_cli_process_environment( string $private_directory ): array {
+	$environment = [];
+	foreach ( array_keys( getenv() ) as $name ) {
+		$value = getenv( $name, true );
+		if ( is_string( $value ) ) {
+			$environment[ $name ] = $value;
+		}
+	}
+
+	$environment['WP_CLI_CONFIG_PATH'] = trailingslashit( $private_directory ) . 'wp-cli-no-config.yml';
+
+	return $environment;
+}
+
+/**
+ * Starts a WP-CLI child and configures its pipes for bounded monitoring.
+ *
+ * The child starts in the filesystem root, so WP-CLI finds no project
+ * configuration in a directory that someone else can write to.
+ *
+ * @since 2.1.1
+ * @param array  $command           Command and arguments.
+ * @param string $private_directory Private export directory of this export.
  * @phpstan-param non-empty-list<string> $command
  * @psalm-param non-empty-list<string> $command
  * @return array{process:resource,process_group_id:int,pipes:array<int,resource>}|WP_Error Open process data or error.
  */
-function sse_open_wp_cli_process( array $command ): array|WP_Error {
+function sse_open_wp_cli_process( array $command, string $private_directory ): array|WP_Error {
 	$launcher = sse_get_wp_cli_process_group_launcher();
 	if ( is_wp_error( $launcher ) ) {
 		return $launcher;
@@ -1612,7 +1971,7 @@ function sse_open_wp_cli_process( array $command ): array|WP_Error {
 	];
 	$pipes         = [];
 	$owned_command = array_merge( $launcher, $command );
-	$process       = proc_open( $owned_command, $descriptors, $pipes, null, null, [ 'bypass_shell' => true ] ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open,Generic.PHP.ForbiddenFunctions.Found -- Verified executables and shell-free argv run in an owned, time-bounded process group; WP_Filesystem cannot create or supervise processes.
+	$process       = proc_open( $owned_command, $descriptors, $pipes, '/', sse_get_wp_cli_process_environment( $private_directory ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open,Generic.PHP.ForbiddenFunctions.Found -- Verified executables and shell-free argv run in an owned, time-bounded process group; WP_Filesystem cannot create or supervise processes.
 	if ( ! is_resource( $process ) ) {
 		return new WP_Error( 'wp_cli_start_failed', __( 'Could not start the WP-CLI database export.', 'enginescript-site-exporter' ) );
 	}
@@ -1782,7 +2141,7 @@ function sse_run_wp_cli_process( array $command, array $expected_identity, strin
 		return $timeout;
 	}
 
-	$opened_process = sse_open_wp_cli_process( $command );
+	$opened_process = sse_open_wp_cli_process( $command, dirname( $output_path ) );
 	if ( is_wp_error( $opened_process ) ) {
 		return $opened_process;
 	}
@@ -1853,14 +2212,14 @@ function sse_sanitize_wp_cli_output( string $output ): string {
 }
 
 /**
- * Checks whether a path is absolute on Unix or Windows.
+ * Checks whether a path is absolute.
  *
  * @since 2.1.1
  * @param string $path Path to check.
  * @return bool True when the path is absolute.
  */
 function sse_is_absolute_path( string $path ): bool {
-	return 1 === preg_match( '#^(?:/|[A-Za-z]:[\\\\/])#', $path );
+	return str_starts_with( $path, '/' );
 }
 
 /**
@@ -1883,8 +2242,9 @@ function sse_wp_cli_has_safe_mode( string $path ): bool {
  * Checks whether a WP-CLI executable has trusted ownership.
  *
  * Root-owned executables may be owner-writable. Non-root executables must not be
- * owner-writable, which prevents a writable web-root foothold from replacing an
- * explicitly configured local PHAR.
+ * owner-writable. That rule catches an executable that was left writable by
+ * mistake. It does not bind the file's owner, who can restore the write bit,
+ * so an executable owned by the web server's user is only as safe as that user.
  *
  * @since 2.1.1
  * @param string $path Resolved executable path.
@@ -1932,7 +2292,8 @@ function sse_export_database( string $export_dir, string $site_identifier, strin
 		return $identity;
 	}
 
-	$command = [ $wp_cli_path, 'db', 'export', $db_filepath, '--path=' . ABSPATH ];
+	// Packages are code that WP-CLI would load from the home directory; a database dump needs none.
+	$command = [ $wp_cli_path, 'db', 'export', $db_filepath, '--path=' . ABSPATH, '--skip-packages' ];
 	if ( function_exists( 'posix_geteuid' ) && 0 === posix_geteuid() ) {
 		$command[] = '--allow-root';
 	}
@@ -1952,7 +2313,7 @@ function sse_export_database( string $export_dir, string $site_identifier, strin
 
 	if ( ! sse_chmod_private_file( $db_filepath ) ) {
 		sse_cleanup_files( [ $db_filepath ] );
-		return new WP_Error( 'db_export_permissions_failed', __( 'Could not secure database export file permissions.', 'enginescript-site-exporter' ) );
+		return new WP_Error( 'db_export_permissions_failed', __( 'Could not secure the permissions of the database export file.', 'enginescript-site-exporter' ) );
 	}
 
 	sse_log( 'Database export successful.', 'info' );

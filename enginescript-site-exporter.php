@@ -7,6 +7,7 @@
  * Requires at least: 6.8
  * Tested up to: 7.1
  * Requires PHP: 8.2
+ * Network: true
  * License: GPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: enginescript-site-exporter
@@ -107,10 +108,9 @@ if ( ! defined( 'SSE_PLUGIN_FILE' ) ) {
  *
  * @see WP_Error - WordPress error handling class
  * @see ZipArchive - PHP ZipArchive class
- * @see Phar - PHP Phar class
- * @see PharData - PHP PharData class
  * @see RecursiveIteratorIterator - PHP SPL iterator
  * @see RecursiveDirectoryIterator - PHP SPL directory iterator
+ * @see RecursiveCallbackFilterIterator - PHP SPL filter iterator
  * @see SplFileInfo - PHP SPL file information class
  * @see RuntimeException - PHP runtime exception class
  * @see Exception - PHP base exception class
@@ -121,6 +121,7 @@ require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/security.php';
 require_once __DIR__ . '/includes/admin-page.php';
 require_once __DIR__ . '/includes/export.php';
+require_once __DIR__ . '/includes/tar.php';
 require_once __DIR__ . '/includes/archive.php';
 require_once __DIR__ . '/includes/cleanup.php';
 require_once __DIR__ . '/includes/download.php';
@@ -165,10 +166,10 @@ function sse_init_plugin(): void {
 }
 
 /**
- * Removes the recurring housekeeping event when the plugin is deactivated.
+ * Removes exports, scheduled events, and the lease when the plugin is deactivated.
  *
- * Lease-specific recovery events are intentionally left in place so they are
- * not discarded if the plugin is reactivated before recovery becomes due.
+ * An inactive plugin cannot delete an archive, so nothing may be left for it
+ * to delete.
  *
  * @since 2.1.1
  * @param bool $_network_wide Whether the plugin is being deactivated network-wide.
@@ -176,12 +177,25 @@ function sse_init_plugin(): void {
  */
 function sse_deactivate_plugin( bool $_network_wide = false ): void {
 	if ( $_network_wide ) {
-		sse_log( 'Exporter housekeeping is being deactivated in the current network context.', 'info' );
+		sse_log( 'The exporter is being deactivated in the current network context.', 'info' );
 	}
 
-	wp_clear_scheduled_hook( 'sse_export_housekeeping' );
+	sse_remove_plugin_runtime_state();
+}
+
+/**
+ * Registers the uninstall callback when the plugin is activated.
+ *
+ * @since 2.1.1
+ * @param bool $_network_wide Whether the plugin is being activated network-wide.
+ * @return void
+ */
+function sse_activate_plugin( bool $_network_wide = false ): void {
+	unset( $_network_wide );
+	sse_register_uninstall_callback();
 }
 
 // Initialize the plugin when all plugins are loaded.
 add_action( 'plugins_loaded', 'sse_init_plugin' );
+register_activation_hook( SSE_PLUGIN_FILE, 'sse_activate_plugin' );
 register_deactivation_hook( SSE_PLUGIN_FILE, 'sse_deactivate_plugin' );

@@ -30,25 +30,23 @@
 	}
 }
 
-/* Action buttons (download/delete) in success notices. */
-.sse-action-button {
-	margin-left: 10px;
-}
-
-/* Keep success notice actions on one line where space allows. */
-.sse-notice-actions {
+/* Download and delete controls of one archive stay on one line where space allows. */
+.sse-archive-actions {
 	align-items: center;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	margin: 8px 0;
 }
 
-.sse-notice-actions .sse-action-button {
-	margin-left: 0;
+/* Space below the archive and activity tables. */
+.sse-archive-table,
+.sse-activity-table {
+	margin-bottom: 20px;
 }
 
-/* Keep the POST-backed delete action visually grouped with the download action. */
-.sse-inline-form {
-	display: inline;
+/* Status line that announces a running export; it keeps its height so the page does not jump. */
+.sse-export-status {
+	font-weight: 600;
+	margin: 0 0 15px;
+	min-height: 1.5em;
 }
