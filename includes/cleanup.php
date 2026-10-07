@@ -53,6 +53,17 @@ function sse_schedule_export_cleanup( string $zip_filepath ): void {
 }
 
 /**
+ * Removes the scheduled deletion of an export file that no longer exists.
+ *
+ * @since 2.1.1
+ * @param string $zip_filepath The ZIP file path the deletion was scheduled for.
+ * @return void
+ */
+function sse_unschedule_export_cleanup( string $zip_filepath ): void {
+	wp_clear_scheduled_hook( 'sse_delete_export_file', [ $zip_filepath ] );
+}
+
+/**
  * Schedules a bulk cleanup of all export files in the private export directory.
  * This runs as a safety net to catch any files that individual cleanup missed.
  *

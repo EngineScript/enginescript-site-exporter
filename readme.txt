@@ -134,12 +134,14 @@ Released entries describe their historical versions, including earlier tool resu
 * **Security**: Added filterable aggregate entry, source-byte, generated-byte, elapsed-time, and free-disk limits with live SQL, gzip, TAR, and ZIP accounting
 * **Privacy**: Stored security/error logs now validate record shape, redact local paths, expire after seven days through recurring housekeeping, and remain capped at 20 entries
 * **Cleanup**: Bulk cleanup excludes the active lease directory, immediate failure cleanup removes newly created staging directories, and owner-bound recovery removes interrupted private staging directories through containment-checked deletion
+* **Cleanup**: Deleting an export from the exporter page now also removes its scheduled deletion event, so the event no longer runs five minutes later for a file that is already gone
 * **Architecture**: Replaced direct file metadata checks, generated artifact verification, export cleanup directory scans, and filename basename extraction with WordPress Filesystem API methods and native WordPress helpers where available
 * **Architecture**: Export operations now require WordPress' direct local filesystem transport and cleanup cron scheduling records native `WP_Error` diagnostics
 * **Architecture**: Filesystem and database callers now use typed WordPress boundary accessors, including the native `%i` database-table identifier placeholder, instead of rereading mixed globals
 * **Architecture**: The exporter remains beneath Tools on single-site installations and appears only beneath Settings in Network Admin on multisite; redirects and page-scoped assets use the matching canonical WordPress admin contract
 * **Performance**: The files archive is now written in one pass straight into a gzip stream instead of through PharData; each file is read once, no uncompressed copy is staged, and the PHP Phar extension is no longer required
 * **Security**: A file whose path is longer than 100 bytes, which any user who can upload media could create, no longer stops the export
+* **Security**: The check of a private export directory name no longer accepts a name that ends in a line break
 * **Security**: The lease lock is now taken on single sites too; an invalid or duplicate lease row is removed at the next export attempt, never a valid unexpired one; a backward clock step can no longer block exports; the lease is decoded with classes disallowed, and scheduled handlers check their stored argument
 * **Security**: The download and delete handlers no longer rewrite the requested file name before validating it
 * **Privacy**: Exports, downloads, and deletions are now recorded with time and user whether or not debug logging is on; the client IP address is no longer stored

@@ -85,6 +85,7 @@ jobs:
             ["WP Plugin Check (PHP 8.3)", "PHPCS (PHP 8.3)", "WP VIP CS (PHP 8.3)",
              "PHPMD (PHP 8.3)", "Psalm Static Analysis (PHP 8.3)",
              "Security Scan (PHP 8.3)", "PHPStan for WP (PHP 8.3)",
+             "Admin Script Tests (Node 24)",
              ( ["8.2", "8.3", "8.4", "8.5"][] as $php |
                ["6.8", "latest", "nightly"][] as $wp |
                "Test WordPress \($wp) with PHP \($php) (highest deps)" ),

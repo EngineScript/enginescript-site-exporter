@@ -2,7 +2,7 @@
 * text=auto eol=lf
 
 # Exclude source-only and development tooling from git archive/export packages.
-/.github/** export-ignore
+/.github export-ignore
 /.distignore export-ignore
 /.gitattributes export-ignore
 /.gitignore export-ignore
@@ -12,13 +12,16 @@
 /composer.lock export-ignore
 /CHANGELOG.md export-ignore
 /GEMINI.md export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
 /phpcs.xml export-ignore
 /phpmd.xml export-ignore
 /phpstan.neon export-ignore
+/phpunit.xml export-ignore
 /psalm.xml export-ignore
 /README.md export-ignore
 /renovate.json export-ignore
 /SECURITY.md export-ignore
-/stubs/** export-ignore
-/tests/** export-ignore
-/vendor/** export-ignore
+/stubs export-ignore
+/tests export-ignore
+/vendor export-ignore

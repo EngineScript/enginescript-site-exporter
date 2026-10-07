@@ -1,0 +1,15 @@
+{
+  "name": "enginescript-site-exporter",
+  "private": true,
+  "description": "Development tooling for EngineScript Site Exporter: tests for the admin script.",
+  "license": "GPL-3.0-or-later",
+  "engines": {
+    "node": ">=22.22.2"
+  },
+  "scripts": {
+    "test": "node --test \"tests/js/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "jsdom": "30.1.2"
+  }
+}

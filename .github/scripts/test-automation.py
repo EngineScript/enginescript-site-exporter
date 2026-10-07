@@ -164,7 +164,7 @@ class AutomationTests(unittest.TestCase):
                 text=True, capture_output=True, check=False
             ).returncode == 0
 
-        self.assertEqual(20, len(jobs))
+        self.assertEqual(21, len(jobs))
         self.assertTrue(accepts_jobs(jobs))
         for index in range(len(jobs)):
             self.assertFalse(accepts_jobs(jobs[:index] + jobs[index + 1:]))

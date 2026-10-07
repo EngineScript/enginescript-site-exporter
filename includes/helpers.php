@@ -422,7 +422,8 @@ function sse_current_user_can_export_site(): bool {
  * @return non-empty-string Regex pattern for generated private directory names.
  */
 function sse_get_export_private_directory_name_pattern(): string {
-	return '/^' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}$/';
+	// The pattern ends in \z, not $: a dollar sign also matches before a final line break.
+	return '/^' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}\z/';
 }
 
 /**

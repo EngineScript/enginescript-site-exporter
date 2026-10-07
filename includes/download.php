@@ -79,6 +79,7 @@ function sse_handle_export_deletion(): void {
 	}
 
 	if ( sse_safely_delete_file( $validation['filepath'] ) ) {
+		sse_unschedule_export_cleanup( $validation['filepath'] );
 		sse_record_activity( 'Export deleted: ' . $validation['filename'] );
 		sse_set_exporter_notice(
 			[

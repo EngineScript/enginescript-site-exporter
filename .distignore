@@ -62,6 +62,8 @@
 /phpcs.xml
 /phpmd.xml
 /phpstan.neon
+/package.json
+/package-lock.json
 /phpunit.xml
 /psalm.xml
 /renovate.json

@@ -34,15 +34,16 @@
   "scripts": {
     "phpcs": "phpcs --standard=phpcs.xml",
     "phpcs:fix": "phpcbf --standard=phpcs.xml",
-    "phpmd": "phpmd . text phpmd.xml --exclude vendor,node_modules,.private",
+    "phpmd": "phpmd . text phpmd.xml --exclude vendor,tests,node_modules,.private",
     "psalm": "psalm --config=psalm.xml --show-info=true",
     "phpstan": "phpstan analyze --memory-limit=1G",
-    "test": "phpunit --no-configuration --do-not-fail-on-empty-test-suite tests",
+    "test": "phpunit --configuration phpunit.xml --testsuite unit --fail-on-empty-test-suite",
     "check-all": [
       "@phpcs",
       "@phpmd",
       "@psalm",
-      "@phpstan"
+      "@phpstan",
+      "@test"
     ]
   },
   "config": {
