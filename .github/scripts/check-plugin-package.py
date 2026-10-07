@@ -13,10 +13,21 @@ from zipfile import ZipFile, ZipInfo
 # Bandit: every subprocess call in this file runs a fixed argument list without a shell.
 
 SLUG = "enginescript-site-exporter"
-RELEASE_FILES = {
-    f"{SLUG}.php", "readme.txt", "README.md", "CHANGELOG.md", "LICENSE"
-}
+# No Markdown file ships: readme.txt is the readme and the changelog of the package.
+RELEASE_FILES = {f"{SLUG}.php", "readme.txt", "LICENSE"}
 RELEASE_DIRS = {"includes", "css", "js", "languages"}
+
+# File rules of the WordPress.org plugin directory, as the Plugin Check plugin
+# applies them: no compressed archive, PHP archive, or application file.
+FORBIDDEN_EXTENSIONS = {
+    "7z", "gz", "rar", "tar", "tgz", "zip",
+    "phar",
+    "a", "bin", "bpk", "deploy", "dist", "distz", "dmg", "dms", "dump", "elc", "exe",
+    "iso", "lha", "lrf", "lzh", "o", "obj", "pkg", "sh", "so",
+}
+# This project's own rule: readme.txt is the only readme and changelog that ships.
+FORBIDDEN_EXTENSIONS.add("md")
+FORBIDDEN_NAME_CHARACTERS = set("!@#$%^&*()+=[]{};:\"'<>,?\\|`~")
 
 
 def tracked_files(root: Path, *options: str) -> set[str]:
@@ -44,6 +55,37 @@ def check_distignore(root: Path, tracked: set[str], names: set[str]) -> None:
         )
 
 
+def directory_rule_problem(name: str) -> str | None:
+    """Say why the WordPress.org plugin directory would not accept a file, or None."""
+    path = Path(name)
+    if any(part.startswith(".") for part in path.parts):
+        return "hidden file or directory"
+    if path.suffix.lower().lstrip(".") in FORBIDDEN_EXTENSIONS:
+        return "file type that must not ship"
+    if any(character.isspace() for character in name):
+        return "space in the name"
+    if FORBIDDEN_NAME_CHARACTERS & set(path.name):
+        return "special character in the name"
+    return None
+
+
+def check_directory_rules(names: set[str]) -> None:
+    """Refuse a package that breaks a file rule of the WordPress.org plugin directory."""
+    problems = [
+        f"{name} ({problem})"
+        for name in sorted(names)
+        for problem in [directory_rule_problem(name)]
+        if problem
+    ]
+    lowered: dict[str, str] = {}
+    for name in sorted(names):
+        if name.lower() in lowered:
+            problems.append(f"{name} (differs from {lowered[name.lower()]} only by case)")
+        lowered[name.lower()] = name
+    if problems:
+        raise ValueError("Not allowed in the release package: " + ", ".join(problems))
+
+
 def expected_contents(root: Path) -> dict[str, bytes]:
     """Read only tracked regular production/public files, never vendor output."""
     tracked = tracked_files(root)
@@ -52,6 +94,7 @@ def expected_contents(root: Path) -> dict[str, bytes]:
         if name in RELEASE_FILES or Path(name).parts[:1] in
         {(directory,) for directory in RELEASE_DIRS}
     }
+    check_directory_rules(names)
     check_distignore(root, tracked, names)
     required = RELEASE_FILES | {
         "css/admin.css", "js/admin.js", f"languages/{SLUG}.pot"

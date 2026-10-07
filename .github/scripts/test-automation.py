@@ -233,8 +233,9 @@ class AutomationTests(unittest.TestCase):
     def test_distignore_must_keep_exactly_the_release_allowlist(self):
         self.add_release_sources()
         subprocess.run(["git", "add", "--", "CHANGELOG.md", "LICENSE", "includes", "css", "js", "languages"], check=True)  # nosec B603 B607
-        shipped = ["CHANGELOG.md", "LICENSE", "README.md", "css/admin.css", "enginescript-site-exporter.php",
-                   "includes/fixture.php", "js/admin.js", "languages/enginescript-site-exporter.pot", "readme.txt"]
+        # README.md and CHANGELOG.md are tracked in this fixture and do not ship.
+        shipped = ["LICENSE", "css/admin.css", "enginescript-site-exporter.php", "includes/fixture.php",
+                   "js/admin.js", "languages/enginescript-site-exporter.pot", "readme.txt"]
         self.assertEqual(shipped, sorted(package.expected_contents(self.root)))
         rules = (self.root / ".distignore").read_text(encoding="utf-8")
         # A tracked file that neither list names would ship through .distignore alone.
@@ -244,6 +245,27 @@ class AutomationTests(unittest.TestCase):
             package.expected_contents(self.root)
         self.write(".distignore", rules + "/new-tool.json\n")
         self.assertEqual(shipped, sorted(package.expected_contents(self.root)))
+        # Inside a shipped directory, a file that the WordPress.org plugin directory
+        # does not accept is refused by name, and so is a Markdown file.
+        refused = {
+            "includes/notes.md": "file type", "includes/tool.sh": "file type", "js/library.zip": "file type",
+            "includes/archive.phar": "file type", "includes/.hidden.php": "hidden", "css/.cache/x.css": "hidden",
+            "includes/two words.php": "space", "includes/odd(name).php": "special character",
+            # The message names the second of the two files in sorted order.
+            "includes/Fixture.php": "includes/fixture.php (differs from includes/Fixture.php only by case",
+        }
+        for name, reason in refused.items():
+            expected = reason if "only by case" in reason else f"{name} ({reason}"
+            with self.subTest(name=name):
+                self.write(name, "fixture\n")
+                subprocess.run(["git", "add", "--force", "--", name], check=True)  # nosec B603 B607
+                try:
+                    with self.assertRaisesRegex(ValueError, re.escape(expected)):
+                        package.expected_contents(self.root)
+                finally:
+                    subprocess.run(["git", "rm", "--cached", "--force", "--quiet", "--", name], check=True)  # nosec B603 B607
+                    (self.root / name).unlink()
+                self.assertEqual(shipped, sorted(package.expected_contents(self.root)))
         # A rule that drops a shipped file, and a missing file, are refused too.
         self.write(".distignore", rules + "/new-tool.json\n/languages\n")
         with self.assertRaisesRegex(ValueError, "languages/enginescript-site-exporter.pot"):

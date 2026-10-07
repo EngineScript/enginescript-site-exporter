@@ -134,8 +134,6 @@ jobs:
           cp -r css "$PLUGIN_SLUG/"
           cp -r js "$PLUGIN_SLUG/"
           cp readme.txt "$PLUGIN_SLUG/"
-          cp README.md "$PLUGIN_SLUG/"
-          cp CHANGELOG.md "$PLUGIN_SLUG/"
           cp LICENSE "$PLUGIN_SLUG/"
           cp -r languages "$PLUGIN_SLUG/"
           zip -r "${PLUGIN_SLUG}-${{ steps.get_version.outputs.version }}.zip" "$PLUGIN_SLUG"

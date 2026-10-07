@@ -6,27 +6,53 @@
 #
 # The release workflow builds its package from an allowlist.
 # .github/scripts/check-plugin-package.py fails when this file and that
-# allowlist would ship different tracked files, so keep the two in step.
+# allowlist would ship different tracked files, and when a shipped file breaks
+# a rule below, so keep the two in step.
 
-# Version control and repository automation
-/.git
-/.github
-/.gitattributes
-/.gitignore
-/.distignore
+# --- What the WordPress.org plugin directory does not accept ---------------
+# (the file rules of the Plugin Check plugin)
 
-# Editor, agent, and local-only files
-/.claude
-/.idea
-/.private
-/.vscode
-/AGENTS.md
-/CLAUDE.md
-/GEMINI.md
-.DS_Store
-Thumbs.db
-*.swp
-*~
+# Hidden files and directories. This covers version control (.git, .svn),
+# repository automation (.github), editor and AI-tool directories (.vscode,
+# .idea, .claude, .cursor), tool configuration, caches, and this file.
+.*
+
+# Compressed archives
+*.7z
+*.gz
+*.rar
+*.tar
+*.tgz
+*.zip
+
+# PHP archives, executables, scripts, and other application files
+*.phar
+*.a
+*.bin
+*.bpk
+*.deploy
+*.dist
+*.distz
+*.dmg
+*.dms
+*.dump
+*.elc
+*.exe
+*.iso
+*.lha
+*.lrf
+*.lzh
+*.o
+*.obj
+*.pkg
+*.sh
+*.so
+
+# --- What this project leaves out as well ----------------------------------
+
+# Markdown. The package carries readme.txt, which holds the description and
+# the changelog; no .md file ships.
+*.md
 
 # Development tooling and its configuration
 /.markdownlint.json
@@ -43,9 +69,6 @@ Thumbs.db
 /stubs
 /tests
 
-# Repository documentation that the package does not carry
-/SECURITY.md
-
 # Dependencies, caches, and build output
 /vendor
 /node_modules
@@ -53,13 +76,9 @@ Thumbs.db
 /coverage
 /dist
 /plugin-check-build
-/.cache
-/.mypy_cache
-/.phpunit.cache
-/.phpunit.result.cache
-/.ruff_cache
 __pycache__
+Thumbs.db
 *.log
 *.sql
-*.tar.gz
-*.zip
+*.swp
+*~

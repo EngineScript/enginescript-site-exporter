@@ -86,8 +86,6 @@ jobs:
 
           cp enginescript-site-exporter.php "$BUILD_DIR/"
           cp readme.txt "$BUILD_DIR/"
-          cp README.md "$BUILD_DIR/"
-          cp CHANGELOG.md "$BUILD_DIR/"
           cp LICENSE "$BUILD_DIR/"
           cp -r includes "$BUILD_DIR/"
           cp -r css "$BUILD_DIR/"
