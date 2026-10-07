@@ -1,0 +1,65 @@
+# Files and directories that are left out of the distributable plugin package.
+#
+# Read by `wp dist-archive` and by WordPress.org deploy tools. One path or
+# pattern per line; a leading slash anchors it to the plugin root. List
+# exclusions only: some of these tools do not support negation.
+#
+# The release workflow builds its package from an allowlist.
+# .github/scripts/check-plugin-package.py fails when this file and that
+# allowlist would ship different tracked files, so keep the two in step.
+
+# Version control and repository automation
+/.git
+/.github
+/.gitattributes
+/.gitignore
+/.distignore
+
+# Editor, agent, and local-only files
+/.claude
+/.idea
+/.private
+/.vscode
+/AGENTS.md
+/CLAUDE.md
+/GEMINI.md
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Development tooling and its configuration
+/.markdownlint.json
+/.yamllint.yml
+/composer.json
+/composer.lock
+/phpcs.xml
+/phpmd.xml
+/phpstan.neon
+/phpunit.xml
+/psalm.xml
+/renovate.json
+/bin
+/stubs
+/tests
+
+# Repository documentation that the package does not carry
+/SECURITY.md
+
+# Dependencies, caches, and build output
+/vendor
+/node_modules
+/build
+/coverage
+/dist
+/plugin-check-build
+/.cache
+/.mypy_cache
+/.phpunit.cache
+/.phpunit.result.cache
+/.ruff_cache
+__pycache__
+*.log
+*.sql
+*.tar.gz
+*.zip

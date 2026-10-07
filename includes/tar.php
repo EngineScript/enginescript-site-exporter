@@ -89,9 +89,7 @@ function sse_tar_build_header( string $name, int $size, int $mode, int $mtime, s
  * @return array<int,int> Byte values.
  */
 function sse_tar_get_byte_values( string $bytes ): array {
-	$values = unpack( 'C*', $bytes );
-
-	return is_array( $values ) ? array_map( 'intval', $values ) : [];
+	return array_map( 'ord', str_split( $bytes ) );
 }
 
 /**

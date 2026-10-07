@@ -120,6 +120,8 @@ if ( ! defined( 'SSE_PLUGIN_FILE' ) ) {
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/security.php';
 require_once __DIR__ . '/includes/admin-page.php';
+require_once __DIR__ . '/includes/lease.php';
+require_once __DIR__ . '/includes/process.php';
 require_once __DIR__ . '/includes/export.php';
 require_once __DIR__ . '/includes/tar.php';
 require_once __DIR__ . '/includes/archive.php';

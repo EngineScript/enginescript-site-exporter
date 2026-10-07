@@ -19,6 +19,7 @@ The automated PHPUnit test suite has failed in the EngineScript Site Exporter pl
 ### Matrix Configuration
 
 This test suite runs on multiple PHP versions:
+
 - **PHP 8.2** - PHPUnit 9.6 for WordPress test library compatibility
 - **PHP 8.3** - PHPUnit 9.6 for WordPress test library compatibility
 - **PHP 8.4** - PHPUnit 9.6 for WordPress test library compatibility
@@ -28,7 +29,7 @@ This test suite runs on multiple PHP versions:
 
 This issue has been automatically created because one or more PHPUnit test cases failed.
 
-#### Possible Causes:
+#### Possible Causes
 
 1. **PHP Version Incompatibility**: Code may not be compatible with the PHP version being tested
 2. **Test Coverage Gap**: New features may lack corresponding test cases
@@ -36,7 +37,7 @@ This issue has been automatically created because one or more PHPUnit test cases
 4. **Assertion Failures**: Test expectations no longer match implementation
 5. **Dependency Conflicts**: Package versions may have changed
 
-#### Recommended Actions:
+#### Recommended Actions
 
 1. **Review Logs**: Check the workflow logs for specific test failure details
 2. **Local Reproduction**: Run tests locally with the same PHP version
@@ -44,7 +45,7 @@ This issue has been automatically created because one or more PHPUnit test cases
 4. **Fix Issues**: Update either the code or tests as needed
 5. **Validate**: Re-run PHPUnit to confirm all tests pass
 
-#### Local Testing Commands:
+#### Local Testing Commands
 
 ```bash
 # Install dependencies for the PHP 8.2+ baseline
@@ -60,7 +61,7 @@ vendor/bin/phpunit tests/EngineScriptSiteExporterTest.php
 vendor/bin/phpunit --verbose
 ```
 
-#### PHPUnit Version Notes:
+#### PHPUnit Version Notes
 
 The WordPress compatibility workflow pins PHPUnit 9.6 because the WordPress test library still calls APIs removed in PHPUnit 10+.
 
@@ -71,5 +72,6 @@ composer test
 ### Support
 
 For more information about PHPUnit:
+
 - [PHPUnit Documentation](https://phpunit.de/documentation.html)
 - [WordPress Testing Documentation](https://developer.wordpress.org/plugins/testing/)

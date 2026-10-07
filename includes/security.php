@@ -5,11 +5,7 @@
  * @package EngineScript_Site_Exporter
  */
 
-/**
- * Prevent direct execution of this component.
- *
- * @psalm-suppress ParadoxicalCondition Files may be requested outside the loaded plugin bootstrap.
- */
+// Prevent direct execution of this component.
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -249,8 +245,8 @@ function sse_get_export_file_native_identity( string $file_path ): array|WP_Erro
 		return new WP_Error( 'file_identity_error', __( 'Could not verify the identity of the export file.', 'enginescript-site-exporter' ) );
 	}
 
-	$link_identity = sse_normalize_native_file_identity( @lstat( $file_path ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_lstat,WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
-	$file_identity = sse_normalize_native_file_identity( @stat( $file_path ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_stat,WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
+	$link_identity = sse_normalize_native_file_identity( @lstat( $file_path ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
+	$file_identity = sse_normalize_native_file_identity( @stat( $file_path ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
 	if ( null === $link_identity || null === $file_identity || $link_identity !== $file_identity ) {
 		return new WP_Error( 'file_identity_error', __( 'Could not verify the identity of the export file.', 'enginescript-site-exporter' ) );
 	}

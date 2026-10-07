@@ -5,11 +5,7 @@
  * @package EngineScript_Site_Exporter
  */
 
-/**
- * Prevent direct execution of this component.
- *
- * @psalm-suppress ParadoxicalCondition Files may be requested outside the loaded plugin bootstrap.
- */
+// Prevent direct execution of this component.
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }

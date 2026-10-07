@@ -7,10 +7,11 @@ import argparse
 import json
 import os
 import re
-import subprocess
+import subprocess  # nosec B404
 import sys
 from pathlib import Path
 
+# Bandit: every subprocess call in this file runs a fixed argument list without a shell.
 
 WORDPRESS_LATEST_VERSION = os.environ.get("WORDPRESS_LATEST_VERSION")
 WORDPRESS_VERSION_CHECK_FILE = Path("wordpress-version-check.json")
@@ -176,7 +177,7 @@ def find_tested_up_to_entries(
 
 
 def get_scanned_files(excluded_dirs: set[str]) -> list[Path]:
-    tracked = subprocess.run(
+    tracked = subprocess.run(  # nosec B603 B607
         ["git", "ls-files", "-z"], check=True, capture_output=True
     ).stdout.decode("utf-8").split("\0")
     if not all(path.as_posix() in tracked for path in METADATA_PATHS):

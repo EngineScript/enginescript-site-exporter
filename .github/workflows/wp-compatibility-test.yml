@@ -43,7 +43,7 @@ jobs:
           # Always fetch the latest commit, disable any caching
           fetch-depth: 0
           clean: true
-      
+
       - name: Setup PHP 8.3
         id: setup_php_8_3
         uses: shivammathur/setup-php@v2
@@ -52,13 +52,13 @@ jobs:
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
           coverage: none
           tools: composer:v2
-      
+
       - name: Clear any existing composer cache
         id: clear_any_existing_composer_cache
         run: |
           composer clear-cache || true
           rm -rf vendor/ composer.lock || true
-      
+
       - name: Install Composer dependencies (no cache)
         id: install_composer_dependencies_no_cache
         run: |
@@ -109,7 +109,7 @@ jobs:
           # Production-style plugin directory. Excludes repo-only files such as
           # .github, GEMINI.md, and other development artifacts.
           build-dir: './plugin-check-build/enginescript-site-exporter'
-          
+
           # Configure which categories to check
           categories: |
             accessibility
@@ -117,23 +117,23 @@ jobs:
             performance
             plugin_repo
             security
-          
+
           # Whether to include experimental checks
           include-experimental: false
-          
+
           # Don't ignore warnings or errors
           ignore-warnings: false
           ignore-errors: false
-          
+
           # WordPress version to use
           wp-version: 'latest'
-      
+
       - name: Handle plugin check completion
         id: handle_plugin_check_completion
         if: ${{ always() }}
         run: |
           echo "Plugin Check job status: ${{ job.status }}"
-      
+
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
         if: ${{ always() }}
@@ -193,7 +193,7 @@ jobs:
         with:
           filename: .github/ISSUE_TEMPLATE/plugin-check-failure.md
           update_existing: false
-          
+
       - name: Mark job as failed after issue creation
         id: mark_job_as_failed_after_issue_creation
         if: ${{ failure() }}
@@ -328,16 +328,16 @@ jobs:
           composer global require --dev wp-coding-standards/wpcs:"^3.4.1"
           composer global require --dev automattic/vipwpcs:"^3.0.1"
           composer global require --dev dealerdirect/phpcodesniffer-composer-installer:"^1.2"
-          
+
           # Add composer bin to PATH
           VIP_BIN_DIR="$(composer global config bin-dir --absolute)"
           echo "$VIP_BIN_DIR" >> "$GITHUB_PATH"
           echo "VIP_PHPCS=$VIP_BIN_DIR/phpcs" >> "$GITHUB_ENV"
           export PATH="$VIP_BIN_DIR:$PATH"
-          
+
           # Verify installation and show available standards
           "$VIP_BIN_DIR/phpcs" -i
-          
+
           # Verify VIP standards are available
           "$VIP_BIN_DIR/phpcs" -i | grep -F WordPress-VIP-Go
 
@@ -367,10 +367,10 @@ jobs:
               <rule ref="WordPress-VIP-Go">
                   <!-- Allow short array syntax [] instead of array() -->
                   <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
-                  
+
                   <!-- Allow longer lines for readability in some cases -->
                   <exclude name="Generic.Files.LineLength.TooLong"/>
-                  
+
                   <!-- Exclude JS-related sniffs to avoid deprecation warnings -->
                   <exclude name="WordPressVIPMinimum.JS"/>
               </rule>
@@ -398,10 +398,10 @@ jobs:
 
               <!-- Show progress -->
               <arg value="p"/>
-              
+
               <!-- Show sniff codes in all reports -->
               <arg value="s"/>
-              
+
               <!-- Use colors in output -->
               <arg name="colors"/>
 
@@ -416,7 +416,7 @@ jobs:
           echo "🚀 Running WordPress VIP Go Coding Standards scan..."
           echo "📋 This scan focuses on VIP-specific requirements including:"
           echo "   • File system operation restrictions"
-          echo "   • Performance and caching best practices"  
+          echo "   • Performance and caching best practices"
           echo "   • Security vulnerabilities specific to VIP platform"
           echo "   • User experience guidelines for enterprise WordPress"
           echo "   • Uncached function usage patterns"
@@ -424,7 +424,7 @@ jobs:
           echo "📦 Using standards: WordPress-VIP-Go, WordPressVIPMinimum"
           echo "🎯 Scanning PHP files only (excluding JS/CSS to avoid deprecation warnings)"
           echo ""
-          
+
           # Run VIP-specific PHPCS scan using our custom configuration
           # Only scan PHP files to avoid JS/CSS deprecation warnings
           "$VIP_PHPCS" --standard=phpcs-vip.xml --extensions=php . || {
@@ -436,7 +436,7 @@ jobs:
             echo ""
             exit 1
           }
-          
+
           echo "✅ WordPress VIP coding standards check completed successfully!"
 
       - name: Preserve diagnostic summary
@@ -538,7 +538,7 @@ jobs:
         id: install_composer_dependencies_no_cache
         run: |
           composer install --prefer-dist --no-progress --no-cache
-          
+
       - name: Verify phpmd.xml content
         id: verify_phpmd_xml_content
         run: |
@@ -896,7 +896,7 @@ jobs:
         id: install_composer_dependencies_no_cache
         run: |
           composer install --prefer-dist --no-progress --no-cache
-          
+
       - name: Verify phpstan.neon content
         id: verify_phpstan_neon_content
         run: |
@@ -1084,22 +1084,22 @@ jobs:
           set -euo pipefail
           set +x
           umask 077
-          
+
           if [ $# -lt 3 ]; then
             echo "usage: $0 <db-name> <db-user> <db-pass> [db-host] [wp-version] [skip-database-creation]"
             exit 1
           fi
-          
+
           DB_NAME=$1
           DB_USER=$2
           DB_PASS=$3
           DB_HOST=${4-localhost}
           WP_VERSION=${5-latest}
           SKIP_DB_CREATE=${6-false}
-          
+
           WP_TESTS_DIR=${WP_TESTS_DIR-/tmp/wordpress-tests-lib}
           WP_CORE_DIR=${WP_CORE_DIR-/tmp/wordpress/}
-          
+
           # Only the isolated GitHub service database is in scope.
           [[ $DB_NAME == wordpress_test && $DB_HOST == 127.0.0.1:3306 ]]
           [[ $SKIP_DB_CREATE == true || $SKIP_DB_CREATE == false ]]
@@ -1238,20 +1238,20 @@ jobs:
            *
            * @package EngineScript_Site_Exporter
            */
-          
+
           define( 'WP_TESTS_PHPUNIT_POLYFILLS_PATH', dirname( __DIR__ ) . '/vendor/yoast/phpunit-polyfills' );
           require_once '/tmp/wordpress-tests-lib/includes/functions.php';
-          
+
           function _manually_load_plugin() {
               add_filter('widgets_init', function() {
                   return;
               }, 0);
-              
+
               require dirname( dirname( __FILE__ ) ) . '/enginescript-site-exporter.php';
           }
-          
+
           tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
-          
+
           require '/tmp/wordpress-tests-lib/includes/bootstrap.php';
           EOF
 
@@ -1265,7 +1265,7 @@ jobs:
            *
            * @package EngineScript_Site_Exporter
            */
-          
+
           class EngineScriptSiteExporterTest extends WP_UnitTestCase {
               public function tear_down() {
                   sse_clear_current_export_lease();
@@ -1514,11 +1514,11 @@ jobs:
                       rmdir($base_dir);
                   }
               }
-              
+
               public function test_wordpress_version_compatibility() {
                   global $wp_version;
                   $this->assertNotEmpty($wp_version, 'WordPress version should be available');
-                  
+
                   // Test that we're running on a supported WordPress version
                   $min_wp_version = '6.8';
                   $this->assertTrue(version_compare(preg_replace('/-src$/', '', $wp_version), $min_wp_version, '>='),

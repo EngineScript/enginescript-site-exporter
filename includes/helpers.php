@@ -5,11 +5,7 @@
  * @package EngineScript_Site_Exporter
  */
 
-/**
- * Prevent direct execution of this component.
- *
- * @psalm-suppress ParadoxicalCondition Files may be requested outside the loaded plugin bootstrap.
- */
+// Prevent direct execution of this component.
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -594,7 +590,7 @@ function sse_get_exporter_admin_page_url(): string {
  */
 function sse_redirect_to_exporter_page(): never {
 	wp_safe_redirect( sse_get_exporter_admin_page_url() );
-	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required after wp_safe_redirect().
+	exit;
 }
 
 /**
@@ -612,7 +608,7 @@ function sse_wp_die( string $message, int $response = 500 ): never {
 		esc_html( $message ),
 		'',
 		[
-			'response' => (int) absint( $response ),
+			'response' => absint( $response ),
 		]
 	);
 }

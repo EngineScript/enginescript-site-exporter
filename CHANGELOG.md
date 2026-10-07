@@ -63,6 +63,8 @@ see the current README and Security Policy for supported behavior and guidance.
 - **Expired Exports**: A download or delete request for an archive that no longer exists now gets a plain "expired or was deleted" message and no security record.
 - **Housekeeping on Networks**: The daily housekeeping event is scheduled on a network's main site only; other sites drop an event that an earlier version scheduled there.
 - **Dead Code Removal**: Removed an unneeded `require_once`, unused array keys and parameters, a Windows path form in POSIX-only code, a call to a function WordPress does not define, and other unreachable branches. No behavior changes.
+- **Stricter Analysis**: PHPStan now runs at level `max` and Psalm at error level 2. Exclusions and overrides in `phpcs.xml`, `phpmd.xml`, and `phpstan.neon` that had no effect were removed, so the rules they named apply again. Added a yamllint configuration and a `.distignore`; the package check fails when `.distignore` and the release file list disagree.
+- **Component Files**: The export lease functions and the WP-CLI process functions moved, unchanged, from `includes/export.php` into `includes/lease.php` and `includes/process.php`. Inline analyzer suppressions that no longer silenced any rule were removed, and the rest name only the rules that apply.
 - **Bounded Request Timer**: Align PHP's request execution timer with the filterable export-time policy, capped at 30 minutes, so ordinary 30-second defaults do not interrupt valid archives outside the plugin's owner-bound recovery and resource controls.
 
 ### Accessibility

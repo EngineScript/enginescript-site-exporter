@@ -21,13 +21,14 @@ The automated compatibility test has failed for the following environment:
 
 This issue has been automatically created because the EngineScript Site Exporter plugin failed compatibility testing with this specific WordPress and PHP version combination. This could indicate:
 
-#### Potential Issues:
+#### Potential Issues
+
 1. **PHP Compatibility**: Code may use features not available in PHP {{ env.PHP_VERSION }}
 2. **WordPress API Changes**: WordPress {{ env.WP_VERSION }} may have deprecated or changed APIs
 3. **Plugin Dependencies**: Required extensions or functions may not be available
 4. **WordPress Plugin Check Violations**: Code may not meet standards for this version combination
 
-#### Recommended Actions:
+#### Recommended Actions
 
 1. **Review Logs**: Check the workflow logs for specific error messages and stack traces
 2. **Local Testing**: Test locally with WordPress {{ env.WP_VERSION }} and PHP {{ env.PHP_VERSION }} to reproduce the issue
@@ -35,7 +36,8 @@ This issue has been automatically created because the EngineScript Site Exporter
 4. **Plugin Check**: Run WordPress Plugin Check locally against this environment
 5. **Update Code**: Make necessary updates to ensure compatibility across supported versions
 
-#### Testing Commands:
+#### Testing Commands
+
 ```bash
 # Test with specific versions using Docker
 docker run --rm -v $(pwd):/app wordpress:{{ env.WP_VERSION }}-php{{ env.PHP_VERSION }}-apache

@@ -163,6 +163,8 @@ Released entries describe their historical versions, including earlier tool resu
 * **Architecture**: On a network, the daily housekeeping event is scheduled on the main site only
 * **Accessibility**: Presentational settings table, a described size control, an announced new-tab link, per-archive control labels, and an announced running-export status
 * **Architecture**: PHP's request timer now aligns with the filterable export-time policy, capped at 30 minutes, instead of allowing a default 30-second limit to abort valid archive work
+* **Architecture**: PHPStan now runs at level `max` and Psalm at error level 2; analyzer exclusions that had no effect were removed; added a yamllint configuration and a `.distignore` that the package check enforces
+* **Architecture**: Moved the export lease functions and the WP-CLI process functions, unchanged, into `includes/lease.php` and `includes/process.php`; removed inline analyzer suppressions that no longer silenced any rule
 * **PHP**: Added native PHP 8.2 union types and modern syntax, and moved 64-bit/archive prerequisite checks before directory, WP-CLI, resource-limit, or database work
 * **Accessibility**: Updated warning text for WCAG AA normal-text contrast and forced-colors support while preserving keyboard focus and responsive action wrapping
 * **Tooling**: Removed broad Psalm suppressions in favor of narrow source-boundary annotations; strict Psalm level 1 and PHPStan max now report no errors without new suppressions or weaker policy

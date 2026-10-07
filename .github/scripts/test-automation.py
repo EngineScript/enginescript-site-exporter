@@ -14,13 +14,15 @@ import json
 import os
 import re
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 import textwrap
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 from zipfile import ZipFile
+
+# Bandit: every subprocess call in this file runs a fixed argument list without a shell.
 
 
 def load_helper(filename: str):
@@ -50,12 +52,12 @@ class AutomationTests(unittest.TestCase):
         previous = Path.cwd()
         os.chdir(self.root)
         self.addCleanup(os.chdir, previous)
-        subprocess.run(["git", "init", "--quiet"], check=True)
+        subprocess.run(["git", "init", "--quiet"], check=True)  # nosec B603 B607
         self.write("enginescript-site-exporter.php", "<?php\n/**\n * Tested up to: 6.8\n */\n")
         self.write("readme.txt", "=== Fixture ===\nTested up to: 6.8\n\nTested up to: historical prose\n")
         self.write("README.md", "Tested up to: historical prose\n")
         self.write(".private/review.md", "Tested up to: historical prose\n")
-        subprocess.run(["git", "add", "--", "enginescript-site-exporter.php", "readme.txt", "README.md"], check=True)
+        subprocess.run(["git", "add", "--", "enginescript-site-exporter.php", "readme.txt", "README.md"], check=True)  # nosec B603 B607
 
     def write(self, name, content):
         path = self.root / name
@@ -92,10 +94,10 @@ class AutomationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 self.findings()
         self.write("readme.txt", "Tested up to: 6.8\n\n")
-        subprocess.run(["git", "rm", "--cached", "--force", "--quiet", "readme.txt"], check=True)
+        subprocess.run(["git", "rm", "--cached", "--force", "--quiet", "readme.txt"], check=True)  # nosec B603 B607
         with self.assertRaises(ValueError):
             self.findings()
-        subprocess.run(["git", "add", "readme.txt"], check=True)
+        subprocess.run(["git", "add", "readme.txt"], check=True)  # nosec B603 B607
         (self.root / "readme.txt").unlink()
         (self.root / "readme.txt").symlink_to("README.md")
         with self.assertRaises(ValueError):
@@ -124,20 +126,21 @@ class AutomationTests(unittest.TestCase):
     def test_release_requires_exact_commit_and_every_quality_job(self):
         script = workflow_step("release.yml", "Require successful quality checks for this commit")
         run_filter = re.search(
-            r"RUN_ID=\$\(jq\b.*?'\n(.*?)\n\s*' \"\$RUNNER_TEMP/quality-runs.json\"\)", script, re.S
+            r"RUN_ID=\$\(jq\b.*?'\n(.*?)\n\s*' \"\$RUNNER_TEMP/quality-runs.json\"\)", script, re.DOTALL
         ).group(1)
         jobs_filter = re.search(
-            r"jq -e '\n(.*?)\n\s*' \"\$RUNNER_TEMP/quality-jobs.json\"", script, re.S
+            r"jq -e '\n(.*?)\n\s*' \"\$RUNNER_TEMP/quality-jobs.json\"", script, re.DOTALL
         ).group(1)
         run = {"id": 1, "head_sha": "abc", "head_branch": "main",
                "head_repository": {"full_name": "fixture/repo"},
                "event": "push", "status": "completed", "conclusion": "success"}
 
         def accepts_run(runs):
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607
                 ["jq", "-er", "--arg", "sha", "abc", "--arg", "repo", "fixture/repo",
                  "--arg", "branch", "main", run_filter],
-                input=json.dumps({"workflow_runs": runs}), text=True, capture_output=True
+                input=json.dumps({"workflow_runs": runs}), text=True, capture_output=True,
+                check=False
             )
             return result.returncode == 0
 
@@ -149,16 +152,16 @@ class AutomationTests(unittest.TestCase):
             self.assertFalse(accepts_run([dict(run, **changes)]))
         self.assertFalse(accepts_run([run, dict(run, id=2, conclusion="failure")]))
         workflow = (WORKFLOWS / "wp-compatibility-test.yml").read_text()
-        names = [name for name in re.findall(r"^    name: (.+)$", workflow, re.M) if "${{" not in name]
+        names = [name for name in re.findall(r"^    name: (.+)$", workflow, re.MULTILINE) if "${{" not in name]
         names += [f"Test WordPress {wp} with PHP {php} (highest deps)"
                   for php in ("8.2", "8.3", "8.4", "8.5") for wp in ("6.8", "latest", "nightly")]
         names.append("Test WordPress latest with PHP 8.2 (lowest deps)")
         jobs = [{"name": name, "status": "completed", "conclusion": "success"} for name in names]
 
         def accepts_jobs(records):
-            return subprocess.run(
+            return subprocess.run(  # nosec B603 B607
                 ["jq", "-e", jobs_filter], input=json.dumps([{"jobs": records}]),
-                text=True, capture_output=True
+                text=True, capture_output=True, check=False
             ).returncode == 0
 
         self.assertEqual(20, len(jobs))
@@ -182,11 +185,11 @@ class AutomationTests(unittest.TestCase):
             with self.subTest(status=status):
                 output.write_text("")
                 env = dict(os.environ, PATH=f"{self.root / 'bin'}:{os.environ['PATH']}",
-                           GH_TOKEN="fixture-only", GITHUB_OUTPUT=str(output), VERSION="1.2.3",
+                           GH_TOKEN="fixture-only", GITHUB_OUTPUT=str(output), VERSION="1.2.3",  # nosec B106
                            GITHUB_API_URL="https://api.invalid", GITHUB_REPOSITORY="fixture/repo",
                            FIXTURE_HTTP_STATUS=status, FIXTURE_CURL_EXIT=code)
-                result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script],
-                                        env=env, capture_output=True, text=True)
+                result = subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script],  # nosec B603 B607
+                                        env=env, capture_output=True, text=True, check=False)
                 if expected is None:
                     self.assertNotEqual(0, result.returncode)
                     self.assertEqual("", output.read_text())
@@ -199,13 +202,13 @@ class AutomationTests(unittest.TestCase):
         filename = "languages/enginescript-site-exporter.pot"
         baseline = 'msgid ""\nmsgstr ""\n"POT-Creation-Date: old\\n"\n\n'
         self.write(filename, baseline)
-        subprocess.run(["git", "add", "--", filename], check=True)
+        subprocess.run(["git", "add", "--", filename], check=True)  # nosec B603 B607
         output = self.root / "step-output"
         env = dict(os.environ, PLUGIN_SLUG=package.SLUG, GITHUB_OUTPUT=str(output))
 
         def check(expected):
             output.write_text("")
-            subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env=env,
+            subprocess.run(["bash", "-e", "-o", "pipefail", "-c", script], env=env,  # nosec B603 B607
                            check=True, capture_output=True, text=True)
             self.assertEqual(f"has_changes={expected}\n", output.read_text())
 
@@ -215,15 +218,43 @@ class AutomationTests(unittest.TestCase):
         self.assertEqual(baseline, (self.root / filename).read_text())
         self.write(filename, baseline + "".join(f'msgid "message {i}"\nmsgstr ""\n\n' for i in range(3000)))
         check("true")
-        subprocess.run(["git", "rm", "--cached", "--force", "--quiet", "--", filename], check=True)
+        subprocess.run(["git", "rm", "--cached", "--force", "--quiet", "--", filename], check=True)  # nosec B603 B607
         check("true")
         self.assertTrue((self.root / filename).is_file())
 
-    def test_package_rejects_missing_extra_changed_and_linked_members(self):
+    def add_release_sources(self):
+        """Track one file of every kind the package ships, and the real .distignore."""
         for name in ("CHANGELOG.md", "LICENSE", "includes/fixture.php", "css/admin.css",
                      "js/admin.js", "languages/enginescript-site-exporter.pot"):
             self.write(name, "fixture\n")
-        subprocess.run(["git", "add", "--", "CHANGELOG.md", "LICENSE", "includes", "css", "js", "languages"], check=True)
+        self.write(".distignore", (WORKFLOWS.parents[1] / ".distignore").read_text(encoding="utf-8"))
+        subprocess.run(["git", "add", "--", ".distignore"], check=True)  # nosec B603 B607
+
+    def test_distignore_must_keep_exactly_the_release_allowlist(self):
+        self.add_release_sources()
+        subprocess.run(["git", "add", "--", "CHANGELOG.md", "LICENSE", "includes", "css", "js", "languages"], check=True)  # nosec B603 B607
+        shipped = ["CHANGELOG.md", "LICENSE", "README.md", "css/admin.css", "enginescript-site-exporter.php",
+                   "includes/fixture.php", "js/admin.js", "languages/enginescript-site-exporter.pot", "readme.txt"]
+        self.assertEqual(shipped, sorted(package.expected_contents(self.root)))
+        rules = (self.root / ".distignore").read_text(encoding="utf-8")
+        # A tracked file that neither list names would ship through .distignore alone.
+        self.write("new-tool.json", "{}\n")
+        subprocess.run(["git", "add", "--", "new-tool.json"], check=True)  # nosec B603 B607
+        with self.assertRaisesRegex(ValueError, "new-tool.json"):
+            package.expected_contents(self.root)
+        self.write(".distignore", rules + "/new-tool.json\n")
+        self.assertEqual(shipped, sorted(package.expected_contents(self.root)))
+        # A rule that drops a shipped file, and a missing file, are refused too.
+        self.write(".distignore", rules + "/new-tool.json\n/languages\n")
+        with self.assertRaisesRegex(ValueError, "languages/enginescript-site-exporter.pot"):
+            package.expected_contents(self.root)
+        (self.root / ".distignore").unlink()
+        with self.assertRaisesRegex(ValueError, "missing"):
+            package.expected_contents(self.root)
+
+    def test_package_rejects_missing_extra_changed_and_linked_members(self):
+        self.add_release_sources()
+        subprocess.run(["git", "add", "--", "CHANGELOG.md", "LICENSE", "includes", "css", "js", "languages"], check=True)  # nosec B603 B607
         build = self.root / "build" / package.SLUG
         for name, content in package.expected_contents(self.root).items():
             destination = build / name

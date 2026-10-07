@@ -147,9 +147,11 @@ jobs:
         id: get_changelog
         run: |
           CHANGELOG_ENTRY=$(awk -v ver="${{ steps.get_version.outputs.version }}" 'BEGIN{flag=0; target="^## \\[?" ver "\\]?([[:space:]-]|$)"} $0 ~ target {flag=1; print; next} /^## \[?[0-9]+\.[0-9]+\.[0-9]+\]?([[:space:]-]|$)/ {flag=0} flag {print}' CHANGELOG.md | tail -n +2)
-          echo "changelog<<EOF" >> "$GITHUB_OUTPUT"
-          echo "$CHANGELOG_ENTRY" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "changelog<<EOF"
+            echo "$CHANGELOG_ENTRY"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Create Release
         if: steps.check_release.outputs.exists == 'false'

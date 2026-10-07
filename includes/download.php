@@ -5,11 +5,7 @@
  * @package EngineScript_Site_Exporter
  */
 
-/**
- * Prevent direct execution of this component.
- *
- * @psalm-suppress ParadoxicalCondition Files may be requested outside the loaded plugin bootstrap.
- */
+// Prevent direct execution of this component.
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -20,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 2.0.0
  * @return void
  */
-function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+function sse_handle_secure_download(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
 	$filename        = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_text_field( wp_unslash( $_GET['file'] ) ) : '';
 	$export_dir_name = isset( $_GET['export_dir'] ) && is_string( $_GET['export_dir'] ) ? sanitize_text_field( wp_unslash( $_GET['export_dir'] ) ) : '';
@@ -58,7 +54,7 @@ function sse_handle_secure_download(): void { // phpcs:ignore WordPress.Security
  * @since 2.0.0
  * @return void
  */
-function sse_handle_export_deletion(): void { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+function sse_handle_export_deletion(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
 	$filename        = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_text_field( wp_unslash( $_POST['file'] ) ) : '';
 	$export_dir_name = isset( $_POST['export_dir'] ) && is_string( $_POST['export_dir'] ) ? sanitize_text_field( wp_unslash( $_POST['export_dir'] ) ) : '';
@@ -225,7 +221,7 @@ function sse_open_validated_export_download( array $file_data ): array|WP_Error 
 		return new WP_Error( 'download_open_failed', __( 'Could not serve the file download.', 'enginescript-site-exporter' ) );
 	}
 
-	$handle_identity = sse_normalize_native_file_identity( fstat( $handle ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fstat -- The streamed handle's native identity must match path validation.
+	$handle_identity = sse_normalize_native_file_identity( fstat( $handle ) );
 	$current_path    = sse_validate_file_output_security( $file_data['filepath'] );
 	if ( is_wp_error( $current_path ) || $current_path !== $resolved_path ) {
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the exact local download handle.
@@ -292,7 +288,7 @@ function sse_prepare_download_output(): true|WP_Error {
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
 function sse_output_file_content( $handle, string $filename, int $expected_size ): never {
-	$streamed_bytes = @fpassthru( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fpassthru,WordPress.Security.EscapeOutput.OutputNotEscaped,WordPress.PHP.NoSilencedErrors.Discouraged -- Stream failure must not inject warning text into an attachment response.
+	$streamed_bytes = @fpassthru( $handle ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Stream failure must not inject warning text into an attachment response.
 	fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the exact local download handle.
 
 	if ( $streamed_bytes !== $expected_size ) {
@@ -301,7 +297,7 @@ function sse_output_file_content( $handle, string $filename, int $expected_size 
 		sse_log( 'Secure file download served from an identity-checked handle: ' . $filename, 'info' );
 	}
 
-	exit; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Required to terminate after streaming a download response.
+	exit;
 }
 
 /**

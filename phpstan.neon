@@ -2,14 +2,11 @@ includes:
     - vendor/szepeviktor/phpstan-wordpress/extension.neon
 
 parameters:
-    level: 6
+    level: max
     paths:
         - enginescript-site-exporter.php
         - includes/
 
-    excludePaths:
-        - .github
-    
     bootstrapFiles:
         - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
     

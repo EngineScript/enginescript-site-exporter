@@ -5,11 +5,7 @@
  * @package EngineScript_Site_Exporter
  */
 
-/**
- * Prevent direct execution of this component.
- *
- * @psalm-suppress ParadoxicalCondition Files may be requested outside the loaded plugin bootstrap.
- */
+// Prevent direct execution of this component.
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -261,7 +257,7 @@ function sse_create_bundle_staging_directories( array $bundle_paths ): true|WP_E
  */
 function sse_get_generated_file_size( string $file_path ): int|WP_Error {
 	clearstatcache( true, $file_path );
-	$file_size = @filesize( $file_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_filesize,WordPress.PHP.NoSilencedErrors.Discouraged -- A disappearing generated file must return a bounded error without leaking its private path.
+	$file_size = @filesize( $file_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A disappearing generated file must return a bounded error without leaking its private path.
 	if ( false === $file_size ) {
 		return new WP_Error( 'export_generated_size_unknown', __( 'Could not verify the size of the generated export.', 'enginescript-site-exporter' ) );
 	}
@@ -350,7 +346,7 @@ function sse_stream_database_to_gzip( $source_handle, $target_handle, string $ta
 		}
 
 		$chunk = fread( $source_handle, 1024 * 1024 ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Streaming a large local SQL file.
-		if ( false === $chunk || false === gzwrite( $target_handle, $chunk ) || ! fflush( $target_handle ) ) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- Gzip streaming and flush are required for live output accounting.
+		if ( false === $chunk || false === gzwrite( $target_handle, $chunk ) || ! fflush( $target_handle ) ) {
 			return new WP_Error( 'db_compress_write_failed', __( 'Could not compress the database dump.', 'enginescript-site-exporter' ) );
 		}
 
@@ -383,7 +379,7 @@ function sse_create_compressed_database_file( string $source_path, string $targe
 		return new WP_Error( 'db_compress_source_failed', __( 'Could not open the database dump for compression.', 'enginescript-site-exporter' ) );
 	}
 
-	$target_handle = @gzopen( $target_path, 'wb9' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen,WordPress.PHP.NoSilencedErrors.Discouraged -- Gzip creation failures return a bounded error without leaking the private path.
+	$target_handle = @gzopen( $target_path, 'wb9' ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Gzip creation failures return a bounded error without leaking the private path.
 	if ( false === $target_handle ) {
 		fclose( $source_handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing local file handle opened above.
 		sse_cleanup_files( [ $target_path ] );
@@ -621,7 +617,7 @@ function sse_preflight_combined_zip_close( string $zip_path, int $projected_zip_
 	}
 
 	clearstatcache( true, $zip_path );
-	$current_zip_bytes = @filesize( $zip_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_filesize,WordPress.PHP.NoSilencedErrors.Discouraged -- Some libzip builds defer creating the output until close; that expected state counts as zero current bytes.
+	$current_zip_bytes = @filesize( $zip_path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Some libzip builds defer creating the output until close; that expected state counts as zero current bytes.
 	$current_zip_bytes = false === $current_zip_bytes ? 0 : $current_zip_bytes;
 	$remaining_bytes   = max( 0, $projected_zip_bytes - $current_zip_bytes );
 	return sse_check_generated_export_capacity( $remaining_bytes, dirname( $zip_path ) );

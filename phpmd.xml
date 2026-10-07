@@ -12,7 +12,6 @@
     <exclude-pattern>*/.private/*</exclude-pattern>
     <exclude-pattern>*/node_modules/*</exclude-pattern>
     <exclude-pattern>*/tests/*</exclude-pattern>
-    <exclude-pattern>*/assets/*</exclude-pattern>
     <exclude-pattern>*/stubs/*</exclude-pattern>
 
     <!-- Clean Code Rules (with WordPress exceptions) -->
@@ -21,54 +20,18 @@
         <exclude name="ElseExpression"/>
         <!-- Global WordPress and PHP classes do not require namespace imports here. -->
         <exclude name="MissingImport"/>
-        <!-- Exclude StaticAccess - Allow for singleton patterns common in WordPress -->
-        <exclude name="StaticAccess"/>
         <!-- Exclude BooleanArgumentFlag - WordPress hooks often use boolean flags -->
         <exclude name="BooleanArgumentFlag"/>
     </rule>
     
     <!-- Code Size Rules (WordPress-adjusted) -->
     <rule ref="rulesets/codesize.xml">
-        <!-- Exclude TooManyPublicMethods - WordPress plugins need many public hook callbacks -->
-        <exclude name="TooManyPublicMethods"/>
-        <!-- Exclude TooManyMethods - WordPress classes often have many methods for hooks -->
-        <exclude name="TooManyMethods"/>
-        <!-- Exclude ExcessiveClassComplexity - WordPress plugins can be complex -->
-        <exclude name="ExcessiveClassComplexity"/>
         <!-- Re-added below with WordPress-adjusted thresholds -->
         <exclude name="CyclomaticComplexity"/>
         <exclude name="NPathComplexity"/>
     </rule>
     
     <!-- WordPress-adjusted complexity limits -->
-    <rule ref="rulesets/codesize.xml/TooManyPublicMethods">
-        <properties>
-            <!-- WordPress plugins often need many public hook callbacks -->
-            <property name="maxmethods" value="20"/>
-        </properties>
-    </rule>
-    
-    <rule ref="rulesets/codesize.xml/TooManyMethods">
-        <properties>
-            <!-- WordPress classes often have many methods for different hooks -->
-            <property name="maxmethods" value="25"/>
-        </properties>
-    </rule>
-    
-    <rule ref="rulesets/codesize.xml/ExcessiveMethodLength">
-        <properties>
-            <!-- Allow longer methods for WordPress template functions -->
-            <property name="minimum" value="150"/>
-        </properties>
-    </rule>
-    
-    <rule ref="rulesets/codesize.xml/ExcessiveClassLength">
-        <properties>
-            <!-- WordPress plugin main classes can be large -->
-            <property name="minimum" value="1500"/>
-        </properties>
-    </rule>
-    
     <rule ref="rulesets/codesize.xml/CyclomaticComplexity">
         <properties>
             <!-- WordPress functions often have conditional logic for hooks -->
@@ -87,26 +50,16 @@
     <rule ref="rulesets/controversial.xml">
         <!-- Request handlers use superglobals; each access still requires boundary validation. -->
         <exclude name="Superglobals"/>
-        <!-- Exclude CamelCaseClassName - WordPress uses Snake_Case_Class_Names -->
-        <exclude name="CamelCaseClassName"/>
-        <!-- Exclude CamelCaseMethodName - WordPress uses snake_case_method_names -->
-        <exclude name="CamelCaseMethodName"/>
         <!-- Exclude CamelCaseVariableName - WordPress uses $snake_case_variables -->
         <exclude name="CamelCaseVariableName"/>
         <!-- Exclude CamelCaseParameterName - WordPress uses $snake_case_parameters -->
         <exclude name="CamelCaseParameterName"/>
-        <!-- Exclude CamelCasePropertyName - WordPress uses $snake_case_properties -->
-        <exclude name="CamelCasePropertyName"/>
     </rule>
     
     <!-- Design Rules (with WordPress exceptions) -->
     <rule ref="rulesets/design.xml">
         <!-- Exclude ExitExpression - Required for WordPress wp_die(), exit, etc. -->
         <exclude name="ExitExpression"/>
-        <!-- Historical rule exclusion, not approval to introduce eval into plugin code. -->
-        <exclude name="EvalExpression"/>
-        <!-- Historical rule exclusion, not evidence that goto is needed in this plugin. -->
-        <exclude name="GotoStatement"/>
     </rule>
     
     <!-- WORDPRESS-SPECIFIC NAMING RULES -->
