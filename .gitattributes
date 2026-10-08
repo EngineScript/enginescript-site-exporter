@@ -5,6 +5,7 @@
 /.github export-ignore
 /.distignore export-ignore
 /.gitattributes export-ignore
+/.codacy.yml export-ignore
 /.gitignore export-ignore
 /.markdownlint.json export-ignore
 /.yamllint.yml export-ignore

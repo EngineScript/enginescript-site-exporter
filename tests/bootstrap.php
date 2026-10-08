@@ -491,7 +491,7 @@ function get_temp_dir() {
  * @return string
  */
 function wp_hash( $data ) {
-	return hash_hmac( 'md5', (string) $data, 'sse-test-salt' );
+	return hash_hmac( 'sha256', (string) $data, 'sse-test-salt' );
 }
 
 // --- Site, user, and request state ----------------------------------------------
@@ -793,7 +793,7 @@ function add_query_arg( $arguments, $url ) {
  * @return string
  */
 function wp_create_nonce( $action ) {
-	return substr( md5( 'nonce|' . $action ), 0, 10 );
+	return substr( hash( 'sha256', 'nonce|' . $action ), 0, 10 );
 }
 
 /**

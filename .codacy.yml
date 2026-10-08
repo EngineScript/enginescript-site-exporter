@@ -1,0 +1,12 @@
+---
+# Codacy configuration.
+#
+# TSLint asks for trailing commas and alphabetically sorted keys. JSON allows
+# no trailing comma, and npm writes the lock file, so neither file can comply.
+# Every other tool, the dependency vulnerability scan included, still reads
+# both files.
+engines:
+  tslint:
+    exclude_paths:
+      - "package.json"
+      - "package-lock.json"

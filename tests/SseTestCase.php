@@ -113,6 +113,14 @@ abstract class SseTestCase extends TestCase {
 				continue;
 			}
 
+			// On Windows a link to a directory is removed like a directory.
+			if ( 'Windows' === PHP_OS_FAMILY && is_link( $path ) && is_dir( $path ) ) {
+				rmdir( $path );
+				continue;
+			}
+
+			// The path is an entry of a directory that this test created.
+			// nosemgrep: php.lang.security.unlink-use.unlink-use
 			unlink( $path );
 		}
 

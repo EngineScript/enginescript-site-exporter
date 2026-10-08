@@ -181,11 +181,8 @@ final class PathRuleTest extends SseTestCase {
 			$this->markTestSkipped( 'This account cannot create symbolic links.' );
 		}
 
-		try {
-			$this->assertFalse( sse_is_path_within_directory( $link, $base ) );
-		} finally {
-			is_dir( $link ) && ! is_link( $link ) ? rmdir( $link ) : unlink( $link );
-		}
+		// The link is removed with its directory when the test ends.
+		$this->assertFalse( sse_is_path_within_directory( $link, $base ) );
 	}
 
 	/**

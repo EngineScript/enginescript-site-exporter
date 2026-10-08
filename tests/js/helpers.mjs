@@ -54,7 +54,7 @@ export async function loadPage( { archives = 0, confirmResult = true, html = nul
 		const list = document.createElement( 'div' );
 
 		list.className = 'sse-test-archive-list';
-		list.innerHTML = page.archive_actions.repeat( archives );
+		list.append( JSDOM.fragment( page.archive_actions.repeat( archives ) ) );
 		document.querySelector( '.wrap' ).insertBefore( list, document.querySelector( '.sse-export-form' ) );
 	}
 
