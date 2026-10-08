@@ -302,7 +302,7 @@ function sse_render_export_archive_actions( string $filename, string $export_dir
 		),
 		'sse_secure_download_' . $filename . '_' . $export_dir_name
 	);
-	$delete_nonce = wp_create_nonce( 'sse_delete_export_' . $filename . '_' . $export_dir_name );
+	$delete_nonce = sse_normalize_string_value( wp_create_nonce( 'sse_delete_export_' . $filename . '_' . $export_dir_name ) );
 	/* translators: %s: archive file name */
 	$download_label = sprintf( __( 'Download %s', 'enginescript-site-exporter' ), $filename );
 	/* translators: %s: archive file name */

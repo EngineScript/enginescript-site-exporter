@@ -4,6 +4,12 @@ Released sections describe their historical versions, including earlier tool
 results and security claims. They are not guarantees about the current build;
 see the current README and Security Policy for supported behavior and guidance.
 
+## 2.1.2 - Unreleased
+
+### Architecture
+
+- **Type Narrowing**: Request values and three WordPress return values are narrowed to their expected type before they are used, so that Psalm reports no "mixed" notes. Behavior is unchanged.
+
 ## 2.1.1 - October 7, 2026
 
 ### Security

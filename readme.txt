@@ -119,6 +119,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
+= 2.1.2 - Unreleased =
+* **Architecture**: Request values and three WordPress return values are narrowed to their expected type before they are used; behavior is unchanged
+
 = 2.1.1 =
 * **Architecture**: Use WordPress directory-list entry fields directly instead of redundant type checks and array-key casts, retaining failed-read handling and cleanup safety checks
 * **Compatibility**: Update Tested up to to WordPress 7.1 based on the recorded compatibility matrix; document call-specific Plugin Check exceptions for supervised process creation, process-pipe cleanup, and the bounded request timer without weakening runtime safeguards

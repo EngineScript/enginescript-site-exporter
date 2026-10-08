@@ -657,7 +657,7 @@ function sse_validate_exported_database_file( array $database_file ): true|WP_Er
  * @return int|false Selected per-file size limit in bytes when the request is valid, false otherwise.
  */
 function sse_validate_export_request(): int|false {
-	$post_action = isset( $_POST['action'] ) && is_string( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
+	$post_action = isset( $_POST['action'] ) && is_string( $_POST['action'] ) ? sanitize_key( (string) wp_unslash( $_POST['action'] ) ) : '';
 	if ( 'sse_export_site' !== $post_action ) {
 		return false;
 	}
@@ -669,7 +669,7 @@ function sse_validate_export_request(): int|false {
 	}
 
 	// Accept only a size that the form offers; anything else means no limit.
-	$requested_size = isset( $_POST['sse_max_file_size'] ) && is_string( $_POST['sse_max_file_size'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_max_file_size'] ) ) : '';
+	$requested_size = isset( $_POST['sse_max_file_size'] ) && is_string( $_POST['sse_max_file_size'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['sse_max_file_size'] ) ) : '';
 	foreach ( array_keys( sse_get_export_file_size_options() ) as $offered_size ) {
 		if ( (string) $offered_size === $requested_size ) {
 			return $offered_size;
@@ -716,12 +716,12 @@ function sse_get_import_requirement_warnings(): array {
  * @return bool True when the path resolves inside a web-served directory.
  */
 function sse_is_path_web_served( string $path ): bool {
-	$upload_dir = wp_get_upload_dir();
+	$upload_dir = sse_normalize_array_value( wp_get_upload_dir() );
 	$server     = sse_normalize_array_value( $_SERVER );
 	$roots      = [
 		ABSPATH,
 		defined( 'WP_CONTENT_DIR' ) ? sse_normalize_string_value( constant( 'WP_CONTENT_DIR' ) ) : '',
-		sse_normalize_string_value( $upload_dir['basedir'] ),
+		sse_normalize_string_value( $upload_dir['basedir'] ?? '' ),
 		sanitize_text_field( sse_normalize_string_value( $server['DOCUMENT_ROOT'] ?? '' ) ),
 	];
 

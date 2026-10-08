@@ -190,9 +190,7 @@ function sse_decode_export_lease_row( ?string $raw_value ): ?array {
 		return null;
 	}
 
-	$value = @unserialize( trim( $raw_value ), [ 'allowed_classes' => false ] ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize,WordPress.PHP.NoSilencedErrors.Discouraged -- The row was written by add_option(); classes are disallowed, and a corrupt row must fail validation quietly.
-
-	return sse_normalize_export_lease( $value );
+	return sse_normalize_export_lease( @unserialize( trim( $raw_value ), [ 'allowed_classes' => false ] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize,WordPress.PHP.NoSilencedErrors.Discouraged -- The row was written by add_option(); classes are disallowed, and a corrupt row must fail validation quietly.
 }
 
 /**

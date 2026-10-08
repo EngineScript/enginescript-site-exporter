@@ -366,7 +366,7 @@ function sse_get_export_directory_path(): string|WP_Error {
 		return new WP_Error( 'temp_dir_unavailable', __( 'Could not determine a private temporary directory for exports.', 'enginescript-site-exporter' ) );
 	}
 
-	return trailingslashit( $temp_dir ) . SSE_EXPORT_DIR_NAME . '-' . substr( wp_hash( 'sse-export-base|' . ABSPATH ), 0, 16 );
+	return trailingslashit( $temp_dir ) . SSE_EXPORT_DIR_NAME . '-' . substr( sse_normalize_string_value( wp_hash( 'sse-export-base|' . ABSPATH ) ), 0, 16 );
 }
 
 /**
