@@ -7,7 +7,7 @@
 
 ## Current Version
 
-[![Version](https://img.shields.io/badge/Version-2.1.1-orange.svg?logo=github)](https://github.com/EngineScript/enginescript-site-exporter/releases/latest/download/enginescript-site-exporter-2.1.1.zip)
+[![Version](https://img.shields.io/badge/Version-2.1.2-orange.svg?logo=github)](https://github.com/EngineScript/enginescript-site-exporter/releases/latest/download/enginescript-site-exporter-2.1.2.zip)
 
 ## Description
 

@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 6.8
 Tested up to: 7.1
-Stable tag: 2.1.1
+Stable tag: 2.1.2
 Requires PHP: 8.2
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -119,7 +119,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
-= 2.1.2 - Unreleased =
+= 2.1.2 =
 * **Architecture**: Request values and three WordPress return values are narrowed to their expected type before they are used; behavior is unchanged
 
 = 2.1.1 =
