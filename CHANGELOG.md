@@ -4,7 +4,7 @@ Released sections describe their historical versions, including earlier tool
 results and security claims. They are not guarantees about the current build;
 see the current README and Security Policy for supported behavior and guidance.
 
-## 2.1.1 - Unreleased
+## 2.1.1 - October 7, 2026
 
 ### Security
 

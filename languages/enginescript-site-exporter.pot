@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-3.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: EngineScript Site Exporter 2.1.0\n"
+"Project-Id-Version: EngineScript Site Exporter 2.1.1\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/enginescript-site-exporter\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-06T21:05:44+00:00\n"
+"POT-Creation-Date: 2026-10-08T03:18:24+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: enginescript-site-exporter\n"
@@ -375,7 +375,7 @@ msgstr ""
 msgid "Could not add a file to the archive: %s"
 msgstr ""
 
-#: includes/cleanup.php:92
+#: includes/cleanup.php:103
 msgid "The recovery of an interrupted export could not be scheduled, so the export was not started."
 msgstr ""
 
@@ -399,31 +399,31 @@ msgstr ""
 msgid "You do not have permission to delete export files."
 msgstr ""
 
-#: includes/download.php:86
+#: includes/download.php:87
 msgid "Export file successfully deleted."
 msgstr ""
 
-#: includes/download.php:96
+#: includes/download.php:97
 msgid "Could not delete the export file."
 msgstr ""
 
-#: includes/download.php:173
+#: includes/download.php:174
 msgid "Access denied: invalid file type."
 msgstr ""
 
-#: includes/download.php:185
+#: includes/download.php:186
 msgid "Access denied."
 msgstr ""
 
-#: includes/download.php:221
-#: includes/download.php:264
-#: includes/download.php:269
-#: includes/download.php:274
+#: includes/download.php:222
+#: includes/download.php:265
+#: includes/download.php:270
+#: includes/download.php:275
 msgid "Could not serve the file download."
 msgstr ""
 
-#: includes/download.php:228
-#: includes/download.php:244
+#: includes/download.php:229
+#: includes/download.php:245
 msgid "The export file changed before the download and was not served."
 msgstr ""
 
@@ -546,11 +546,11 @@ msgstr ""
 msgid "Could not determine a private temporary directory for exports."
 msgstr ""
 
-#: includes/helpers.php:669
+#: includes/helpers.php:670
 msgid "Could not initialize the WordPress Filesystem API."
 msgstr ""
 
-#: includes/helpers.php:675
+#: includes/helpers.php:676
 msgid "This server does not provide the direct filesystem access required for secure exports."
 msgstr ""
 
