@@ -40,6 +40,7 @@ jobs:
         id: checkout_code
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           # Always fetch the latest commit, disable any caching
           fetch-depth: 0
           clean: true
@@ -207,6 +208,8 @@ jobs:
       - name: Checkout code
         id: checkout_code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
@@ -300,6 +303,8 @@ jobs:
       - name: Checkout code
         id: checkout_code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
@@ -504,6 +509,7 @@ jobs:
         id: checkout_code
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           # Always fetch the latest commit, disable any caching
           fetch-depth: 0
           clean: true
@@ -618,6 +624,8 @@ jobs:
       - name: Checkout code
         id: checkout_code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
@@ -709,6 +717,8 @@ jobs:
       - name: Checkout code
         id: checkout_code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
@@ -871,6 +881,7 @@ jobs:
         id: checkout_code
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           # Always fetch the latest commit, disable any caching
           fetch-depth: 0
           clean: true
@@ -976,6 +987,8 @@ jobs:
       - name: Checkout code
         id: checkout_code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
@@ -1107,6 +1120,8 @@ jobs:
       - name: Checkout code
         id: checkout_code
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Setup PHP ${{ matrix.php-version }}
         id: setup_php
@@ -2379,6 +2394,7 @@ jobs:
         if: ${{ failure() }}
         uses: actions/checkout@v7
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Create issue on test failure

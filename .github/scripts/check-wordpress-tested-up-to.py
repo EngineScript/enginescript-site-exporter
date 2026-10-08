@@ -9,7 +9,9 @@ import os
 import re
 import subprocess  # nosec B404
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import TypedDict
 
 # Bandit: every subprocess call in this file runs a fixed argument list without a shell.
 
@@ -32,6 +34,22 @@ TESTED_UP_TO_PATTERN = re.compile(
 )
 TESTED_UP_TO_LABEL_PATTERN = re.compile(r"^\s*(?:\*\s*)?tested\s+up\s+to\s*:", re.IGNORECASE)
 VERSION_PATTERN = re.compile(r"^[0-9]+(?:\.[0-9]+){1,2}$")
+
+
+class Finding(TypedDict):
+    """One "Tested up to" line; version is None when it could not be parsed."""
+
+    path: str
+    line: int
+    version: str | None
+
+
+class Failure(TypedDict):
+    """One entry that is missing, malformed, or out of date."""
+
+    path: str
+    line: int
+    message: str
 
 
 def main() -> int:
@@ -145,8 +163,8 @@ def get_excluded_dirs() -> set[str]:
 
 def find_tested_up_to_entries(
     excluded_dirs: set[str],
-) -> list[dict[str, str | int | None]]:
-    findings = []
+) -> list[Finding]:
+    findings: list[Finding] = []
 
     for path in get_scanned_files(excluded_dirs):
         if not should_scan(path, excluded_dirs):
@@ -197,9 +215,9 @@ def should_scan(path: Path, excluded_dirs: set[str]) -> bool:
 
 def get_failures(
     latest_version: str,
-    findings: list[dict[str, str | int | None]],
-) -> list[dict[str, str | int]]:
-    failures = []
+    findings: list[Finding],
+) -> list[Failure]:
+    failures: list[Failure] = []
 
     for finding in findings:
         if finding["version"] is None:
@@ -229,7 +247,7 @@ def get_failures(
 
 
 def update_tested_up_to_entries(
-    findings: list[dict[str, str | int | None]],
+    findings: list[Finding],
     latest_version: str,
 ) -> list[str]:
     paths_to_update = {
@@ -267,14 +285,14 @@ def replace_tested_up_to_line(line: str, latest_version: str) -> str:
     raise ValueError("Refusing to rewrite an invalid metadata line.")
 
 
-def format_failure(failure: dict[str, str | int]) -> str:
+def format_failure(failure: Failure) -> str:
     return f"{failure['path']}:{failure['line']}: {failure['message']}"
 
 
 def write_summary(
     latest_version: str,
-    findings: list[dict[str, str | int | None]],
-    failures: list[dict[str, str | int] | str],
+    findings: Sequence[Finding],
+    failures: Sequence[Failure | str],
     updated_paths: list[str] | None = None,
 ) -> None:
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")

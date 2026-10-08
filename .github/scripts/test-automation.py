@@ -27,6 +27,8 @@ from zipfile import ZipFile
 
 def load_helper(filename: str):
     spec = importlib.util.spec_from_file_location(filename, Path(__file__).with_name(filename))
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {filename}.")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
