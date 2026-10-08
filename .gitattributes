@@ -25,4 +25,5 @@
 /SECURITY.md export-ignore
 /stubs export-ignore
 /tests export-ignore
+/tslint.json export-ignore
 /vendor export-ignore
