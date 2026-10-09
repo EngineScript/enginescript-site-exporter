@@ -146,24 +146,21 @@ function sse_get_scheduled_hook_names(): array {
 }
 
 /**
- * Gets the export base directories that cleanup has to look at.
+ * Gets the export base directory that cleanup has to look at.
  *
- * These are the current directory and the one earlier versions used. A base
- * that is a symbolic link is never used: in a shared temporary directory,
- * anyone could have put it there.
+ * A base that is a symbolic link is never used: in a shared temporary
+ * directory, anyone could have put it there.
  *
- * @since 2.1.1
- * @return string[] Export base directory paths.
+ * @since 2.1.3
+ * @return string Export base directory path, or an empty string when there is none to look at.
  */
-function sse_get_export_cleanup_directories(): array {
-	$directories = [];
-	foreach ( [ sse_get_export_directory_path(), sse_get_legacy_export_directory_path() ] as $directory ) {
-		if ( ! is_wp_error( $directory ) && ! is_link( $directory ) && ! in_array( $directory, $directories, true ) ) {
-			$directories[] = $directory;
-		}
+function sse_get_export_cleanup_directory(): string {
+	$directory = sse_get_export_directory_path();
+	if ( is_wp_error( $directory ) || is_link( $directory ) ) {
+		return '';
 	}
 
-	return $directories;
+	return $directory;
 }
 
 /**
@@ -201,26 +198,9 @@ function sse_remove_export_base_directory( string $export_dir ): bool {
 }
 
 /**
- * Removes the earlier export base directory once nothing is left in it.
- *
- * @since 2.1.1
- * @return bool True when the directory was removed.
- */
-function sse_remove_empty_legacy_export_directory(): bool {
-	$legacy_dir  = sse_get_legacy_export_directory_path();
-	$current_dir = sse_get_export_directory_path();
-	if ( is_wp_error( $legacy_dir ) || is_wp_error( $current_dir ) || $legacy_dir === $current_dir ) {
-		return false;
-	}
-
-	return sse_remove_export_base_directory( $legacy_dir );
-}
-
-/**
  * Deletes every private export directory in this installation's export base.
  *
- * Used when the plugin is deactivated or deleted. It is never applied to the
- * earlier, shared base, where another installation's exports may live.
+ * Used when the plugin is deactivated or deleted.
  *
  * @since 2.1.1
  * @param string $export_dir Export base directory of this installation.
@@ -272,9 +252,6 @@ function sse_remove_plugin_runtime_state(): void {
 	if ( ! is_wp_error( $export_dir ) ) {
 		sse_delete_all_export_directories( $export_dir );
 	}
-
-	// The earlier base may be shared, so only its usual age rule applies there.
-	sse_cleanup_stale_export_directories();
 }
 
 /**
@@ -441,8 +418,7 @@ function sse_recover_expired_export_handler( mixed $expected_owner ): void {
  * Removes abandoned generated export directories after their lease lifetime.
  *
  * Only canonical, non-symlinked child directories are eligible. An unexpired
- * lease's recorded directory is always excluded. The earlier export base is
- * looked at with the same rule.
+ * lease's recorded directory is always excluded.
  *
  * @since 2.1.1
  * @return int Number of stale directories removed.
@@ -459,13 +435,12 @@ function sse_cleanup_stale_export_directories(): int {
 		return 0;
 	}
 
-	$cutoff  = time() - sse_get_export_lease_lifetime();
-	$removed = 0;
-	foreach ( sse_get_export_cleanup_directories() as $export_dir ) {
-		$removed += sse_remove_stale_export_directories_in( $export_dir, $active_directory, $cutoff, $filesystem );
+	$export_dir = sse_get_export_cleanup_directory();
+	if ( '' === $export_dir ) {
+		return 0;
 	}
-	sse_remove_empty_legacy_export_directory();
 
+	$removed = sse_remove_stale_export_directories_in( $export_dir, $active_directory, time() - sse_get_export_lease_lifetime(), $filesystem );
 	if ( $removed > 0 ) {
 		sse_log( "Removed {$removed} abandoned export directories.", 'info' );
 	}
@@ -569,18 +544,14 @@ function sse_bulk_cleanup_exports_handler(): void {
 
 	$cleaned_count = 0;
 	$cutoff_time   = time() - ( 5 * 60 ); // Files older than 5 minutes.
-	foreach ( sse_get_export_cleanup_directories() as $export_dir ) {
-		if ( ! $filesystem->is_dir( $export_dir ) ) {
-			continue;
-		}
-
+	$export_dir    = sse_get_export_cleanup_directory();
+	if ( '' !== $export_dir && $filesystem->is_dir( $export_dir ) ) {
 		foreach ( sse_get_export_files_for_bulk_cleanup( $export_dir ) as $file_path ) {
-			if ( sse_cleanup_expired_export_file( $file_path, $cutoff_time, $export_dir ) ) {
+			if ( sse_cleanup_expired_export_file( $file_path, $cutoff_time ) ) {
 				++$cleaned_count;
 			}
 		}
 	}
-	sse_remove_empty_legacy_export_directory();
 
 	sse_log( "Bulk cleanup completed. Deleted {$cleaned_count} export files.", 'info' );
 }
@@ -689,12 +660,11 @@ function sse_is_export_zip_entry( string $filename, string $type ): bool {
  * Attempts to clean up a single expired export file.
  *
  * @since 2.0.0
- * @param string      $file_path      The file path to check and potentially delete.
- * @param int         $cutoff_time    Unix timestamp; files modified before this are eligible.
- * @param string|null $base_directory Export base directory that holds the file; the current one when null.
+ * @param string $file_path   The file path to check and potentially delete.
+ * @param int    $cutoff_time Unix timestamp; files modified before this are eligible.
  * @return bool True if the file was deleted, false otherwise.
  */
-function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time, ?string $base_directory = null ): bool {
+function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time ): bool {
 	$filesystem = sse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return false;
@@ -712,14 +682,14 @@ function sse_cleanup_expired_export_file( string $file_path, int $cutoff_time, ?
 		return false;
 	}
 
-	$validation = sse_validate_basic_export_file( $filename, $export_dir_name, $base_directory );
+	$validation = sse_validate_basic_export_file( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
 		sse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
 		return false;
 	}
 
-	if ( sse_safely_delete_file( $validation['filepath'], $base_directory ) ) {
+	if ( sse_safely_delete_file( $validation['filepath'] ) ) {
 		sse_log( 'Bulk cleanup deleted export file: ' . $validation['filepath'], 'info' );
 		return true;
 	}
@@ -792,12 +762,11 @@ function sse_delete_export_file_handler( mixed $file ): void {
  * Safely deletes a file using WordPress' directory containment helper.
  *
  * @since 1.0.0
- * @param string      $filepath       Path to the file to delete.
- * @param string|null $base_directory Export base directory that must contain the file; the current one when null.
+ * @param string $filepath Path to the file to delete.
  * @return bool Whether the file was deleted successfully.
  */
-function sse_safely_delete_file( string $filepath, ?string $base_directory = null ): bool {
-	$export_dir = $base_directory ?? sse_get_export_directory_path();
+function sse_safely_delete_file( string $filepath ): bool {
+	$export_dir = sse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
 		return false;
 	}

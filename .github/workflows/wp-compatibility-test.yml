@@ -2137,7 +2137,7 @@ jobs:
               public function test_export_base_name_is_specific_to_the_installation() {
                   $base = sse_get_export_directory_path();
                   $this->assertSame(1, preg_match('#/' . preg_quote(SSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $base));
-                  $this->assertNotSame($base, sse_get_legacy_export_directory_path());
+                  $this->assertNotSame(trailingslashit(get_temp_dir()) . SSE_EXPORT_DIR_NAME, $base);
                   // Another installation has other secret salts, and so another directory.
                   $other_salt = static function () {
                       return 'the salt of another installation';
@@ -2148,6 +2148,37 @@ jobs:
                   $this->assertSame(1, preg_match('#/' . preg_quote(SSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $other_base));
                   $this->assertNotSame($base, $other_base);
                   $this->assertSame($base, sse_get_export_directory_path());
+              }
+
+              public function test_cleanup_stays_inside_the_installation_export_base() {
+                  $base = sse_get_export_directory_path();
+                  // The fixed name that versions before 2.1.1 used; other installations may share it.
+                  $neighbour = trailingslashit(get_temp_dir()) . SSE_EXPORT_DIR_NAME;
+                  $stale = 'export-20200101_000000-' . str_repeat('a', 32);
+                  $created = [];
+                  foreach ([$base, $neighbour] as $directory) {
+                      if (!is_dir($directory)) {
+                          $created[] = $directory;
+                      }
+                      $this->assertTrue(wp_mkdir_p($directory . '/' . $stale));
+                      $this->assertTrue(chmod($directory . '/' . $stale, 0700));
+                      $this->assertSame(3, file_put_contents($directory . '/' . $stale . '/old.txt', 'old'));
+                      $this->assertTrue(touch($directory . '/' . $stale, time() - DAY_IN_SECONDS));
+                  }
+                  try {
+                      clearstatcache();
+                      $this->assertSame(1, sse_cleanup_stale_export_directories());
+                      sse_bulk_cleanup_exports_handler();
+                      clearstatcache();
+                      $this->assertDirectoryDoesNotExist($base . '/' . $stale);
+                      $this->assertSame('old', file_get_contents($neighbour . '/' . $stale . '/old.txt'));
+                  } finally {
+                      $this->sse_remove_fixture_tree($base . '/' . $stale);
+                      $this->sse_remove_fixture_tree($neighbour . '/' . $stale);
+                      foreach ($created as $directory) {
+                          $this->sse_remove_fixture_tree($directory);
+                      }
+                  }
               }
 
               public function test_export_request_is_refused_without_action_nonce_or_capability() {

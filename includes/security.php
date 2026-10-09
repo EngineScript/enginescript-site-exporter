@@ -258,18 +258,17 @@ function sse_get_export_file_native_identity( string $file_path ): array|WP_Erro
  * Performs basic validation common to both download and deletion operations.
  *
  * @since 2.0.0
- * @param string      $filename        The filename to validate.
- * @param string      $export_dir_name Private export directory basename.
- * @param string|null $base_directory  Export base directory; the current one when null.
+ * @param string $filename        The filename to validate.
+ * @param string $export_dir_name Private export directory basename.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_basic_export_file( string $filename, string $export_dir_name, ?string $base_directory = null ): array|WP_Error {
+function sse_validate_basic_export_file( string $filename, string $export_dir_name ): array|WP_Error {
 	$basic_checks = sse_validate_filename_format( $filename );
 	if ( is_wp_error( $basic_checks ) ) {
 		return $basic_checks;
 	}
 
-	return sse_validate_export_file_path( $filename, $export_dir_name, $base_directory );
+	return sse_validate_export_file_path( $filename, $export_dir_name );
 }
 
 /**
@@ -324,14 +323,13 @@ function sse_validate_export_directory_name_format( string $export_dir_name ): t
  * Validates export file path and directory security.
  *
  * @since 2.0.0
- * @param string      $filename        The filename to validate.
- * @param string      $export_dir_name Private export directory basename.
- * @param string|null $base_directory  Export base directory; the current one when null.
+ * @param string $filename        The filename to validate.
+ * @param string $export_dir_name Private export directory basename.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_export_file_path( string $filename, string $export_dir_name, ?string $base_directory = null ): array|WP_Error {
+function sse_validate_export_file_path( string $filename, string $export_dir_name ): array|WP_Error {
 	// Get the full path to the file.
-	$export_dir = $base_directory ?? sse_get_export_directory_path();
+	$export_dir = sse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}

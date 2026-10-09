@@ -370,25 +370,6 @@ function sse_get_export_directory_path(): string|WP_Error {
 }
 
 /**
- * Gets the export directory path that earlier versions used.
- *
- * The fixed name was shared by every installation with the same temporary
- * directory. Cleanup still looks there, with the same age rules as before, so
- * that archives made before an update are removed on schedule.
- *
- * @since 2.1.1
- * @return string|WP_Error Earlier export directory path on success, WP_Error on failure.
- */
-function sse_get_legacy_export_directory_path(): string|WP_Error {
-	$temp_dir = get_temp_dir();
-	if ( '' === $temp_dir ) {
-		return new WP_Error( 'temp_dir_unavailable', __( 'Could not determine a private temporary directory for exports.', 'enginescript-site-exporter' ) );
-	}
-
-	return trailingslashit( $temp_dir ) . SSE_EXPORT_DIR_NAME;
-}
-
-/**
  * Gets the capability used to show the exporter menu.
  *
  * @since 2.1.1

@@ -4,6 +4,12 @@ Released sections describe their historical versions, including earlier tool
 results and security claims. They are not guarantees about the current build;
 see the current README and Security Policy for supported behavior and guidance.
 
+## 2.1.3 - Unreleased
+
+### Architecture
+
+- **Earlier Export Directory**: Cleanup no longer looks in the fixed-name export directory that versions before 2.1.1 used, and works only in this installation's own export directory. The plugin no longer removes anything from the earlier directory. If `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand.
+
 ## 2.1.2 - October 7, 2026
 
 ### Architecture

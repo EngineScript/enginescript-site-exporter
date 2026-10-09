@@ -119,6 +119,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
+= 2.1.3 - Unreleased =
+* **Architecture**: Cleanup no longer looks in the fixed-name export directory used before 2.1.1; if `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand
+
 = 2.1.2 =
 * **Architecture**: Request values and three WordPress return values are narrowed to their expected type before they are used; behavior is unchanged
 
