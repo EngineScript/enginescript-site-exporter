@@ -555,7 +555,8 @@ jobs:
         run: |
           # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
           echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
-          vendor/bin/phpmd . text phpmd.xml --exclude vendor,tests
+          # PHPMD 3: the analyze command, and one --exclude per directory (a comma list is no longer split).
+          vendor/bin/phpmd analyze . --no-progress --format text --ruleset phpmd.xml --exclude vendor --exclude tests
 
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
