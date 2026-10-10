@@ -6,14 +6,12 @@ core:
   - changed-files:
       - any-glob-to-any-file: enginescript-site-exporter.php
       - any-glob-to-any-file: includes/**/*
-      - any-glob-to-any-file: assets/js/**/*
 
 # Frontend related changes
 frontend:
   - changed-files:
-      - any-glob-to-any-file: assets/css/**/*
-      - any-glob-to-any-file: assets/images/**/*
-      - any-glob-to-any-file: templates/**/*
+      - any-glob-to-any-file: css/**/*
+      - any-glob-to-any-file: js/**/*
 
 # Workflows and automation
 automation:
@@ -29,50 +27,41 @@ security:
 # Documentation
 documentation:
   - changed-files:
-      - any-glob-to-any-file: README.md
       - any-glob-to-any-file: '*.md'
-      - any-glob-to-any-file: docs/**/*
+      - any-glob-to-any-file: readme.txt
 
 # Export functionality
 export:
   - changed-files:
-      - any-glob-to-any-file: '**/export*.php'
-      - any-glob-to-any-file: '**/zip*.php'
-
-# Database related changes
-database:
-  - changed-files:
-      - any-glob-to-any-file: '**/database*.php'
-      - any-glob-to-any-file: '**/db*.php'
-      - any-glob-to-any-file: '**/sql*.php'
-
-# WordPress integration
-wordpress:
-  - changed-files:
-      - any-glob-to-any-file: '**/wp-*.php'
-      - any-glob-to-any-file: '**/wordpress*.php'
+      - any-glob-to-any-file: includes/archive.php
+      - any-glob-to-any-file: includes/download.php
+      - any-glob-to-any-file: includes/export.php
+      - any-glob-to-any-file: includes/process.php
+      - any-glob-to-any-file: includes/tar.php
 
 # Translations and localization
 i18n:
   - changed-files:
       - any-glob-to-any-file: languages/**/*
-      - any-glob-to-any-file: '**/*.pot'
-      - any-glob-to-any-file: '**/*.po'
-      - any-glob-to-any-file: '**/*.mo'
 
 # Dependencies
 dependencies:
   - changed-files:
       - any-glob-to-any-file: .github/dependabot.yml
       - any-glob-to-any-file: composer.json
-      - any-glob-to-any-file: composer.lock
       - any-glob-to-any-file: package.json
       - any-glob-to-any-file: package-lock.json
+      - any-glob-to-any-file: renovate.json
 
 # Tests and quality
 testing:
   - changed-files:
       - any-glob-to-any-file: tests/**/*
+      - any-glob-to-any-file: stubs/**/*
       - any-glob-to-any-file: phpunit.xml
-      - any-glob-to-any-file: .travis.yml
-      - any-glob-to-any-file: .phpcs.xml
+      - any-glob-to-any-file: phpcs.xml
+      - any-glob-to-any-file: phpmd.xml
+      - any-glob-to-any-file: phpstan.neon
+      - any-glob-to-any-file: psalm.xml
+      - any-glob-to-any-file: .markdownlint.json
+      - any-glob-to-any-file: .yamllint.yml

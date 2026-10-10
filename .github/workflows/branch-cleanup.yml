@@ -40,9 +40,23 @@ jobs:
             exit 0
           fi
 
+          # GitHub or Dependabot may have deleted the branch already. Only an
+          # existing branch is deleted; a lookup error still fails the job.
+          if git ls-remote --exit-code --heads origin "refs/heads/$BRANCH_NAME" >/dev/null; then
+            :
+          else
+            status=$?
+            if [[ $status == 2 ]]; then
+              echo "::notice::Branch is already deleted: $BRANCH_NAME"
+              exit 0
+            fi
+            echo "::error::Could not look up branch: $BRANCH_NAME"
+            exit 1
+          fi
+
           # Attempt branch deletion. Quotes prevent injection.
           echo "Attempting to delete branch: $BRANCH_NAME"
-          if git push origin --delete "$BRANCH_NAME" 2>/dev/null; then
+          if git push origin --delete "$BRANCH_NAME"; then
             echo "::notice::Successfully deleted branch: $BRANCH_NAME"
           else
             echo "::error::Failed to delete branch: $BRANCH_NAME"
