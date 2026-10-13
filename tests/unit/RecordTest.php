@@ -32,7 +32,7 @@ final class RecordTest extends SseTestCase {
 	 */
 	public function test_a_malformed_stored_value_yields_no_records(): void {
 		foreach ( array( false, null, 'text', 12, new stdClass() ) as $stored ) {
-			$this->assertSame( array(), sse_get_retained_stored_logs( $stored, 0 ) );
+			$this->assertSame( array(), esse_get_retained_stored_logs( $stored, 0 ) );
 		}
 	}
 
@@ -53,7 +53,7 @@ final class RecordTest extends SseTestCase {
 			$this->record( array( 'message' => 'kept too' ) ),
 		);
 
-		$this->assertSame( array( 'kept', 'kept too' ), array_column( sse_get_retained_stored_logs( $stored, 0 ), 'message' ) );
+		$this->assertSame( array( 'kept', 'kept too' ), array_column( esse_get_retained_stored_logs( $stored, 0 ), 'message' ) );
 	}
 
 	/**
@@ -68,7 +68,7 @@ final class RecordTest extends SseTestCase {
 			$this->record( array( 'time' => 501, 'message' => 'new' ) ),
 		);
 
-		$this->assertSame( array( 'at the cutoff', 'new' ), array_column( sse_get_retained_stored_logs( $stored, 500 ), 'message' ) );
+		$this->assertSame( array( 'at the cutoff', 'new' ), array_column( esse_get_retained_stored_logs( $stored, 500 ), 'message' ) );
 	}
 
 	/**
@@ -82,7 +82,7 @@ final class RecordTest extends SseTestCase {
 			$stored[] = $this->record( array( 'message' => 'record ' . $index ) );
 		}
 
-		$retained = sse_get_retained_stored_logs( $stored, 0 );
+		$retained = esse_get_retained_stored_logs( $stored, 0 );
 
 		$this->assertCount( 20, $retained );
 		$this->assertSame( 'record 6', $retained[0]['message'] );
@@ -95,7 +95,7 @@ final class RecordTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_kept_records_are_normalized(): void {
-		$retained = sse_get_retained_stored_logs(
+		$retained = esse_get_retained_stored_logs(
 			array(
 				$this->record(
 					array(
@@ -124,7 +124,7 @@ final class RecordTest extends SseTestCase {
 	public function test_stored_messages_hold_no_paths_and_no_markup(): void {
 		$GLOBALS['sse_test']['temp_dir'] = '/srv/private-tmp/';
 
-		$message = sse_sanitize_stored_log_message(
+		$message = esse_sanitize_stored_log_message(
 			'Failed for ' . ABSPATH . 'wp-content/uploads/a.zip, /srv/private-tmp/exports/b.zip, /home/user/c.zip and C:\\Users\\me\\d.zip <script>alert(1)</script>'
 		);
 
@@ -134,7 +134,7 @@ final class RecordTest extends SseTestCase {
 		$this->assertStringContainsString( '[path]', $message );
 		$this->assertStringStartsWith( 'Failed for', $message );
 
-		$this->assertSame( 1000, strlen( sse_sanitize_stored_log_message( str_repeat( 'word ', 400 ) ) ) );
+		$this->assertSame( 1000, strlen( esse_sanitize_stored_log_message( str_repeat( 'word ', 400 ) ) ) );
 	}
 
 	/**
@@ -145,7 +145,7 @@ final class RecordTest extends SseTestCase {
 	public function test_ordinary_text_is_not_treated_as_a_path(): void {
 		$message = 'Export created: example.com_enginescript_site_export_20260101_120000.zip (3 of 4, 50%)';
 
-		$this->assertSame( $message, sse_sanitize_stored_log_message( $message ) );
+		$this->assertSame( $message, esse_sanitize_stored_log_message( $message ) );
 	}
 
 	/**
@@ -155,7 +155,7 @@ final class RecordTest extends SseTestCase {
 	 */
 	public function test_log_lines_are_single_lines_without_private_directory_names(): void {
 		$directory = 'export-20260101_120000-' . str_repeat( 'f', 32 );
-		$prepared  = sse_prepare_log_message( "first\r\n[01-Jan-2026] forged\ttab\0null " . $directory . '/site.zip' );
+		$prepared  = esse_prepare_log_message( "first\r\n[01-Jan-2026] forged\ttab\0null " . $directory . '/site.zip' );
 
 		$this->assertSame( 'first [01-Jan-2026] forged tab null export-[private]/site.zip', $prepared );
 		$this->assertDoesNotMatchRegularExpression( '/[\x00-\x1F\x7F]/', $prepared );
@@ -167,12 +167,12 @@ final class RecordTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_only_errors_and_security_events_are_stored_by_the_logger(): void {
-		sse_log( 'Scheduled deletion successful.', 'info' );
-		sse_log( 'Careful.', 'warning' );
+		esse_log( 'Scheduled deletion successful.', 'info' );
+		esse_log( 'Careful.', 'warning' );
 		$this->assertFalse( get_option( 'sse_error_logs' ) );
 
-		sse_log( 'The export failed.', 'error' );
-		sse_log( 'A request was refused.', 'security' );
+		esse_log( 'The export failed.', 'error' );
+		esse_log( 'A request was refused.', 'security' );
 
 		$records = get_option( 'sse_error_logs' );
 		$this->assertSame( array( 'error', 'security' ), array_column( $records, 'level' ) );
@@ -187,18 +187,18 @@ final class RecordTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_a_repeated_error_is_stored_once(): void {
-		sse_log( 'The export failed.', 'error' );
-		sse_log( 'The export failed.', 'error' );
+		esse_log( 'The export failed.', 'error' );
+		esse_log( 'The export failed.', 'error' );
 		$this->assertCount( 1, get_option( 'sse_error_logs' ) );
 
-		sse_log( 'Another failure.', 'error' );
+		esse_log( 'Another failure.', 'error' );
 		$this->assertCount( 2, get_option( 'sse_error_logs' ) );
 
 		$GLOBALS['sse_test']['user_id'] = 8;
-		sse_log( 'Another failure.', 'error' );
+		esse_log( 'Another failure.', 'error' );
 		$this->assertCount( 3, get_option( 'sse_error_logs' ) );
 
-		sse_log( 'Another failure.', 'security' );
+		esse_log( 'Another failure.', 'security' );
 		$this->assertCount( 4, get_option( 'sse_error_logs' ), 'The same text at another level is another record.' );
 	}
 
@@ -210,7 +210,7 @@ final class RecordTest extends SseTestCase {
 	public function test_a_repeated_error_is_stored_again_after_an_hour(): void {
 		update_option( 'sse_error_logs', array( $this->record( array( 'time' => time() - HOUR_IN_SECONDS - 1, 'message' => 'The export failed.' ) ) ) );
 
-		sse_log( 'The export failed.', 'error' );
+		esse_log( 'The export failed.', 'error' );
 
 		$this->assertCount( 2, get_option( 'sse_error_logs' ) );
 	}
@@ -221,8 +221,8 @@ final class RecordTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_activity_is_always_recorded(): void {
-		sse_record_activity( 'Export downloaded: site.zip' );
-		sse_record_activity( 'Export downloaded: site.zip' );
+		esse_record_activity( 'Export downloaded: site.zip' );
+		esse_record_activity( 'Export downloaded: site.zip' );
 
 		$records = get_option( 'sse_error_logs' );
 		$this->assertCount( 2, $records );
@@ -236,7 +236,7 @@ final class RecordTest extends SseTestCase {
 	 */
 	public function test_the_store_is_capped_at_twenty_records(): void {
 		for ( $index = 1; $index <= 23; $index++ ) {
-			sse_record_activity( 'Export created: ' . $index );
+			esse_record_activity( 'Export created: ' . $index );
 		}
 
 		$records = get_option( 'sse_error_logs' );
@@ -260,8 +260,8 @@ final class RecordTest extends SseTestCase {
 			)
 		);
 
-		$this->assertSame( 2, sse_prune_expired_stored_logs() );
+		$this->assertSame( 2, esse_prune_expired_stored_logs() );
 		$this->assertSame( array( 'recent' ), array_column( get_option( 'sse_error_logs' ), 'message' ) );
-		$this->assertSame( 0, sse_prune_expired_stored_logs(), 'A second run finds nothing to remove.' );
+		$this->assertSame( 0, esse_prune_expired_stored_logs(), 'A second run finds nothing to remove.' );
 	}
 }

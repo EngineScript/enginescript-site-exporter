@@ -52,7 +52,7 @@ final class AdminPageTest extends SseTestCase {
 	 * @return DOMXPath
 	 */
 	private function page(): DOMXPath {
-		return $this->parse( $this->capture( 'sse_exporter_page_html' ) );
+		return $this->parse( $this->capture( 'esse_exporter_page_html' ) );
 	}
 
 	/**
@@ -79,7 +79,7 @@ final class AdminPageTest extends SseTestCase {
 	public function test_the_page_is_refused_without_the_capability(): void {
 		$GLOBALS['sse_test']['capabilities'] = array( 'edit_posts' );
 
-		$refusal = $this->expect_die( 'sse_exporter_page_html' );
+		$refusal = $this->expect_die( 'esse_exporter_page_html' );
 
 		$this->assertSame( 403, $refusal->status );
 		$this->assertSame( 'You do not have permission to view this page.', $refusal->getMessage() );
@@ -93,7 +93,7 @@ final class AdminPageTest extends SseTestCase {
 	public function test_the_page_stops_without_a_temporary_directory(): void {
 		$GLOBALS['sse_test']['temp_dir'] = '';
 
-		$refusal = $this->expect_die( 'sse_exporter_page_html' );
+		$refusal = $this->expect_die( 'esse_exporter_page_html' );
 
 		$this->assertSame( 500, $refusal->status );
 		$this->assertSame( 'Could not determine a private temporary directory for exports.', $refusal->getMessage() );
@@ -133,7 +133,7 @@ final class AdminPageTest extends SseTestCase {
 			$values[] = $option->getAttribute( 'value' );
 		}
 
-		$this->assertSame( array_map( 'strval', array_keys( sse_get_export_file_size_options() ) ), $values );
+		$this->assertSame( array_map( 'strval', array_keys( esse_get_export_file_size_options() ) ), $values );
 		$this->assertSame( 0, $page->query( '//select[@name="sse_max_file_size"]/option[@selected]' )->length, 'The first option, no limit, is the default.' );
 	}
 
@@ -209,8 +209,8 @@ final class AdminPageTest extends SseTestCase {
 	public function test_the_page_names_the_export_directory(): void {
 		$page = $this->page();
 
-		$this->assertContains( wp_normalize_path( sse_get_export_directory_path() ), $this->texts( $page, '//code' ) );
-		$this->assertSame( array( array( SSE_PLUGIN_FILE, 'sse_uninstall_plugin' ) ), $GLOBALS['sse_test']['uninstall'] );
+		$this->assertContains( wp_normalize_path( esse_get_export_directory_path() ), $this->texts( $page, '//code' ) );
+		$this->assertSame( array( array( ESSE_PLUGIN_FILE, 'esse_uninstall_plugin' ) ), $GLOBALS['sse_test']['uninstall'] );
 	}
 
 	/**
@@ -233,7 +233,7 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_import_requirement_warnings(): void {
-		$warnings = sse_get_import_requirement_warnings();
+		$warnings = esse_get_import_requirement_warnings();
 		$this->assertCount( 2, $warnings, 'This suite has no wp-config.php and defines neither address constant.' );
 
 		$shown = $this->texts( $this->page(), '//div[contains(@class, "notice-warning")]/p' );
@@ -249,20 +249,20 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_error_notice_is_shown_once_as_text(): void {
-		sse_set_exporter_notice(
+		esse_set_exporter_notice(
 			array(
 				'type'    => 'error',
 				'message' => 'Failed <img src=x onerror=alert(1)> & stopped',
 			)
 		);
 
-		$html = $this->capture( 'sse_render_exporter_notices' );
+		$html = $this->capture( 'esse_render_exporter_notices' );
 		$page = $this->parse( $html );
 
 		$this->assertStringNotContainsString( '<img', $html );
 		$this->assertSame( array( 'Failed <img src=x onerror=alert(1)> & stopped' ), $this->texts( $page, '//div[contains(@class, "notice-error")]/p' ) );
 		$this->assertSame( 0, $page->query( '//div[contains(@class, "notice-success")]' )->length );
-		$this->assertSame( '', $this->capture( 'sse_render_exporter_notices' ), 'The notice is gone after it was shown.' );
+		$this->assertSame( '', $this->capture( 'esse_render_exporter_notices' ), 'The notice is gone after it was shown.' );
 	}
 
 	/**
@@ -271,7 +271,7 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_a_notice_is_shown_to_its_own_user_only(): void {
-		sse_set_exporter_notice(
+		esse_set_exporter_notice(
 			array(
 				'type'    => 'success',
 				'message' => 'Export file successfully deleted.',
@@ -279,10 +279,10 @@ final class AdminPageTest extends SseTestCase {
 		);
 
 		$GLOBALS['sse_test']['user_id'] = 8;
-		$this->assertSame( '', $this->capture( 'sse_render_exporter_notices' ) );
+		$this->assertSame( '', $this->capture( 'esse_render_exporter_notices' ) );
 
 		$GLOBALS['sse_test']['user_id'] = 7;
-		$this->assertSame( array( 'Export file successfully deleted.' ), $this->texts( $this->parse( $this->capture( 'sse_render_exporter_notices' ) ), '//div[contains(@class, "notice-success")]/p' ) );
+		$this->assertSame( array( 'Export file successfully deleted.' ), $this->texts( $this->parse( $this->capture( 'esse_render_exporter_notices' ) ), '//div[contains(@class, "notice-success")]/p' ) );
 	}
 
 	/**
@@ -291,17 +291,17 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_malformed_notices(): void {
-		set_transient( sse_get_exporter_notice_key(), 'text' );
-		$this->assertSame( '', $this->capture( 'sse_render_exporter_notices' ) );
+		set_transient( esse_get_exporter_notice_key(), 'text' );
+		$this->assertSame( '', $this->capture( 'esse_render_exporter_notices' ) );
 
 		set_transient(
-			sse_get_exporter_notice_key(),
+			esse_get_exporter_notice_key(),
 			array(
 				'type'    => array( 'error' ),
 				'message' => array( '<b>x</b>' ),
 			)
 		);
-		$page = $this->parse( $this->capture( 'sse_render_exporter_notices' ) );
+		$page = $this->parse( $this->capture( 'esse_render_exporter_notices' ) );
 		$this->assertSame( array( '' ), $this->texts( $page, '//div[contains(@class, "notice")]/p' ) );
 	}
 
@@ -311,7 +311,7 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_success_notice_names_the_archive(): void {
-		sse_set_exporter_notice(
+		esse_set_exporter_notice(
 			array(
 				'type'       => 'export_success',
 				'zip_result' => array( 'filename' => self::ARCHIVE ),
@@ -325,7 +325,7 @@ final class AdminPageTest extends SseTestCase {
 			)
 		);
 
-		$page = $this->parse( $this->capture( 'sse_render_exporter_notices' ) );
+		$page = $this->parse( $this->capture( 'esse_render_exporter_notices' ) );
 
 		$this->assertSame( array( self::ARCHIVE ), $this->texts( $page, '//div[contains(@class, "notice-success")]//code' ) );
 		$this->assertContains( 'Left out of the export: 1 unreadable file or directory and 2 files over the size limit.', $this->texts( $page, '//div[contains(@class, "notice-success")]/p' ) );
@@ -338,7 +338,7 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_success_notice_does_not_print_an_unexpected_name(): void {
-		sse_set_exporter_notice(
+		esse_set_exporter_notice(
 			array(
 				'type'       => 'export_success',
 				'zip_result' => array( 'filename' => '<script>alert(1)</script>.zip' ),
@@ -346,7 +346,7 @@ final class AdminPageTest extends SseTestCase {
 			)
 		);
 
-		$html = $this->capture( 'sse_render_exporter_notices' );
+		$html = $this->capture( 'esse_render_exporter_notices' );
 		$page = $this->parse( $html );
 
 		$this->assertStringNotContainsString( 'script', $html );
@@ -363,7 +363,7 @@ final class AdminPageTest extends SseTestCase {
 		$page = $this->parse(
 			$this->capture(
 				static function (): void {
-					sse_render_export_archive_actions( self::ARCHIVE, self::DIRECTORY );
+					esse_render_export_archive_actions( self::ARCHIVE, self::DIRECTORY );
 				}
 			)
 		);
@@ -402,7 +402,7 @@ final class AdminPageTest extends SseTestCase {
 		$page = $this->parse(
 			$this->capture(
 				static function (): void {
-					sse_render_export_archive_actions( self::ARCHIVE, self::DIRECTORY );
+					esse_render_export_archive_actions( self::ARCHIVE, self::DIRECTORY );
 				}
 			)
 		);
@@ -439,7 +439,7 @@ final class AdminPageTest extends SseTestCase {
 	public function test_archive_controls_escape_their_names(): void {
 		$html = $this->capture(
 			static function (): void {
-				sse_render_export_archive_actions( 'a"><script>alert(1)</script>.zip', 'dir"><b>' );
+				esse_render_export_archive_actions( 'a"><script>alert(1)</script>.zip', 'dir"><b>' );
 			}
 		);
 
@@ -478,7 +478,7 @@ final class AdminPageTest extends SseTestCase {
 			)
 		);
 
-		$html = $this->capture( 'sse_render_activity_records' );
+		$html = $this->capture( 'esse_render_activity_records' );
 		$page = $this->parse( $html );
 
 		$this->assertStringNotContainsString( '<img', $html );
@@ -511,7 +511,7 @@ final class AdminPageTest extends SseTestCase {
 			)
 		);
 
-		$page = $this->parse( $this->capture( 'sse_render_activity_records' ) );
+		$page = $this->parse( $this->capture( 'esse_render_activity_records' ) );
 
 		$this->assertSame( 0, $page->query( '//table' )->length );
 		$this->assertContains( 'No activity has been recorded.', $this->texts( $page, '//p' ) );
@@ -523,11 +523,11 @@ final class AdminPageTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_record_type_labels(): void {
-		$this->assertSame( 'Activity', sse_get_activity_record_type_label( 'activity' ) );
-		$this->assertSame( 'Error', sse_get_activity_record_type_label( 'error' ) );
-		$this->assertSame( 'Security', sse_get_activity_record_type_label( 'security' ) );
-		$this->assertSame( 'warning', sse_get_activity_record_type_label( 'warning' ) );
-		$this->assertSame( 'System', sse_get_activity_record_user_label( 0 ) );
-		$this->assertSame( 'System', sse_get_activity_record_user_label( -3 ) );
+		$this->assertSame( 'Activity', esse_get_activity_record_type_label( 'activity' ) );
+		$this->assertSame( 'Error', esse_get_activity_record_type_label( 'error' ) );
+		$this->assertSame( 'Security', esse_get_activity_record_type_label( 'security' ) );
+		$this->assertSame( 'warning', esse_get_activity_record_type_label( 'warning' ) );
+		$this->assertSame( 'System', esse_get_activity_record_user_label( 0 ) );
+		$this->assertSame( 'System', esse_get_activity_record_user_label( -3 ) );
 	}
 }

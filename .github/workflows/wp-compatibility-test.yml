@@ -7,6 +7,10 @@
 # - PHPStan static analysis for WordPress-specific code quality
 # - WordPress security vulnerability scanning using pattern analysis
 # - PHPCS code standards validation for WordPress coding standards
+# - Psalm static analysis and taint analysis
+# - YAML, workflow, Python, Markdown, JavaScript and CSS linting
+#   (yamllint, actionlint, zizmor, Ruff, mypy, markdownlint, ESLint, Stylelint)
+# - Unit test line coverage, with a minimum
 # - Code quality analysis and automated issue creation for failures
 # The workflow ensures the plugin meets WordPress.org standards and maintains compatibility.
 
@@ -27,18 +31,21 @@ concurrency:
 
 permissions:
   contents: read
-  issues: write
 
 jobs:
   plugin-check:
     name: WP Plugin Check (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
 
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           # Always fetch the latest commit, disable any caching
@@ -47,7 +54,7 @@ jobs:
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -100,7 +107,7 @@ jobs:
 
       - name: WordPress Plugin Check
         id: wordpress_plugin_check
-        uses: WordPress/plugin-check-action@v1.1.9
+        uses: WordPress/plugin-check-action@10857da14b6c2246d15402b3e69f777edcf8c12e  # v1.1.9
         with:
           # Comment only on trusted, same-repository human PRs. An empty token
           # skips the action's optional comment, not checks or annotations.
@@ -117,12 +124,17 @@ jobs:
             plugin_repo
             security
 
-          # Whether to include experimental checks
-          include-experimental: false
+          # Run the experimental checks as well
+          include-experimental: true
 
-          # Don't ignore warnings or errors
+          # Don't ignore warnings or errors, including the low-severity ones
           ignore-warnings: false
           ignore-errors: false
+          include-low-severity-errors: true
+          include-low-severity-warnings: true
+
+          # A warning fails the job, as an error does
+          strict: true
 
           # WordPress version to use
           wp-version: 'latest'
@@ -130,8 +142,10 @@ jobs:
       - name: Handle plugin check completion
         id: handle_plugin_check_completion
         if: ${{ always() }}
+        env:
+          JOB_STATUS: ${{ job.status }}
         run: |
-          echo "Plugin Check job status: ${{ job.status }}"
+          echo "Plugin Check job status: $JOB_STATUS"
 
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
@@ -166,7 +180,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-plugin-check
           path: |
@@ -182,7 +196,7 @@ jobs:
       - name: Create issue on plugin check failure
         id: create_issue_on_plugin_check_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.clear_any_existing_composer_cache.outcome == 'failure' && 'clear_any_existing_composer_cache' || steps.install_composer_dependencies_no_cache.outcome == 'failure' && 'install_composer_dependencies_no_cache' || steps.clean_up_potential_artifact_directories.outcome == 'failure' && 'clean_up_potential_artifact_directories' || steps.prepare_plugin_check_build_directory.outcome == 'failure' && 'prepare_plugin_check_build_directory' || steps.wordpress_plugin_check.outcome == 'failure' && 'wordpress_plugin_check' || steps.handle_plugin_check_completion.outcome == 'failure' && 'handle_plugin_check_completion' || 'unknown_or_canceled' }}
@@ -203,17 +217,21 @@ jobs:
   phpcs:
     name: PHPCS (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -222,7 +240,7 @@ jobs:
 
       - name: Install Composer dependencies
         id: install_composer_dependencies
-        uses: ramsey/composer-install@v4
+        uses: ramsey/composer-install@26d8a556604053a9612623447203a691f406fbe6  # v4
         with:
           dependency-versions: highest
           composer-options: "--prefer-dist --no-progress"
@@ -268,7 +286,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-phpcs
           path: |
@@ -284,7 +302,7 @@ jobs:
       - name: Create issue on PHPCS failure
         id: create_issue_on_phpcs_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.verify_phpcs_standards.outcome == 'failure' && 'verify_phpcs_standards' || steps.run_phpcs.outcome == 'failure' && 'run_phpcs' || 'unknown_or_canceled' }}
@@ -298,17 +316,21 @@ jobs:
   vip-phpcs:
     name: WP VIP CS (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -317,7 +339,7 @@ jobs:
 
       - name: Install Composer dependencies
         id: install_composer_dependencies
-        uses: ramsey/composer-install@v4
+        uses: ramsey/composer-install@26d8a556604053a9612623447203a691f406fbe6  # v4
         with:
           dependency-versions: highest
           composer-options: "--prefer-dist --no-progress"
@@ -376,6 +398,9 @@ jobs:
 
                   <!-- Exclude JS-related sniffs to avoid deprecation warnings -->
                   <exclude name="WordPressVIPMinimum.JS"/>
+
+                  <!-- WordPress.PHP.NoSilencedErrors, in phpcs.xml, checks the @ operator with a list of allowed functions -->
+                  <exclude name="Generic.PHP.NoSilencedErrors"/>
               </rule>
 
               <!-- Add specific WordPressVIPMinimum rules (non-JS) -->
@@ -410,6 +435,9 @@ jobs:
 
               <!-- Set report width for better readability -->
               <arg name="report-width" value="120"/>
+
+              <!-- Report every message, including those rated below the default severity of 5 -->
+              <arg name="severity" value="1"/>
           </ruleset>
           EOF
 
@@ -473,7 +501,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-vip-phpcs
           path: |
@@ -489,7 +517,7 @@ jobs:
       - name: Create issue on VIP PHPCS failure
         id: create_issue_on_vip_phpcs_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.install_wordpress_vip_coding_standards.outcome == 'failure' && 'install_wordpress_vip_coding_standards' || steps.create_vip_specific_phpcs_configuration.outcome == 'failure' && 'create_vip_specific_phpcs_configuration' || steps.run_wordpress_vip_phpcs.outcome == 'failure' && 'run_wordpress_vip_phpcs' || 'unknown_or_canceled' }}
@@ -503,11 +531,15 @@ jobs:
   phpmd:
     name: PHPMD (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           # Always fetch the latest commit, disable any caching
@@ -525,7 +557,7 @@ jobs:
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -590,7 +622,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-phpmd
           path: |
@@ -606,7 +638,7 @@ jobs:
       - name: Create issue on PHPMD failure
         id: create_issue_on_phpmd_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.verify_latest_commit.outcome == 'failure' && 'verify_latest_commit' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.clear_any_existing_composer_cache.outcome == 'failure' && 'clear_any_existing_composer_cache' || steps.install_composer_dependencies_no_cache.outcome == 'failure' && 'install_composer_dependencies_no_cache' || steps.verify_phpmd_xml_content.outcome == 'failure' && 'verify_phpmd_xml_content' || steps.run_phpmd.outcome == 'failure' && 'run_phpmd' || 'unknown_or_canceled' }}
@@ -620,17 +652,21 @@ jobs:
   psalm-analysis:
     name: Psalm Static Analysis (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -639,7 +675,7 @@ jobs:
 
       - name: Install Composer dependencies
         id: install_composer_dependencies
-        uses: ramsey/composer-install@v4
+        uses: ramsey/composer-install@26d8a556604053a9612623447203a691f406fbe6  # v4
         with:
           dependency-versions: highest
           composer-options: "--prefer-dist --no-progress"
@@ -653,6 +689,11 @@ jobs:
         run: |
           vendor/bin/psalm --config=psalm.xml --show-info=true
 
+      - name: Run Psalm taint analysis
+        id: run_psalm_taint_analysis
+        run: |
+          vendor/bin/psalm --config=psalm.xml --taint-analysis
+
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
         if: ${{ always() }}
@@ -664,6 +705,7 @@ jobs:
             install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
             verify_psalm_installation=${{ steps.verify_psalm_installation.outcome }}
             run_psalm=${{ steps.run_psalm.outcome }}
+            run_psalm_taint_analysis=${{ steps.run_psalm_taint_analysis.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/sse-diagnostics"
           printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/sse-diagnostics/steps.txt"
@@ -683,7 +725,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-psalm-analysis
           path: |
@@ -699,10 +741,10 @@ jobs:
       - name: Create issue on Psalm failure
         id: create_issue_on_psalm_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.verify_psalm_installation.outcome == 'failure' && 'verify_psalm_installation' || steps.run_psalm.outcome == 'failure' && 'run_psalm' || 'unknown_or_canceled' }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.verify_psalm_installation.outcome == 'failure' && 'verify_psalm_installation' || steps.run_psalm.outcome == 'failure' && 'run_psalm' || steps.run_psalm_taint_analysis.outcome == 'failure' && 'run_psalm_taint_analysis' || 'unknown_or_canceled' }}
           PHP_VERSION: '8.3'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -713,17 +755,21 @@ jobs:
   security-check:
     name: Security Scan (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -732,14 +778,14 @@ jobs:
 
       - name: Install Composer dependencies
         id: install_composer_dependencies
-        uses: ramsey/composer-install@v4
+        uses: ramsey/composer-install@26d8a556604053a9612623447203a691f406fbe6  # v4
         with:
           dependency-versions: highest
           composer-options: "--prefer-dist --no-progress"
 
       - name: Security Check for known vulnerabilities in dependencies
         id: security_check_for_known_vulnerabilities_in_dependencies
-        uses: symfonycorp/security-checker-action@v5
+        uses: symfonycorp/security-checker-action@258311ef7ac571f1310780ef3d79fc5abef642b5  # v5
 
       - name: WordPress Security Scan
         id: wordpress_security_scan
@@ -846,7 +892,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-security-check
           path: |
@@ -862,7 +908,7 @@ jobs:
       - name: Create issue on security vulnerability
         id: create_issue_on_security_vulnerability
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.security_check_for_known_vulnerabilities_in_dependencies.outcome == 'failure' && 'security_check_for_known_vulnerabilities_in_dependencies' || steps.wordpress_security_scan.outcome == 'failure' && 'wordpress_security_scan' || 'unknown_or_canceled' }}
@@ -876,11 +922,15 @@ jobs:
   phpstan-wordpress:
     name: PHPStan for WP (PHP 8.3)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           # Always fetch the latest commit, disable any caching
@@ -889,7 +939,7 @@ jobs:
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.3'
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -952,7 +1002,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-phpstan-wordpress
           path: |
@@ -968,7 +1018,7 @@ jobs:
       - name: Create issue on PHPStan failure
         id: create_issue_on_phpstan_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.clear_any_existing_composer_cache.outcome == 'failure' && 'clear_any_existing_composer_cache' || steps.install_composer_dependencies_no_cache.outcome == 'failure' && 'install_composer_dependencies_no_cache' || steps.verify_phpstan_neon_content.outcome == 'failure' && 'verify_phpstan_neon_content' || steps.phpstan_for_wordpress_analysis.outcome == 'failure' && 'phpstan_for_wordpress_analysis' || 'unknown_or_canceled' }}
@@ -982,18 +1032,22 @@ jobs:
   admin-script-tests:
     name: Admin Script Tests (Node 24)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 15
 
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup PHP 8.3
         id: setup_php_8_3
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           # PHP renders the page markup and script settings the tests load.
           php-version: '8.3'
@@ -1002,14 +1056,15 @@ jobs:
 
       - name: Setup Node.js 24
         id: setup_node
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
         with:
           node-version: '24'
 
       - name: Install npm dependencies
         id: install_npm_dependencies
         run: |
-          npm ci --no-audit --no-fund
+          # package-lock.json is not tracked, so npm resolves the pinned packages here.
+          npm install --no-audit --no-fund --no-package-lock
           npm ls jsdom
 
       - name: Run admin script tests
@@ -1066,7 +1121,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-admin-script-tests
           path: |
@@ -1081,7 +1136,7 @@ jobs:
       - name: Create issue on admin script test failure
         id: create_issue_on_admin_script_test_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_3.outcome == 'failure' && 'setup_php_8_3' || steps.setup_node.outcome == 'failure' && 'setup_node' || steps.install_npm_dependencies.outcome == 'failure' && 'install_npm_dependencies' || steps.run_admin_script_tests.outcome == 'failure' && 'run_admin_script_tests' || 'unknown_or_canceled' }}
@@ -1092,9 +1147,295 @@ jobs:
           filename: .github/ISSUE_TEMPLATE/admin-script-test-failure.md
           update_existing: false
 
+  lint:
+    name: Lint (Node 24)
+    runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup Node.js 24
+        id: setup_node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version: '24'
+
+      - name: Install npm dependencies
+        id: install_npm_dependencies
+        run: |
+          # package-lock.json is not tracked, so npm resolves the pinned packages here.
+          npm install --no-audit --no-fund --no-package-lock
+          npm ls @wordpress/eslint-plugin eslint markdownlint-cli2 stylelint stylelint-config-standard
+
+      - name: Install Python linters
+        id: install_python_linters
+        run: |
+          # A virtual environment holds the versions that .github/lint-requirements.txt pins.
+          python3 -m venv "$RUNNER_TEMP/lint-venv"
+          "$RUNNER_TEMP/lint-venv/bin/pip" install --disable-pip-version-check --quiet \
+            --requirement .github/lint-requirements.txt
+          echo "$RUNNER_TEMP/lint-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run yamllint
+        id: run_yamllint
+        run: |
+          # Lint the tracked files only, so installed dependencies are left out.
+          mapfile -d '' -t YAML_FILES < <(git ls-files -z -- '*.yml' '*.yaml')
+          # A run that found no files must not pass.
+          [[ ${#YAML_FILES[@]} -gt 0 ]]
+          # --strict makes a warning fail the job, as an error does.
+          yamllint --strict -c .yamllint.yml -- "${YAML_FILES[@]}"
+
+      - name: Run actionlint
+        id: run_actionlint
+        run: |
+          # ShellCheck and pyflakes are left out. With ShellCheck, actionlint can stall on the
+          # long steps of the compatibility workflow; Ruff and mypy check the Python scripts.
+          actionlint -shellcheck= -pyflakes= .github/workflows/*.yml
+
+      - name: Run zizmor
+        id: run_zizmor
+        # --offline: the audits that need the GitHub API are left out, so no token is used.
+        run: zizmor --offline --no-progress .github/workflows
+
+      - name: Run Ruff
+        id: run_ruff
+        run: |
+          ruff check .github/scripts
+          ruff format --check .github/scripts
+
+      - name: Run mypy
+        id: run_mypy
+        # .mypy.ini names the files and sets the strict mode.
+        run: mypy
+
+      - name: Run markdownlint
+        id: run_markdownlint
+        run: |
+          # .markdownlint-cli2.jsonc names the files; .markdownlint.json holds the rules.
+          status=0
+          npm run --silent lint:md > "$RUNNER_TEMP/markdownlint.txt" 2>&1 || status=$?
+          cat "$RUNNER_TEMP/markdownlint.txt"
+          [[ $status == 0 ]]
+          # A run that found no files must not pass.
+          grep -Eq '^Linting: [1-9][0-9]* file' "$RUNNER_TEMP/markdownlint.txt"
+
+      - name: Run ESLint
+        id: run_eslint
+        # ESLint fails by itself when the pattern matches no file.
+        run: npm run --silent lint:js
+
+      - name: Run Stylelint
+        id: run_stylelint
+        # Stylelint fails by itself when the pattern matches no file.
+        run: npm run --silent lint:css
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_node=${{ steps.setup_node.outcome }}
+            install_npm_dependencies=${{ steps.install_npm_dependencies.outcome }}
+            install_python_linters=${{ steps.install_python_linters.outcome }}
+            run_yamllint=${{ steps.run_yamllint.outcome }}
+            run_actionlint=${{ steps.run_actionlint.outcome }}
+            run_zizmor=${{ steps.run_zizmor.outcome }}
+            run_ruff=${{ steps.run_ruff.outcome }}
+            run_mypy=${{ steps.run_mypy.outcome }}
+            run_markdownlint=${{ steps.run_markdownlint.outcome }}
+            run_eslint=${{ steps.run_eslint.outcome }}
+            run_stylelint=${{ steps.run_stylelint.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/sse-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/sse-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/sse-diagnostics/run.txt"
+          if command -v node >/dev/null; then
+            node --version > "$RUNNER_TEMP/sse-diagnostics/node.txt"
+          fi
+          if command -v npm >/dev/null && [ -d node_modules ]; then
+            npm ls --all --depth=1 > "$RUNNER_TEMP/sse-diagnostics/dependencies.txt" 2>&1 || true
+          fi
+          if [ -x "$RUNNER_TEMP/lint-venv/bin/pip" ]; then
+            "$RUNNER_TEMP/lint-venv/bin/pip" freeze > "$RUNNER_TEMP/sse-diagnostics/python-dependencies.txt" 2>&1 || true
+          fi
+          # Never upload config, authentication data, SQL, exports, or arbitrary logs.
+          # Refuse oversized or linked diagnostics instead of uploading them.
+          find "$RUNNER_TEMP/sse-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/sse-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: wp-compat-lint
+          path: |
+            ${{ runner.temp }}/sse-diagnostics/run.txt
+            ${{ runner.temp }}/sse-diagnostics/steps.txt
+            ${{ runner.temp }}/sse-diagnostics/node.txt
+            ${{ runner.temp }}/sse-diagnostics/dependencies.txt
+            ${{ runner.temp }}/sse-diagnostics/python-dependencies.txt
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on lint failure
+        id: create_issue_on_lint_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_node.outcome == 'failure' && 'setup_node' || steps.install_npm_dependencies.outcome == 'failure' && 'install_npm_dependencies' || steps.install_python_linters.outcome == 'failure' && 'install_python_linters' || steps.run_yamllint.outcome == 'failure' && 'run_yamllint' || steps.run_actionlint.outcome == 'failure' && 'run_actionlint' || steps.run_zizmor.outcome == 'failure' && 'run_zizmor' || steps.run_ruff.outcome == 'failure' && 'run_ruff' || steps.run_mypy.outcome == 'failure' && 'run_mypy' || steps.run_markdownlint.outcome == 'failure' && 'run_markdownlint' || steps.run_eslint.outcome == 'failure' && 'run_eslint' || steps.run_stylelint.outcome == 'failure' && 'run_stylelint' || 'unknown_or_canceled' }}
+          NODE_VERSION: '24'
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/lint-failure.md
+          update_existing: false
+
+  unit-coverage:
+    name: Unit Test Coverage (PHP 8.4)
+    runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
+    timeout-minutes: 15
+    env:
+      # The unit suite must cover at least this percentage of the production lines. It is set a few
+      # points below the measured value, so it stops a real drop without failing on small changes.
+      MINIMUM_LINE_COVERAGE: '15'
+
+    steps:
+      - name: Checkout code
+        id: checkout_code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP 8.4
+        id: setup_php_8_4
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
+        with:
+          php-version: '8.4'
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          coverage: pcov
+          tools: composer:v2
+
+      - name: Install Composer dependencies
+        id: install_composer_dependencies
+        uses: ramsey/composer-install@26d8a556604053a9612623447203a691f406fbe6  # v4
+        with:
+          dependency-versions: highest
+          composer-options: "--prefer-dist --no-progress"
+
+      - name: Run unit tests with coverage
+        id: run_unit_tests_with_coverage
+        run: |
+          mkdir -p "$RUNNER_TEMP/sse-diagnostics"
+          vendor/bin/phpunit --version
+          vendor/bin/phpunit --configuration phpunit.xml --testsuite unit --fail-on-empty-test-suite \
+            --coverage-text="$RUNNER_TEMP/sse-diagnostics/coverage.txt" \
+            --coverage-clover "$RUNNER_TEMP/sse-diagnostics/clover.xml"
+          cat "$RUNNER_TEMP/sse-diagnostics/coverage.txt"
+
+      - name: Check line coverage
+        id: check_line_coverage
+        run: |
+          php -r '
+            $metrics = simplexml_load_file($argv[1])->project->metrics;
+            $lines   = (int) $metrics["statements"];
+            $covered = (int) $metrics["coveredstatements"];
+            if ($lines < 1) {
+                fwrite(STDERR, "::error::The coverage report lists no production lines.\n");
+                exit(1);
+            }
+            $percent = 100 * $covered / $lines;
+            printf("Line coverage: %.2f%% (%d of %d lines); minimum %s%%.\n", $percent, $covered, $lines, $argv[2]);
+            if ($percent < (float) $argv[2]) {
+                fwrite(STDERR, "::error::Unit test line coverage is below the minimum.\n");
+                exit(1);
+            }
+          ' "$RUNNER_TEMP/sse-diagnostics/clover.xml" "$MINIMUM_LINE_COVERAGE"
+
+      - name: Preserve diagnostic summary
+        id: preserve_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        env:
+          STEP_RESULTS: |
+            checkout_code=${{ steps.checkout_code.outcome }}
+            setup_php_8_4=${{ steps.setup_php_8_4.outcome }}
+            install_composer_dependencies=${{ steps.install_composer_dependencies.outcome }}
+            run_unit_tests_with_coverage=${{ steps.run_unit_tests_with_coverage.outcome }}
+            check_line_coverage=${{ steps.check_line_coverage.outcome }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/sse-diagnostics"
+          printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/sse-diagnostics/steps.txt"
+          printf 'commit=%s\njob=%s\n' "$GITHUB_SHA" "$GITHUB_JOB" > "$RUNNER_TEMP/sse-diagnostics/run.txt"
+          if command -v php >/dev/null; then
+            php -r 'echo PHP_VERSION, PHP_EOL;' > "$RUNNER_TEMP/sse-diagnostics/php.txt"
+          fi
+          if command -v composer >/dev/null && [ -f vendor/composer/installed.json ]; then
+            php -r '$data = json_decode(file_get_contents("vendor/composer/installed.json"), true, 512, JSON_THROW_ON_ERROR); foreach ($data["packages"] ?? $data as $package) { echo $package["name"], " ", $package["version"], PHP_EOL; }' > "$RUNNER_TEMP/sse-diagnostics/dependencies.txt"
+          fi
+          # Never upload config, authentication data, SQL, exports, or arbitrary logs.
+          # Refuse oversized or linked diagnostics instead of uploading them.
+          find "$RUNNER_TEMP/sse-diagnostics" -type l -delete
+          find "$RUNNER_TEMP/sse-diagnostics" -type f -size +2M -delete
+
+      - name: Upload diagnostic summary
+        id: upload_diagnostics
+        if: ${{ always() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        with:
+          name: wp-compat-unit-coverage
+          path: |
+            ${{ runner.temp }}/sse-diagnostics/run.txt
+            ${{ runner.temp }}/sse-diagnostics/steps.txt
+            ${{ runner.temp }}/sse-diagnostics/php.txt
+            ${{ runner.temp }}/sse-diagnostics/dependencies.txt
+            ${{ runner.temp }}/sse-diagnostics/wordpress.txt
+            ${{ runner.temp }}/sse-diagnostics/junit.xml
+            ${{ runner.temp }}/sse-diagnostics/coverage.txt
+            ${{ runner.temp }}/sse-diagnostics/clover.xml
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Create issue on unit coverage failure
+        id: create_issue_on_unit_coverage_failure
+        if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php_8_4.outcome == 'failure' && 'setup_php_8_4' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_unit_tests_with_coverage.outcome == 'failure' && 'run_unit_tests_with_coverage' || steps.check_line_coverage.outcome == 'failure' && 'check_line_coverage' || 'unknown_or_canceled' }}
+          PHP_VERSION: '8.4'
+          RUN_ID: ${{ github.run_id }}
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          filename: .github/ISSUE_TEMPLATE/unit-coverage-failure.md
+          update_existing: false
+
   wp-version-test:
     name: Test WordPress ${{ matrix.wp-version }} with PHP ${{ matrix.php-version }} (${{ matrix.dependency-versions }} deps)
     runs-on: ubuntu-latest
+    # The job files an issue when it fails on main.
+    permissions:
+      contents: read
+      issues: write
     timeout-minutes: 45
     strategy:
       matrix:
@@ -1120,13 +1461,13 @@ jobs:
     steps:
       - name: Checkout code
         id: checkout_code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
 
       - name: Setup PHP ${{ matrix.php-version }}
         id: setup_php
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: ${{ matrix.php-version }}
           extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
@@ -1165,7 +1506,7 @@ jobs:
 
       - name: Install Composer dependencies
         id: install_composer_dependencies
-        uses: ramsey/composer-install@v4
+        uses: ramsey/composer-install@26d8a556604053a9612623447203a691f406fbe6  # v4
         with:
           dependency-versions: ${{ matrix.dependency-versions }}
           composer-options: "--prefer-dist --no-progress"
@@ -1407,8 +1748,8 @@ jobs:
 
           class EngineScriptSiteExporterTest extends WP_UnitTestCase {
               public function tear_down() {
-                  sse_clear_current_export_lease();
-                  sse_clear_export_resource_budget();
+                  esse_clear_current_export_lease();
+                  esse_clear_export_resource_budget();
                   $_GET = [];
                   $_POST = [];
                   $_REQUEST = [];
@@ -1418,68 +1759,68 @@ jobs:
 
               public function test_export_capability_boundary() {
                   wp_set_current_user(0);
-                  $this->assertFalse(sse_current_user_can_export_site());
+                  $this->assertFalse(esse_current_user_can_export_site());
                   $subscriber = self::factory()->user->create(['role' => 'subscriber']);
                   wp_set_current_user($subscriber);
-                  $this->assertFalse(sse_current_user_can_export_site());
+                  $this->assertFalse(esse_current_user_can_export_site());
                   $admin = self::factory()->user->create(['role' => 'administrator']);
                   wp_set_current_user($admin);
-                  $this->assertSame(!is_multisite(), sse_current_user_can_export_site());
+                  $this->assertSame(!is_multisite(), esse_current_user_can_export_site());
               }
 
               public function test_lease_ownership_and_conflict() {
-                  $lease = sse_acquire_export_lease();
+                  $lease = esse_acquire_export_lease();
                   $this->assertIsArray($lease);
                   try {
-                      $conflict = sse_acquire_export_lease();
+                      $conflict = esse_acquire_export_lease();
                       $this->assertWPError($conflict);
                       $this->assertSame('export_lease_conflict', $conflict->get_error_code());
                       $wrong = $lease;
                       $wrong['owner'] = wp_generate_uuid4();
-                      $this->assertFalse(sse_release_export_lease($wrong));
-                      $this->assertSame($lease, sse_get_stored_export_lease());
-                      sse_set_current_export_lease($lease);
-                      $this->assertTrue(sse_renew_current_export_lease(true));
+                      $this->assertFalse(esse_release_export_lease($wrong));
+                      $this->assertSame($lease, esse_get_stored_export_lease());
+                      esse_set_current_export_lease($lease);
+                      $this->assertTrue(esse_renew_current_export_lease(true));
                   } finally {
-                      sse_release_export_lease(sse_get_current_export_lease() ?? $lease);
+                      esse_release_export_lease(esse_get_current_export_lease() ?? $lease);
                   }
-                  $this->assertNull(sse_get_stored_export_lease());
+                  $this->assertNull(esse_get_stored_export_lease());
               }
 
               public function test_stale_owner_cannot_release_replacement() {
-                  $old = sse_acquire_export_lease();
+                  $old = esse_acquire_export_lease();
                   $this->assertIsArray($old);
-                  $this->assertTrue(sse_release_export_lease($old));
-                  $new = sse_acquire_export_lease();
+                  $this->assertTrue(esse_release_export_lease($old));
+                  $new = esse_acquire_export_lease();
                   $this->assertIsArray($new);
                   try {
-                      $this->assertFalse(sse_release_export_lease($old));
-                      $this->assertSame($new, sse_get_stored_export_lease());
+                      $this->assertFalse(esse_release_export_lease($old));
+                      $this->assertSame($new, esse_get_stored_export_lease());
                   } finally {
-                      sse_release_export_lease($new);
+                      esse_release_export_lease($new);
                   }
               }
 
               public function test_logs_expire_without_new_append() {
                   update_option('sse_error_logs', 'malformed', false);
-                  sse_prune_expired_stored_logs();
+                  esse_prune_expired_stored_logs();
                   $this->assertSame([], get_option('sse_error_logs'));
-                  sse_store_log_in_database('test record', 'error');
+                  esse_store_log_in_database('test record', 'error');
                   $logs = get_option('sse_error_logs');
                   $this->assertCount(1, $logs);
                   $logs[0]['time'] = time() - 8 * DAY_IN_SECONDS;
                   update_option('sse_error_logs', $logs, false);
-                  $this->assertSame(1, sse_prune_expired_stored_logs());
+                  $this->assertSame(1, esse_prune_expired_stored_logs());
                   $this->assertSame([], get_option('sse_error_logs'));
               }
 
               public function test_cleanup_schedule_is_idempotent() {
                   $path = '/tmp/sse-test-' . wp_generate_uuid4() . '/fixture.zip';
                   try {
-                      sse_schedule_export_cleanup($path);
+                      esse_schedule_export_cleanup($path);
                       $first = wp_next_scheduled('sse_delete_export_file', [$path]);
                       $this->assertIsInt($first);
-                      sse_schedule_export_cleanup($path);
+                      esse_schedule_export_cleanup($path);
                       $this->assertSame($first, wp_next_scheduled('sse_delete_export_file', [$path]));
                       $this->assertSame(1, wp_clear_scheduled_hook('sse_delete_export_file', [$path]));
                       $this->assertFalse(wp_next_scheduled('sse_delete_export_file', [$path]));
@@ -1492,18 +1833,18 @@ jobs:
                   $deleted = '/tmp/sse-test-' . wp_generate_uuid4() . '/deleted.zip';
                   $kept    = '/tmp/sse-test-' . wp_generate_uuid4() . '/kept.zip';
                   try {
-                      sse_schedule_export_cleanup($deleted);
-                      sse_schedule_export_cleanup($kept);
+                      esse_schedule_export_cleanup($deleted);
+                      esse_schedule_export_cleanup($kept);
                       $kept_time = wp_next_scheduled('sse_delete_export_file', [$kept]);
                       $this->assertIsInt(wp_next_scheduled('sse_delete_export_file', [$deleted]));
                       $this->assertIsInt($kept_time);
 
-                      sse_unschedule_export_cleanup($deleted);
+                      esse_unschedule_export_cleanup($deleted);
                       $this->assertFalse(wp_next_scheduled('sse_delete_export_file', [$deleted]));
                       $this->assertSame($kept_time, wp_next_scheduled('sse_delete_export_file', [$kept]));
 
                       // A path with no event is not an error.
-                      sse_unschedule_export_cleanup($deleted);
+                      esse_unschedule_export_cleanup($deleted);
                       $this->assertSame($kept_time, wp_next_scheduled('sse_delete_export_file', [$kept]));
                   } finally {
                       wp_clear_scheduled_hook('sse_delete_export_file', [$deleted]);
@@ -1514,7 +1855,7 @@ jobs:
               public function test_stored_logs_are_bounded_and_redacted() {
                   delete_option('sse_error_logs');
                   for ($index = 0; $index < 25; ++$index) {
-                      sse_store_log_in_database('record ' . $index . ' ' . ABSPATH . 'private.sql', 'ERROR!');
+                      esse_store_log_in_database('record ' . $index . ' ' . ABSPATH . 'private.sql', 'ERROR!');
                   }
                   $logs = get_option('sse_error_logs');
                   $this->assertCount(20, $logs);
@@ -1524,14 +1865,14 @@ jobs:
                       $this->assertStringNotContainsString(ABSPATH, $log['message']);
                       $this->assertStringNotContainsString('private.sql', $log['message']);
                   }
-                  $this->assertLessThanOrEqual(1000, strlen(sse_sanitize_stored_log_message(str_repeat('x', 2000))));
+                  $this->assertLessThanOrEqual(1000, strlen(esse_sanitize_stored_log_message(str_repeat('x', 2000))));
               }
 
               public function test_private_directory_contract_rejects_legacy_and_traversal() {
-                  $valid = sse_generate_private_export_directory_name();
-                  $this->assertTrue(sse_validate_export_directory_name_format($valid));
+                  $valid = esse_generate_private_export_directory_name();
+                  $this->assertTrue(esse_validate_export_directory_name_format($valid));
                   foreach (['', '.', '..', '../' . $valid, $valid . '/child', $valid . '\\child', 'legacy-export'] as $invalid) {
-                      $error = sse_validate_export_directory_name_format($invalid);
+                      $error = esse_validate_export_directory_name_format($invalid);
                       $this->assertWPError($error);
                       $this->assertSame('invalid_export_directory', $error->get_error_code());
                   }
@@ -1545,11 +1886,11 @@ jobs:
                   try {
                       foreach ([null, false, 'invalid', new stdClass()] as $invalid) {
                           $GLOBALS['wp_filesystem'] = $invalid;
-                          $this->assertNull(sse_get_direct_global_filesystem());
+                          $this->assertNull(esse_get_direct_global_filesystem());
                       }
                       $direct = new WP_Filesystem_Direct(null);
                       $GLOBALS['wp_filesystem'] = $direct;
-                      $this->assertSame($direct, sse_get_direct_global_filesystem());
+                      $this->assertSame($direct, esse_get_direct_global_filesystem());
                   } finally {
                       if ($existed) {
                           $GLOBALS['wp_filesystem'] = $previous;
@@ -1568,8 +1909,8 @@ jobs:
                   try {
                       $this->assertSame(7, file_put_contents($outside, 'fixture'));
                       $this->assertTrue(symlink($outside, $link));
-                      $this->assertTrue(sse_validate_filepath($outside, $root));
-                      $this->assertFalse(sse_validate_filepath($link, $root . '/allowed'));
+                      $this->assertTrue(esse_validate_filepath($outside, $root));
+                      $this->assertFalse(esse_validate_filepath($link, $root . '/allowed'));
                       $this->assertSame('fixture', file_get_contents($outside));
                   } finally {
                       if (is_link($link)) {
@@ -1584,7 +1925,7 @@ jobs:
               }
 
               public function test_plugin_loaded() {
-                  $this->assertTrue(function_exists('sse_admin_menu'), 'Plugin was not loaded correctly');
+                  $this->assertTrue(function_exists('esse_admin_menu'), 'Plugin was not loaded correctly');
               }
 
               public function test_cleanup_uses_directory_entry_fields() {
@@ -1598,10 +1939,10 @@ jobs:
                       $this->assertSame(7, file_put_contents($root . '/123', 'fixture'));
                       $this->assertSame(7, file_put_contents($root . '/unrelated.txt', 'fixture'));
                       $this->assertTrue(mkdir($root . '/nested.zip', 0700));
-                      $this->assertSame([$zip], sse_get_export_files_from_private_directory($root));
-                      $this->assertSame([], sse_get_export_files_from_private_directory($root . '/missing'));
+                      $this->assertSame([$zip], esse_get_export_files_from_private_directory($root));
+                      $this->assertSame([], esse_get_export_files_from_private_directory($root . '/missing'));
                       // This helper independently accepts broad arrays; retain its guards.
-                      $this->assertSame([], sse_get_export_files_from_directory_entry(['name' => null, 'type' => null], $root, ''));
+                      $this->assertSame([], esse_get_export_files_from_directory_entry(['name' => null, 'type' => null], $root, ''));
                   } finally {
                       foreach ([$zip, $root . '/123', $root . '/unrelated.txt'] as $file) {
                           if (is_file($file)) {
@@ -1621,42 +1962,42 @@ jobs:
               }
 
               public function test_plugin_hooks_registered() {
-                  $this->assertSame(10, has_action('admin_menu', 'sse_admin_menu'));
-                  $this->assertSame(10, has_action('network_admin_menu', 'sse_network_admin_menu'));
-                  $this->assertSame(10, has_action('sse_recover_expired_export', 'sse_recover_expired_export_handler'));
-                  $this->assertSame(10, has_action('sse_export_housekeeping', 'sse_export_housekeeping_handler'));
-                  $this->assertSame(10, has_action('admin_enqueue_scripts', 'sse_enqueue_admin_assets'));
-                  $this->assertSame(10, has_action('admin_post_sse_export_site', 'sse_handle_export'));
-                  $this->assertSame(10, has_action('admin_post_sse_secure_download', 'sse_handle_secure_download'));
-                  $this->assertSame(10, has_action('admin_post_sse_delete_export', 'sse_handle_export_deletion'));
-                  $this->assertSame(10, has_action('sse_delete_export_file', 'sse_delete_export_file_handler'));
-                  $this->assertSame(10, has_action('sse_bulk_cleanup_exports', 'sse_bulk_cleanup_exports_handler'));
+                  $this->assertSame(10, has_action('admin_menu', 'esse_admin_menu'));
+                  $this->assertSame(10, has_action('network_admin_menu', 'esse_network_admin_menu'));
+                  $this->assertSame(10, has_action('sse_recover_expired_export', 'esse_recover_expired_export_handler'));
+                  $this->assertSame(10, has_action('sse_export_housekeeping', 'esse_export_housekeeping_handler'));
+                  $this->assertSame(10, has_action('admin_enqueue_scripts', 'esse_enqueue_admin_assets'));
+                  $this->assertSame(10, has_action('admin_post_sse_export_site', 'esse_handle_export'));
+                  $this->assertSame(10, has_action('admin_post_sse_secure_download', 'esse_handle_secure_download'));
+                  $this->assertSame(10, has_action('admin_post_sse_delete_export', 'esse_handle_export_deletion'));
+                  $this->assertSame(10, has_action('sse_delete_export_file', 'esse_delete_export_file_handler'));
+                  $this->assertSame(10, has_action('sse_bulk_cleanup_exports', 'esse_bulk_cleanup_exports_handler'));
               }
 
               public function test_plugin_constants_defined() {
-                  $this->assertTrue(defined('ES_SITE_EXPORTER_VERSION'));
-                  $this->assertTrue(defined('SSE_ALLOWED_EXTENSIONS'));
-                  $this->assertTrue(defined('SSE_EXPORT_DIR_NAME'));
-                  $this->assertTrue(defined('SSE_FILTER_MAX_FILE_SIZE'));
+                  $this->assertTrue(defined('ESSE_VERSION'));
+                  $this->assertTrue(defined('ESSE_ALLOWED_EXTENSIONS'));
+                  $this->assertTrue(defined('ESSE_EXPORT_DIR_NAME'));
+                  $this->assertTrue(defined('ESSE_FILTER_MAX_FILE_SIZE'));
 
-                  $this->assertNotEmpty(ES_SITE_EXPORTER_VERSION);
-                  $this->assertSame(['zip'], SSE_ALLOWED_EXTENSIONS);
-                  $this->assertSame('enginescript-site-exporter-exports', SSE_EXPORT_DIR_NAME);
-                  $this->assertSame('sse_max_file_size_for_export', SSE_FILTER_MAX_FILE_SIZE);
+                  $this->assertNotEmpty(ESSE_VERSION);
+                  $this->assertSame(['zip'], ESSE_ALLOWED_EXTENSIONS);
+                  $this->assertSame('enginescript-site-exporter-exports', ESSE_EXPORT_DIR_NAME);
+                  $this->assertSame('sse_max_file_size_for_export', ESSE_FILTER_MAX_FILE_SIZE);
               }
 
               public function test_security_helper_allows_only_zip_extension() {
-                  $this->assertTrue(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.zip'));
-                  $this->assertFalse(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.php'));
-                  $this->assertFalse(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.sql'));
-                  $this->assertFalse(sse_validate_file_extension('site_enginescript_site_export_20260513_123456.tar.gz'));
+                  $this->assertTrue(esse_validate_file_extension('site_enginescript_site_export_20260513_123456.zip'));
+                  $this->assertFalse(esse_validate_file_extension('site_enginescript_site_export_20260513_123456.php'));
+                  $this->assertFalse(esse_validate_file_extension('site_enginescript_site_export_20260513_123456.sql'));
+                  $this->assertFalse(esse_validate_file_extension('site_enginescript_site_export_20260513_123456.tar.gz'));
               }
 
               public function test_export_filename_format_validation() {
-                  $this->assertTrue(sse_validate_filename_format('site_enginescript_site_export_20260513_123456.zip'));
-                  $this->assertInstanceOf(WP_Error::class, sse_validate_filename_format('../site_enginescript_site_export_20260513_123456.zip'));
-                  $this->assertInstanceOf(WP_Error::class, sse_validate_filename_format('site_enginescript_site_export_20260513_123456.php'));
-                  $this->assertInstanceOf(WP_Error::class, sse_validate_filename_format('site_export.zip'));
+                  $this->assertTrue(esse_validate_filename_format('site_enginescript_site_export_20260513_123456.zip'));
+                  $this->assertInstanceOf(WP_Error::class, esse_validate_filename_format('../site_enginescript_site_export_20260513_123456.zip'));
+                  $this->assertInstanceOf(WP_Error::class, esse_validate_filename_format('site_enginescript_site_export_20260513_123456.php'));
+                  $this->assertInstanceOf(WP_Error::class, esse_validate_filename_format('site_export.zip'));
               }
 
               public function test_filepath_validation_rejects_traversal() {
@@ -1665,10 +2006,10 @@ jobs:
                   $file = $base_dir . '/site_enginescript_site_export_20260513_123456.zip';
                   try {
                       $this->assertSame(7, file_put_contents($file, 'fixture'));
-                      $this->assertTrue(sse_validate_filepath($file, $base_dir));
-                      $this->assertFalse(sse_validate_filepath($base_dir . '/../' . basename($file), $base_dir));
+                      $this->assertTrue(esse_validate_filepath($file, $base_dir));
+                      $this->assertFalse(esse_validate_filepath($base_dir . '/../' . basename($file), $base_dir));
                       // A file that does not exist is never valid, also inside the base.
-                      $this->assertFalse(sse_validate_filepath($base_dir . '/site_enginescript_site_export_20260513_999999.zip', $base_dir));
+                      $this->assertFalse(esse_validate_filepath($base_dir . '/site_enginescript_site_export_20260513_999999.zip', $base_dir));
                   } finally {
                       if (is_file($file)) {
                           unlink($file);
@@ -1746,7 +2087,7 @@ jobs:
               }
 
               public function test_tar_header_layout_and_checksum() {
-                  $header = sse_tar_build_header('dir/file.txt', 5, 0104755, 1700000000, '0');
+                  $header = esse_tar_build_header('dir/file.txt', 5, 0104755, 1700000000, '0');
                   $this->assertSame(512, strlen($header));
                   $this->assertSame('dir/file.txt', rtrim(substr($header, 0, 100), "\0"));
                   // Only the nine permission bits are stored, and the owner and group are zero.
@@ -1762,22 +2103,22 @@ jobs:
               }
 
               public function test_tar_size_field_padding_and_entry_lengths() {
-                  $this->assertSame("77777777777\0", sse_tar_format_size_field(077777777777));
+                  $this->assertSame("77777777777\0", esse_tar_format_size_field(077777777777));
                   // From 8 GiB on, the size is stored in the GNU binary form.
-                  $this->assertSame("\x80\0\0\0" . pack('J', 8589934592), sse_tar_format_size_field(8589934592));
-                  $this->assertSame(12, strlen(sse_tar_format_size_field(PHP_INT_MAX)));
-                  $this->assertSame('', sse_tar_get_padding(0));
-                  $this->assertSame(511, strlen(sse_tar_get_padding(1)));
-                  $this->assertSame('', sse_tar_get_padding(1024));
-                  $this->assertSame(str_repeat("\0", 1024), sse_tar_get_end_of_archive());
+                  $this->assertSame("\x80\0\0\0" . pack('J', 8589934592), esse_tar_format_size_field(8589934592));
+                  $this->assertSame(12, strlen(esse_tar_format_size_field(PHP_INT_MAX)));
+                  $this->assertSame('', esse_tar_get_padding(0));
+                  $this->assertSame(511, strlen(esse_tar_get_padding(1)));
+                  $this->assertSame('', esse_tar_get_padding(1024));
+                  $this->assertSame(str_repeat("\0", 1024), esse_tar_get_end_of_archive());
                   // A path of up to 100 bytes needs one header; a longer one needs a long-name record first.
                   foreach ([100 => 512, 101 => 1536, 300 => 1536, 600 => 2048] as $length => $expected) {
                       $path = str_repeat('n', $length);
-                      $this->assertSame($expected, strlen(sse_tar_build_entry_header($path, 0, 0644, 0, '0')));
-                      $this->assertSame($expected, sse_tar_get_entry_bytes(0, $path));
+                      $this->assertSame($expected, strlen(esse_tar_build_entry_header($path, 0, 0644, 0, '0')));
+                      $this->assertSame($expected, esse_tar_get_entry_bytes(0, $path));
                   }
-                  $this->assertSame(512 + 1024, sse_tar_get_entry_bytes(513, 'f'));
-                  $long_name = sse_tar_build_long_name_record(str_repeat('n', 101));
+                  $this->assertSame(512 + 1024, esse_tar_get_entry_bytes(513, 'f'));
+                  $long_name = esse_tar_build_long_name_record(str_repeat('n', 101));
                   $this->assertSame('L', $long_name[156]);
                   $this->assertSame('././@LongLink', rtrim(substr($long_name, 0, 100), "\0"));
               }
@@ -1795,13 +2136,13 @@ jobs:
                   $archive = '';
                   foreach ($entries as $name => $content) {
                       if (null === $content) {
-                          $archive .= sse_tar_build_entry_header($name, 0, 0755, 1700000000, '5');
+                          $archive .= esse_tar_build_entry_header($name, 0, 0755, 1700000000, '5');
                           continue;
                       }
-                      $archive .= sse_tar_build_entry_header($name, strlen($content), 0640, 1700000000, '0')
-                          . $content . sse_tar_get_padding(strlen($content));
+                      $archive .= esse_tar_build_entry_header($name, strlen($content), 0640, 1700000000, '0')
+                          . $content . esse_tar_get_padding(strlen($content));
                   }
-                  $archive .= sse_tar_get_end_of_archive();
+                  $archive .= esse_tar_get_end_of_archive();
                   $this->assertTrue(mkdir($root . '/out', 0700, true));
                   try {
                       $this->assertSame(strlen($archive), file_put_contents($root . '/fixture.tar', $archive));
@@ -1831,13 +2172,13 @@ jobs:
                   $excluded = ['.git', 'a/.git', 'a/.GIT', 'wp-content/.svn', '.hg', 'a/.DS_Store', '.htaccess',
                       'wp-content/.user.ini', 'wp-content/cache/page.html', 'wp-content/upgrade/a/b', 'wp-content/temp/c'];
                   foreach ($excluded as $path) {
-                      $this->assertTrue(sse_should_exclude_file($path), $path);
+                      $this->assertTrue(esse_should_exclude_file($path), $path);
                   }
                   // A file named "0", and names that only begin like an excluded one, are kept.
                   $kept = ['0', 'a/0', '.gitignore', 'a/.github', 'a/b.git', 'git', 'wp-config.php',
                       'wp-content/cache', 'wp-content/cachefoo/page.html', 'a/wp-content/cache/page.html'];
                   foreach ($kept as $path) {
-                      $this->assertFalse(sse_should_exclude_file($path), $path);
+                      $this->assertFalse(esse_should_exclude_file($path), $path);
                   }
               }
 
@@ -1848,10 +2189,10 @@ jobs:
                   $long_name = str_repeat('p', 150) . '.txt';
                   $utf8_name = "\u{00FC}n\u{00EF}-\u{2713}.txt";
                   $export_paths = null;
-                  $lease = sse_acquire_export_lease();
+                  $lease = esse_acquire_export_lease();
                   $this->assertIsArray($lease);
-                  sse_set_current_export_lease($lease);
-                  sse_initialize_export_resource_budget(0);
+                  esse_set_current_export_lease($lease);
+                  esse_initialize_export_resource_budget(0);
                   try {
                       foreach (['/kept', '/.git', '/locked'] as $directory) {
                           $this->assertTrue(mkdir($source . $directory, 0755, true));
@@ -1871,12 +2212,12 @@ jobs:
                       $this->assertTrue(symlink($source . '/0', $source . '/link'));
                       $this->assertTrue(chmod($source . '/locked', 0000));
 
-                      $export_paths = sse_setup_export_directories();
+                      $export_paths = esse_setup_export_directories();
                       $this->assertIsArray($export_paths);
                       $archive = $export_paths['export_dir'] . '/files.tar.gz';
-                      $this->assertTrue(sse_create_wordpress_files_archive($archive));
+                      $this->assertTrue(esse_create_wordpress_files_archive($archive));
                       $this->assertSame(0600, fileperms($archive) & 0777);
-                      $skipped = sse_get_skipped_export_entry_counts();
+                      $skipped = esse_get_skipped_export_entry_counts();
                       $this->assertSame(1, $skipped['links']);
                       $this->assertSame(1, $skipped['unreadable']);
                       $this->assertSame(0, $skipped['large'] + $skipped['special'] + $skipped['changed']);
@@ -1888,20 +2229,20 @@ jobs:
                       );
                       $this->assertSame(0, $status, implode("\n", array_slice($listing, -5)));
                       $names = [];
-                      $tar_bytes = strlen(sse_tar_get_end_of_archive());
+                      $tar_bytes = strlen(esse_tar_get_end_of_archive());
                       $file_bytes = 0;
                       foreach ($listing as $line) {
                           $this->assertSame(1, preg_match('/^.{10}\s+\S+\s+(\d+)\s+\S+\s+\S+\s(.+)$/', $line, $match), $line);
                           $names[] = $match[2];
                           $file_bytes += (int) $match[1];
-                          $tar_bytes += sse_tar_get_entry_bytes((int) $match[1], $match[2]);
+                          $tar_bytes += esse_tar_get_entry_bytes((int) $match[1], $match[2]);
                       }
                       $this->assertGreaterThan(1000, count($names));
                       $this->assertSame(count($names), count(array_unique($names)));
 
                       // Single pass: every entry is counted once, and the stream holds one
                       // header and one copy of the content per entry and nothing else.
-                      $budget = sse_get_export_resource_budget();
+                      $budget = esse_get_export_resource_budget();
                       $this->assertSame(count($names), $budget['entries']);
                       $this->assertSame($file_bytes, $budget['source_bytes']);
                       $stream = gzopen($archive, 'rb');
@@ -1938,9 +2279,9 @@ jobs:
                       $this->sse_remove_fixture_tree($source);
                       $this->sse_remove_fixture_tree($out);
                       if (is_array($export_paths)) {
-                          sse_delete_directory_tree($export_paths['export_dir']);
+                          esse_delete_directory_tree($export_paths['export_dir']);
                       }
-                      sse_release_export_lease(sse_get_current_export_lease() ?? $lease);
+                      esse_release_export_lease(esse_get_current_export_lease() ?? $lease);
                   }
               }
 
@@ -1948,35 +2289,35 @@ jobs:
                   $user_id = $this->sse_sign_in_exporter();
                   // An earlier version kept the limit in this transient; it no longer has any effect.
                   set_transient('sse_export_max_file_size_' . $user_id, 1, HOUR_IN_SECONDS);
-                  $this->assertSame(0, sse_get_export_max_file_size());
-                  sse_initialize_export_resource_budget(104857600);
-                  $this->assertSame(104857600, sse_get_export_max_file_size());
-                  $this->assertFalse(sse_is_over_export_file_size_limit(104857600, 'at-the-limit.bin'));
-                  $this->assertTrue(sse_is_over_export_file_size_limit(104857601, 'over-the-limit.bin'));
-                  $this->assertSame(1, sse_get_skipped_export_entry_counts()['large']);
-                  sse_initialize_export_resource_budget(0);
-                  $this->assertFalse(sse_is_over_export_file_size_limit(PHP_INT_MAX, 'no-limit.bin'));
-                  $this->assertSame(0, sse_get_skipped_export_entry_counts()['large']);
+                  $this->assertSame(0, esse_get_export_max_file_size());
+                  esse_initialize_export_resource_budget(104857600);
+                  $this->assertSame(104857600, esse_get_export_max_file_size());
+                  $this->assertFalse(esse_is_over_export_file_size_limit(104857600, 'at-the-limit.bin'));
+                  $this->assertTrue(esse_is_over_export_file_size_limit(104857601, 'over-the-limit.bin'));
+                  $this->assertSame(1, esse_get_skipped_export_entry_counts()['large']);
+                  esse_initialize_export_resource_budget(0);
+                  $this->assertFalse(esse_is_over_export_file_size_limit(PHP_INT_MAX, 'no-limit.bin'));
+                  $this->assertSame(0, esse_get_skipped_export_entry_counts()['large']);
               }
 
               public function test_lease_recovers_from_unusable_rows() {
                   foreach ([null, 'not serialized', 'O:8:"stdClass":0:{}', serialize(['owner' => 'incomplete'])] as $row) {
-                      $this->assertNull(sse_decode_export_lease_row($row));
+                      $this->assertNull(esse_decode_export_lease_row($row));
                   }
                   delete_option('sse_error_logs');
 
                   // A row that fails validation cannot belong to a running export, so it is removed.
-                  $this->assertTrue(sse_add_export_lease_option(['owner' => 'incomplete']));
-                  $invalid = sse_get_stored_export_lease();
+                  $this->assertTrue(esse_add_export_lease_option(['owner' => 'incomplete']));
+                  $invalid = esse_get_stored_export_lease();
                   $this->assertWPError($invalid);
                   $this->assertSame('export_lease_invalid', $invalid->get_error_code());
-                  $lease = sse_acquire_export_lease();
+                  $lease = esse_acquire_export_lease();
                   $this->assertIsArray($lease);
-                  $this->assertSame($lease, sse_get_stored_export_lease());
+                  $this->assertSame($lease, esse_get_stored_export_lease());
                   $records = get_option('sse_error_logs');
                   $this->assertCount(1, $records);
                   $this->assertSame('security', $records[0]['level']);
-                  $this->assertTrue(sse_release_export_lease($lease));
+                  $this->assertTrue(esse_release_export_lease($lease));
 
                   // A valid lease that has expired is reclaimed.
                   $expired = $lease;
@@ -1984,32 +2325,32 @@ jobs:
                   $expired['started_at'] = time() - 7200;
                   $expired['heartbeat_at'] = time() - 7200;
                   $expired['expires_at'] = time() - 1;
-                  $this->assertTrue(sse_add_export_lease_option($expired));
-                  $this->assertSame($expired, sse_get_stored_export_lease());
-                  $next = sse_acquire_export_lease();
+                  $this->assertTrue(esse_add_export_lease_option($expired));
+                  $this->assertSame($expired, esse_get_stored_export_lease());
+                  $next = esse_acquire_export_lease();
                   $this->assertIsArray($next);
                   $this->assertNotSame($expired['owner'], $next['owner']);
-                  $this->assertTrue(sse_release_export_lease($next));
-                  $this->assertNull(sse_get_stored_export_lease());
+                  $this->assertTrue(esse_release_export_lease($next));
+                  $this->assertNull(esse_get_stored_export_lease());
               }
 
               public function test_lease_renewal_never_moves_the_heartbeat_backward() {
-                  $lease = sse_acquire_export_lease();
+                  $lease = esse_acquire_export_lease();
                   $this->assertIsArray($lease);
                   try {
                       // The stored heartbeat is ahead of the clock, as after a backward clock step.
                       $ahead = $lease;
                       $ahead['heartbeat_at'] = time() + 600;
                       $ahead['expires_at'] = $ahead['heartbeat_at'] + 30;
-                      $this->assertTrue(sse_compare_and_update_export_lease($lease, $ahead));
-                      sse_set_current_export_lease($ahead);
-                      $this->assertTrue(sse_renew_current_export_lease(true));
-                      $renewed = sse_get_current_export_lease();
+                      $this->assertTrue(esse_compare_and_update_export_lease($lease, $ahead));
+                      esse_set_current_export_lease($ahead);
+                      $this->assertTrue(esse_renew_current_export_lease(true));
+                      $renewed = esse_get_current_export_lease();
                       $this->assertSame($ahead['heartbeat_at'], $renewed['heartbeat_at']);
-                      $this->assertSame($ahead['heartbeat_at'] + sse_get_export_lease_lifetime(), $renewed['expires_at']);
-                      $this->assertSame($renewed, sse_get_stored_export_lease());
+                      $this->assertSame($ahead['heartbeat_at'] + esse_get_export_lease_lifetime(), $renewed['expires_at']);
+                      $this->assertSame($renewed, esse_get_stored_export_lease());
                   } finally {
-                      sse_release_export_lease(sse_get_current_export_lease() ?? $lease);
+                      esse_release_export_lease(esse_get_current_export_lease() ?? $lease);
                   }
               }
 
@@ -2026,42 +2367,42 @@ jobs:
                       // Without the intl extension the two bytes of the letter become one hyphen.
                       "b\u{00FC}cher.example" => function_exists('idn_to_ascii') ? 'xn--bcher-kva.example' : 'b-cher.example',
                   ];
-                  $identifiers = [sse_build_export_site_identifier(str_repeat('a', 150) . '.example'), sse_get_export_site_identifier()];
+                  $identifiers = [esse_build_export_site_identifier(str_repeat('a', 150) . '.example'), esse_get_export_site_identifier()];
                   $this->assertLessThanOrEqual(100, strlen($identifiers[0]));
                   foreach ($cases as $host => $expected) {
-                      $identifiers[] = sse_build_export_site_identifier((string) $host);
+                      $identifiers[] = esse_build_export_site_identifier((string) $host);
                       $this->assertSame($expected, end($identifiers), (string) $host);
                   }
                   foreach ($identifiers as $identifier) {
-                      $this->assertTrue(sse_validate_filename_format(sse_get_engine_script_archive_filename($identifier, '20260513_123456')), $identifier);
+                      $this->assertTrue(esse_validate_filename_format(esse_get_engine_script_archive_filename($identifier, '20260513_123456')), $identifier);
                   }
               }
 
               public function test_deactivation_and_uninstall_leave_nothing_behind() {
-                  $export_paths = sse_setup_export_directories();
+                  $export_paths = esse_setup_export_directories();
                   $this->assertIsArray($export_paths);
-                  $base = sse_get_export_directory_path();
+                  $base = esse_get_export_directory_path();
                   $zip = $export_paths['export_dir'] . '/site_enginescript_site_export_20260513_123456.zip';
                   $this->assertSame(7, file_put_contents($zip, 'fixture'));
-                  $this->assertIsArray(sse_acquire_export_lease());
+                  $this->assertIsArray(esse_acquire_export_lease());
                   delete_option('sse_error_logs');
-                  sse_store_log_in_database('kept until the plugin is deleted', 'error');
-                  foreach (sse_get_scheduled_hook_names() as $hook) {
+                  esse_store_log_in_database('kept until the plugin is deleted', 'error');
+                  foreach (esse_get_scheduled_hook_names() as $hook) {
                       $this->assertTrue(wp_schedule_single_event(time() + 600, $hook, [$zip]));
                   }
                   $this->assertCount(4, array_unique($this->sse_get_scheduled_plugin_hooks()));
 
-                  sse_deactivate_plugin();
+                  esse_deactivate_plugin();
 
                   clearstatcache();
                   $this->assertFileDoesNotExist($zip);
                   $this->assertDirectoryDoesNotExist($export_paths['export_dir']);
-                  $this->assertNull(sse_get_stored_export_lease());
+                  $this->assertNull(esse_get_stored_export_lease());
                   $this->assertSame([], $this->sse_get_scheduled_plugin_hooks());
                   // The records stay until the plugin is deleted.
                   $this->assertCount(1, get_option('sse_error_logs'));
 
-                  sse_uninstall_plugin();
+                  esse_uninstall_plugin();
 
                   clearstatcache();
                   $this->assertFalse(get_option('sse_error_logs'));
@@ -2082,14 +2423,14 @@ jobs:
                       $this->assertTrue(symlink($root . '/outside', $base . '/linked-tree'));
                       $this->assertTrue(symlink($root . '/outside', $root . '/outside-link'));
                       // A path outside the base is refused, also when it is written through the base.
-                      $this->assertFalse(sse_delete_directory_tree($root . '/outside', $base));
-                      $this->assertFalse(sse_delete_directory_tree($base . '/../outside', $base));
+                      $this->assertFalse(esse_delete_directory_tree($root . '/outside', $base));
+                      $this->assertFalse(esse_delete_directory_tree($base . '/../outside', $base));
                       // A link outside the base is left in place.
-                      $this->assertFalse(sse_delete_directory_tree($root . '/outside-link', $base));
+                      $this->assertFalse(esse_delete_directory_tree($root . '/outside-link', $base));
                       $this->assertTrue(is_link($root . '/outside-link'));
-                      $this->assertTrue(sse_delete_directory_tree($tree, $base));
+                      $this->assertTrue(esse_delete_directory_tree($tree, $base));
                       // A link in place of the directory is removed as a link.
-                      $this->assertTrue(sse_delete_directory_tree($base . '/linked-tree', $base));
+                      $this->assertTrue(esse_delete_directory_tree($base . '/linked-tree', $base));
                       clearstatcache();
                       $this->assertDirectoryDoesNotExist($tree);
                       $this->assertFalse(is_link($base . '/linked-tree'));
@@ -2113,16 +2454,16 @@ jobs:
                       $served = [ABSPATH . 'wp-admin', WP_CONTENT_DIR, $upload_dir['basedir'],
                           $root . '/public', $root . '/public/inner', $root . '/private/alias'];
                       foreach ($served as $path) {
-                          $this->assertTrue(sse_is_path_web_served($path), $path);
+                          $this->assertTrue(esse_is_path_web_served($path), $path);
                       }
-                      $this->assertFalse(sse_is_path_web_served($root . '/private'));
+                      $this->assertFalse(esse_is_path_web_served($root . '/private'));
                       // An empty document root, or the filesystem root, says nothing about what is served.
                       foreach (['', '/'] as $ignored_root) {
                           $_SERVER['DOCUMENT_ROOT'] = $ignored_root;
-                          $this->assertFalse(sse_is_path_web_served($root . '/public'));
+                          $this->assertFalse(esse_is_path_web_served($root . '/public'));
                       }
                       $_SERVER['DOCUMENT_ROOT'] = untrailingslashit(get_temp_dir());
-                      $refused = sse_setup_export_directories();
+                      $refused = esse_setup_export_directories();
                       $this->assertWPError($refused);
                       $this->assertSame('export_dir_public', $refused->get_error_code());
                   } finally {
@@ -2136,25 +2477,25 @@ jobs:
               }
 
               public function test_export_base_name_is_specific_to_the_installation() {
-                  $base = sse_get_export_directory_path();
-                  $this->assertSame(1, preg_match('#/' . preg_quote(SSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $base));
-                  $this->assertNotSame(trailingslashit(get_temp_dir()) . SSE_EXPORT_DIR_NAME, $base);
+                  $base = esse_get_export_directory_path();
+                  $this->assertSame(1, preg_match('#/' . preg_quote(ESSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $base));
+                  $this->assertNotSame(trailingslashit(get_temp_dir()) . ESSE_EXPORT_DIR_NAME, $base);
                   // Another installation has other secret salts, and so another directory.
                   $other_salt = static function () {
                       return 'the salt of another installation';
                   };
                   add_filter('salt', $other_salt);
-                  $other_base = sse_get_export_directory_path();
+                  $other_base = esse_get_export_directory_path();
                   remove_filter('salt', $other_salt);
-                  $this->assertSame(1, preg_match('#/' . preg_quote(SSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $other_base));
+                  $this->assertSame(1, preg_match('#/' . preg_quote(ESSE_EXPORT_DIR_NAME, '#') . '-[a-f0-9]{16}$#', $other_base));
                   $this->assertNotSame($base, $other_base);
-                  $this->assertSame($base, sse_get_export_directory_path());
+                  $this->assertSame($base, esse_get_export_directory_path());
               }
 
               public function test_cleanup_stays_inside_the_installation_export_base() {
-                  $base = sse_get_export_directory_path();
+                  $base = esse_get_export_directory_path();
                   // The fixed name that versions before 2.1.1 used; other installations may share it.
-                  $neighbour = trailingslashit(get_temp_dir()) . SSE_EXPORT_DIR_NAME;
+                  $neighbour = trailingslashit(get_temp_dir()) . ESSE_EXPORT_DIR_NAME;
                   $stale = 'export-20200101_000000-' . str_repeat('a', 32);
                   $created = [];
                   foreach ([$base, $neighbour] as $directory) {
@@ -2168,8 +2509,8 @@ jobs:
                   }
                   try {
                       clearstatcache();
-                      $this->assertSame(1, sse_cleanup_stale_export_directories());
-                      sse_bulk_cleanup_exports_handler();
+                      $this->assertSame(1, esse_cleanup_stale_export_directories());
+                      esse_bulk_cleanup_exports_handler();
                       clearstatcache();
                       $this->assertDirectoryDoesNotExist($base . '/' . $stale);
                       $this->assertSame('old', file_get_contents($neighbour . '/' . $stale . '/old.txt'));
@@ -2185,76 +2526,76 @@ jobs:
               public function test_export_request_is_refused_without_action_nonce_or_capability() {
                   delete_option('sse_error_logs');
                   // A request that is not the export form is ignored.
-                  $this->assertFalse(sse_validate_export_request());
+                  $this->assertFalse(esse_validate_export_request());
                   $_POST = ['action' => 'another_action'];
-                  $this->assertFalse(sse_validate_export_request());
+                  $this->assertFalse(esse_validate_export_request());
 
                   $_POST = ['action' => 'sse_export_site'];
-                  $this->sse_assert_refused('sse_validate_export_request');
+                  $this->sse_assert_refused('esse_validate_export_request');
                   $_REQUEST['sse_export_nonce'] = 'invalid';
-                  $this->sse_assert_refused('sse_validate_export_request');
+                  $this->sse_assert_refused('esse_validate_export_request');
 
                   wp_set_current_user(self::factory()->user->create(['role' => 'subscriber']));
                   $_REQUEST['sse_export_nonce'] = wp_create_nonce('sse_export_action');
-                  $this->sse_assert_refused('sse_validate_export_request', 'You do not have permission to perform this action.');
+                  $this->sse_assert_refused('esse_validate_export_request', 'You do not have permission to perform this action.');
                   $this->assertSame([], get_option('sse_error_logs', []));
 
                   $this->sse_sign_in_exporter();
                   $_REQUEST['sse_export_nonce'] = wp_create_nonce('sse_export_action');
-                  $this->assertSame(0, sse_validate_export_request());
+                  $this->assertSame(0, esse_validate_export_request());
                   // Only a size that the form offers is accepted; anything else means no limit.
                   $sizes = ['104857600' => 104857600, '524288000' => 524288000, '1073741824' => 1073741824,
                       '0' => 0, '12345' => 0, '-1' => 0, '1e9' => 0, ' 104857600' => 104857600];
                   foreach ($sizes as $posted => $accepted) {
                       $_POST['sse_max_file_size'] = (string) $posted;
-                      $this->assertSame($accepted, sse_validate_export_request(), (string) $posted);
+                      $this->assertSame($accepted, esse_validate_export_request(), (string) $posted);
                   }
                   $_POST['sse_max_file_size'] = ['104857600'];
-                  $this->assertSame(0, sse_validate_export_request());
+                  $this->assertSame(0, esse_validate_export_request());
               }
 
               public function test_download_and_delete_requests_are_refused_before_any_file_access() {
                   delete_option('sse_error_logs');
                   $file = 'site_enginescript_site_export_20260513_123456.zip';
-                  $directory = sse_generate_private_export_directory_name();
+                  $directory = esse_generate_private_export_directory_name();
                   $download_action = 'sse_secure_download_' . $file . '_' . $directory;
                   $delete_action = 'sse_delete_export_' . $file . '_' . $directory;
                   $request = ['file' => $file, 'export_dir' => $directory];
 
                   // The download reads the query string and the deletion reads the form body, and nothing else.
-                  $this->sse_assert_refused('sse_handle_secure_download', 'Invalid download request.');
-                  $this->sse_assert_refused('sse_handle_export_deletion', 'Invalid deletion request.');
+                  $this->sse_assert_refused('esse_handle_secure_download', 'Invalid download request.');
+                  $this->sse_assert_refused('esse_handle_export_deletion', 'Invalid deletion request.');
                   $_POST = $request;
-                  $this->sse_assert_refused('sse_handle_secure_download', 'Invalid download request.');
+                  $this->sse_assert_refused('esse_handle_secure_download', 'Invalid download request.');
                   $_POST = [];
                   $_GET = $request;
-                  $this->sse_assert_refused('sse_handle_export_deletion', 'Invalid deletion request.');
+                  $this->sse_assert_refused('esse_handle_export_deletion', 'Invalid deletion request.');
 
                   $_POST = $request;
                   foreach ([null, 'invalid'] as $nonce) {
                       if (null !== $nonce) {
                           $_REQUEST['_wpnonce'] = $nonce;
                       }
-                      $this->sse_assert_refused('sse_handle_secure_download');
-                      $this->sse_assert_refused('sse_handle_export_deletion');
+                      $this->sse_assert_refused('esse_handle_secure_download');
+                      $this->sse_assert_refused('esse_handle_export_deletion');
                   }
 
                   wp_set_current_user(self::factory()->user->create(['role' => 'subscriber']));
                   $_REQUEST['_wpnonce'] = wp_create_nonce($download_action);
-                  $this->sse_assert_refused('sse_handle_secure_download', 'You do not have permission to download export files.');
+                  $this->sse_assert_refused('esse_handle_secure_download', 'You do not have permission to download export files.');
                   $_REQUEST['_wpnonce'] = wp_create_nonce($delete_action);
-                  $this->sse_assert_refused('sse_handle_export_deletion', 'You do not have permission to delete export files.');
+                  $this->sse_assert_refused('esse_handle_export_deletion', 'You do not have permission to delete export files.');
                   // A refusal before or at the authorization checks stores no record.
                   $this->assertSame([], get_option('sse_error_logs', []));
 
                   $this->sse_sign_in_exporter();
                   // The nonce of one action does not authorize the other.
                   $_REQUEST['_wpnonce'] = wp_create_nonce($download_action);
-                  $this->sse_assert_refused('sse_handle_export_deletion');
+                  $this->sse_assert_refused('esse_handle_export_deletion');
                   $this->assertSame([], get_option('sse_error_logs', []));
-                  $this->sse_assert_refused('sse_handle_secure_download', 'This export has expired or was deleted.');
+                  $this->sse_assert_refused('esse_handle_secure_download', 'This export has expired or was deleted.');
                   $_REQUEST['_wpnonce'] = wp_create_nonce($delete_action);
-                  $this->sse_assert_refused('sse_handle_export_deletion', 'This export has expired or was deleted.');
+                  $this->sse_assert_refused('esse_handle_export_deletion', 'This export has expired or was deleted.');
                   $records = get_option('sse_error_logs');
                   $this->assertSame(['activity', 'activity'], wp_list_pluck($records, 'level'));
                   $this->assertStringStartsWith('Export download refused:', $records[0]['message']);
@@ -2263,18 +2604,18 @@ jobs:
 
               public function test_activity_and_error_records() {
                   $user_id = $this->sse_sign_in_exporter();
-                  $failure = "Same failure\nforged line in " . SSE_EXPORT_PRIVATE_DIR_PREFIX . '20260513_123456-' . str_repeat('a', 32);
+                  $failure = "Same failure\nforged line in " . ESSE_EXPORT_PRIVATE_DIR_PREFIX . '20260513_123456-' . str_repeat('a', 32);
                   // A record written by an earlier version carries a client address.
                   update_option('sse_error_logs', [[
                       'time' => time(), 'level' => 'error', 'message' => 'from an earlier version',
                       'user_id' => 0, 'ip' => '203.0.113.7',
                   ]], false);
-                  sse_record_activity('Export created: site.zip');
-                  sse_record_activity('Export created: site.zip');
-                  sse_log($failure, 'error');
-                  sse_log($failure, 'error');
-                  sse_log('Not stored', 'info');
-                  sse_log('Not stored', 'warning');
+                  esse_record_activity('Export created: site.zip');
+                  esse_record_activity('Export created: site.zip');
+                  esse_log($failure, 'error');
+                  esse_log($failure, 'error');
+                  esse_log('Not stored', 'info');
+                  esse_log('Not stored', 'warning');
                   $records = get_option('sse_error_logs');
                   // Activity is always stored; an identical error is stored once per hour.
                   $this->assertSame(['error', 'activity', 'activity', 'error'], wp_list_pluck($records, 'level'));
@@ -2283,10 +2624,10 @@ jobs:
                   }
                   $this->assertSame($user_id, $records[1]['user_id']);
                   // The line break and the random directory name do not reach the record.
-                  $this->assertSame('Same failure forged line in ' . SSE_EXPORT_PRIVATE_DIR_PREFIX . '[private]', $records[3]['message']);
+                  $this->assertSame('Same failure forged line in ' . ESSE_EXPORT_PRIVATE_DIR_PREFIX . '[private]', $records[3]['message']);
                   $records[3]['time'] -= HOUR_IN_SECONDS;
                   update_option('sse_error_logs', $records, false);
-                  sse_log($failure, 'error');
+                  esse_log($failure, 'error');
                   $this->assertCount(5, get_option('sse_error_logs'));
               }
           }
@@ -2398,7 +2739,7 @@ jobs:
         id: upload_diagnostics
         if: ${{ always() }}
         continue-on-error: true
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: wp-compat-${{ matrix.php-version }}-${{ matrix.wp-version }}-${{ matrix.dependency-versions }}
           path: |
@@ -2414,17 +2755,21 @@ jobs:
       - name: Report test status
         id: report_test_status
         if: ${{ always() }}
+        env:
+          JOB_STATUS: ${{ job.status }}
+          MATRIX_PHP_VERSION: ${{ matrix.php-version }}
+          MATRIX_WP_VERSION: ${{ matrix.wp-version }}
         run: |
-          if [ ${{ job.status }} == 'success' ]; then
-            echo "✅ Tests passed successfully on PHP ${{ matrix.php-version }} with WordPress ${{ matrix.wp-version }}"
+          if [ "$JOB_STATUS" == 'success' ]; then
+            echo "✅ Tests passed successfully on PHP $MATRIX_PHP_VERSION with WordPress $MATRIX_WP_VERSION"
           else
-            echo "❌ Tests failed on PHP ${{ matrix.php-version }} with WordPress ${{ matrix.wp-version }}"
+            echo "❌ Tests failed on PHP $MATRIX_PHP_VERSION with WordPress $MATRIX_WP_VERSION"
           fi
 
       - name: Ensure repository files available after failure
         id: ensure_repository_files_available_after_failure
         if: ${{ failure() }}
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -2432,7 +2777,7 @@ jobs:
       - name: Create issue on test failure
         id: create_issue_on_test_failure
         if: ${{ failure() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.actor != 'dependabot[bot]' }}
-        uses: JasonEtco/create-an-issue@v2
+        uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_php.outcome == 'failure' && 'setup_php' || steps.use_isolated_composer_auth.outcome == 'failure' && 'use_isolated_composer_auth' || steps.php_syntax_lint.outcome == 'failure' && 'php_syntax_lint' || steps.install_subversion.outcome == 'failure' && 'install_subversion' || steps.install_composer_dependencies.outcome == 'failure' && 'install_composer_dependencies' || steps.run_unit_tests.outcome == 'failure' && 'run_unit_tests' || steps.pin_phpunit_for_wordpress_test_suite.outcome == 'failure' && 'pin_phpunit_for_wordpress_test_suite' || steps.verify_phpunit_dependency_versions.outcome == 'failure' && 'verify_phpunit_dependency_versions' || steps.prepare_database.outcome == 'failure' && 'prepare_database' || steps.create_tests_directory_structure.outcome == 'failure' && 'create_tests_directory_structure' || steps.create_wp_tests_install_script.outcome == 'failure' && 'create_wp_tests_install_script' || steps.create_bootstrap_file.outcome == 'failure' && 'create_bootstrap_file' || steps.create_test_file.outcome == 'failure' && 'create_test_file' || steps.create_phpunit_config.outcome == 'failure' && 'create_phpunit_config' || steps.setup_wp_tests.outcome == 'failure' && 'setup_wp_tests' || steps.run_plugin_test.outcome == 'failure' && 'run_plugin_test' || steps.report_test_status.outcome == 'failure' && 'report_test_status' || steps.ensure_repository_files_available_after_failure.outcome == 'failure' && 'ensure_repository_files_available_after_failure' || 'unknown_or_canceled' }}

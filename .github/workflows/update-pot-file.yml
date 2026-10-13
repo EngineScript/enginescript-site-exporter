@@ -21,12 +21,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
-        with:
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        # A later step opens a pull request with the credentials that checkout keeps.
+        with:  # zizmor: ignore[artipacked]
           fetch-depth: 0
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.2'
           coverage: none
@@ -71,7 +72,7 @@ jobs:
 
       - name: Create Pull Request
         if: steps.changes.outputs.has_changes == 'true'
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1  # v8.1.1
         with:
           commit-message: 'chore(i18n): regenerate translation template'
           title: 'chore(i18n): Update translation template (.pot file)'

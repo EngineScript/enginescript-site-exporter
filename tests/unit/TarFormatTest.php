@@ -30,9 +30,9 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_octal_field_is_zero_padded_and_nul_terminated(): void {
-		$this->assertSame( "0000644\0", sse_tar_format_octal_field( 0644, 8 ) );
-		$this->assertSame( "00000000000\0", sse_tar_format_octal_field( 0, 12 ) );
-		$this->assertSame( "0000000\0", sse_tar_format_octal_field( -5, 8 ), 'A negative value is written as zero.' );
+		$this->assertSame( "0000644\0", esse_tar_format_octal_field( 0644, 8 ) );
+		$this->assertSame( "00000000000\0", esse_tar_format_octal_field( 0, 12 ) );
+		$this->assertSame( "0000000\0", esse_tar_format_octal_field( -5, 8 ), 'A negative value is written as zero.' );
 	}
 
 	/**
@@ -41,7 +41,7 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_octal_field_never_exceeds_its_length(): void {
-		$field = sse_tar_format_octal_field( PHP_INT_MAX, 8 );
+		$field = esse_tar_format_octal_field( PHP_INT_MAX, 8 );
 
 		$this->assertSame( 8, strlen( $field ) );
 		$this->assertSame( "7777777\0", $field );
@@ -55,9 +55,9 @@ final class TarFormatTest extends SseTestCase {
 	public function test_size_field_switches_to_base_256_above_the_octal_limit(): void {
 		$limit = 077777777777;
 
-		$this->assertSame( "77777777777\0", sse_tar_format_size_field( $limit ) );
+		$this->assertSame( "77777777777\0", esse_tar_format_size_field( $limit ) );
 
-		$large = sse_tar_format_size_field( $limit + 1 );
+		$large = esse_tar_format_size_field( $limit + 1 );
 		$this->assertSame( 12, strlen( $large ) );
 		$this->assertSame( "\x80", $large[0], 'The first byte marks the base-256 form.' );
 		$this->assertSame( $limit + 1, unpack( 'J', substr( $large, 4 ) )[1] );
@@ -69,7 +69,7 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_header_layout(): void {
-		$header = sse_tar_build_header( 'wp-content/index.php', 28, 0100644, 1700000000, '0' );
+		$header = esse_tar_build_header( 'wp-content/index.php', 28, 0100644, 1700000000, '0' );
 
 		$this->assertSame( 512, strlen( $header ) );
 		$this->assertSame( 'wp-content/index.php', rtrim( $this->field( $header, 0, 100 ), "\0" ) );
@@ -90,7 +90,7 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_header_checksum_matches_the_header_bytes(): void {
-		$header = sse_tar_build_header( 'readme.html', 7425, 0644, 1234567890, '0' );
+		$header = esse_tar_build_header( 'readme.html', 7425, 0644, 1234567890, '0' );
 		$field  = $this->field( $header, 148, 8 );
 
 		$expected = array_sum( array_map( 'ord', str_split( substr_replace( $header, '        ', 148, 8 ) ) ) );
@@ -105,8 +105,8 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_header_checksum_follows_the_content(): void {
-		$first  = sse_tar_build_header( 'a.txt', 1, 0644, 0, '0' );
-		$second = sse_tar_build_header( 'b.txt', 1, 0644, 0, '0' );
+		$first  = esse_tar_build_header( 'a.txt', 1, 0644, 0, '0' );
+		$second = esse_tar_build_header( 'b.txt', 1, 0644, 0, '0' );
 
 		$this->assertNotSame( $this->field( $first, 148, 8 ), $this->field( $second, 148, 8 ) );
 	}
@@ -117,10 +117,10 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_header_type_flag(): void {
-		$this->assertSame( '5', $this->field( sse_tar_build_header( 'dir/', 0, 0755, 0, '5' ), 156, 1 ) );
-		$this->assertSame( 'L', $this->field( sse_tar_build_header( 'x', 0, 0644, 0, 'L' ), 156, 1 ) );
-		$this->assertSame( '0', $this->field( sse_tar_build_header( 'x', 0, 0644, 0, '' ), 156, 1 ) );
-		$this->assertSame( '5', $this->field( sse_tar_build_header( 'x', 0, 0644, 0, '57' ), 156, 1 ) );
+		$this->assertSame( '5', $this->field( esse_tar_build_header( 'dir/', 0, 0755, 0, '5' ), 156, 1 ) );
+		$this->assertSame( 'L', $this->field( esse_tar_build_header( 'x', 0, 0644, 0, 'L' ), 156, 1 ) );
+		$this->assertSame( '0', $this->field( esse_tar_build_header( 'x', 0, 0644, 0, '' ), 156, 1 ) );
+		$this->assertSame( '5', $this->field( esse_tar_build_header( 'x', 0, 0644, 0, '57' ), 156, 1 ) );
 	}
 
 	/**
@@ -129,8 +129,8 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_header_modification_time_is_clamped(): void {
-		$this->assertSame( "00000000000\0", $this->field( sse_tar_build_header( 'x', 0, 0644, -10, '0' ), 136, 12 ) );
-		$this->assertSame( "77777777777\0", $this->field( sse_tar_build_header( 'x', 0, 0644, PHP_INT_MAX, '0' ), 136, 12 ) );
+		$this->assertSame( "00000000000\0", $this->field( esse_tar_build_header( 'x', 0, 0644, -10, '0' ), 136, 12 ) );
+		$this->assertSame( "77777777777\0", $this->field( esse_tar_build_header( 'x', 0, 0644, PHP_INT_MAX, '0' ), 136, 12 ) );
 	}
 
 	/**
@@ -140,7 +140,7 @@ final class TarFormatTest extends SseTestCase {
 	 */
 	public function test_header_name_field_holds_at_most_100_bytes(): void {
 		$name   = str_repeat( 'a', 60 ) . '/' . str_repeat( 'b', 60 );
-		$header = sse_tar_build_header( $name, 0, 0644, 0, '0' );
+		$header = esse_tar_build_header( $name, 0, 0644, 0, '0' );
 
 		$this->assertSame( substr( $name, 0, 100 ), $this->field( $header, 0, 100 ) );
 	}
@@ -154,7 +154,7 @@ final class TarFormatTest extends SseTestCase {
 	 */
 	#[DataProvider( 'padding_cases' )]
 	public function test_padding_completes_the_block( int $size, int $expected ): void {
-		$padding = sse_tar_get_padding( $size );
+		$padding = esse_tar_get_padding( $size );
 
 		$this->assertSame( $expected, strlen( $padding ) );
 		$this->assertSame( str_repeat( "\0", $expected ), $padding );
@@ -184,7 +184,7 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_end_of_archive_is_two_empty_blocks(): void {
-		$this->assertSame( str_repeat( "\0", 1024 ), sse_tar_get_end_of_archive() );
+		$this->assertSame( str_repeat( "\0", 1024 ), esse_tar_get_end_of_archive() );
 	}
 
 	/**
@@ -195,7 +195,7 @@ final class TarFormatTest extends SseTestCase {
 	public function test_entry_header_for_a_short_path_is_one_block(): void {
 		$path = str_repeat( 'p', 100 );
 
-		$this->assertSame( sse_tar_build_header( $path, 5, 0644, 9, '0' ), sse_tar_build_entry_header( $path, 5, 0644, 9, '0' ) );
+		$this->assertSame( esse_tar_build_header( $path, 5, 0644, 9, '0' ), esse_tar_build_entry_header( $path, 5, 0644, 9, '0' ) );
 	}
 
 	/**
@@ -205,7 +205,7 @@ final class TarFormatTest extends SseTestCase {
 	 */
 	public function test_entry_header_for_a_long_path_carries_the_whole_path(): void {
 		$path  = 'wp-content/uploads/' . str_repeat( 'n', 150 ) . '.jpg';
-		$entry = sse_tar_build_entry_header( $path, 3, 0644, 0, '0' );
+		$entry = esse_tar_build_entry_header( $path, 3, 0644, 0, '0' );
 
 		$this->assertSame( 0, strlen( $entry ) % 512 );
 		$this->assertSame( 1536, strlen( $entry ), 'Long-name header, one block of name, and the entry header.' );
@@ -216,7 +216,7 @@ final class TarFormatTest extends SseTestCase {
 		$this->assertSame( strlen( $path ) + 1, octdec( rtrim( $this->field( $long_header, 124, 12 ), "\0" ) ), 'The record size counts the closing NUL byte.' );
 		$this->assertSame( $path . "\0", substr( $entry, 512, strlen( $path ) + 1 ) );
 
-		$this->assertSame( sse_tar_build_header( $path, 3, 0644, 0, '0' ), substr( $entry, 1024 ) );
+		$this->assertSame( esse_tar_build_header( $path, 3, 0644, 0, '0' ), substr( $entry, 1024 ) );
 	}
 
 	/**
@@ -225,8 +225,8 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_long_name_record_starts_at_101_bytes(): void {
-		$this->assertSame( 512, strlen( sse_tar_build_entry_header( str_repeat( 'x', 100 ), 0, 0644, 0, '0' ) ) );
-		$this->assertSame( 1536, strlen( sse_tar_build_entry_header( str_repeat( 'x', 101 ), 0, 0644, 0, '0' ) ) );
+		$this->assertSame( 512, strlen( esse_tar_build_entry_header( str_repeat( 'x', 100 ), 0, 0644, 0, '0' ) ) );
+		$this->assertSame( 1536, strlen( esse_tar_build_entry_header( str_repeat( 'x', 101 ), 0, 0644, 0, '0' ) ) );
 	}
 
 	/**
@@ -238,9 +238,9 @@ final class TarFormatTest extends SseTestCase {
 	 */
 	#[DataProvider( 'entry_cases' )]
 	public function test_projected_entry_bytes_equal_the_written_bytes( int $size, string $path ): void {
-		$written = strlen( sse_tar_build_entry_header( $path, $size, 0644, 0, '0' ) ) + $size + strlen( sse_tar_get_padding( $size ) );
+		$written = strlen( esse_tar_build_entry_header( $path, $size, 0644, 0, '0' ) ) + $size + strlen( esse_tar_get_padding( $size ) );
 
-		$this->assertSame( $written, sse_tar_get_entry_bytes( $size, $path ) );
+		$this->assertSame( $written, esse_tar_get_entry_bytes( $size, $path ) );
 	}
 
 	/**
@@ -269,7 +269,7 @@ final class TarFormatTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_byte_values_are_unsigned(): void {
-		$this->assertSame( array( 0, 65, 128, 255 ), sse_tar_get_byte_values( "\x00A\x80\xFF" ) );
+		$this->assertSame( array( 0, 65, 128, 255 ), esse_tar_get_byte_values( "\x00A\x80\xFF" ) );
 	}
 
 	/**
@@ -289,11 +289,11 @@ final class TarFormatTest extends SseTestCase {
 			'wp-content/binary.bin' => "\x00\x01\xFE\xFF",
 		);
 
-		$archive = sse_tar_build_entry_header( 'wp-content/', 0, 0755, 1700000000, '5' );
+		$archive = esse_tar_build_entry_header( 'wp-content/', 0, 0755, 1700000000, '5' );
 		foreach ( $files as $name => $content ) {
-			$archive .= sse_tar_build_entry_header( $name, strlen( $content ), 0644, 1700000000, '0' ) . $content . sse_tar_get_padding( strlen( $content ) );
+			$archive .= esse_tar_build_entry_header( $name, strlen( $content ), 0644, 1700000000, '0' ) . $content . esse_tar_get_padding( strlen( $content ) );
 		}
-		$archive .= sse_tar_get_end_of_archive();
+		$archive .= esse_tar_get_end_of_archive();
 
 		$path = $this->make_temporary_directory() . DIRECTORY_SEPARATOR . 'built.tar';
 		file_put_contents( $path, $archive );

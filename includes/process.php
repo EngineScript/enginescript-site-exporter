@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 2.0.0
  * @return string|WP_Error The path to WP-CLI on success, or a WP_Error on failure.
  */
-function sse_get_safe_wp_cli_path(): string|WP_Error {
+function esse_get_safe_wp_cli_path(): string|WP_Error {
 	$trusted_system_paths = [
 		'/usr/local/bin/wp',
 		'/usr/bin/wp',
@@ -27,7 +27,7 @@ function sse_get_safe_wp_cli_path(): string|WP_Error {
 
 	$refusal = null;
 	foreach ( $trusted_system_paths as $path ) {
-		$validation = sse_validate_wp_cli_executable_path( $path );
+		$validation = esse_validate_wp_cli_executable_path( $path );
 		if ( ! is_wp_error( $validation ) ) {
 			return $validation;
 		}
@@ -38,9 +38,9 @@ function sse_get_safe_wp_cli_path(): string|WP_Error {
 		}
 	}
 
-	$configured_path = sse_get_configured_wp_cli_path();
+	$configured_path = esse_get_configured_wp_cli_path();
 	if ( '' !== $configured_path ) {
-		return sse_validate_wp_cli_executable_path( $configured_path );
+		return esse_validate_wp_cli_executable_path( $configured_path );
 	}
 
 	if ( null !== $refusal ) {
@@ -56,10 +56,10 @@ function sse_get_safe_wp_cli_path(): string|WP_Error {
  * @since 2.1.1
  * @return string Configured path, or empty string.
  */
-function sse_get_configured_wp_cli_path(): string {
+function esse_get_configured_wp_cli_path(): string {
 	$configured_path = '';
 	if ( defined( 'SSE_WP_CLI_PATH' ) && is_string( SSE_WP_CLI_PATH ) ) {
-		$configured_path = sse_normalize_string_value( SSE_WP_CLI_PATH );
+		$configured_path = esse_normalize_string_value( SSE_WP_CLI_PATH );
 	}
 
 	/**
@@ -69,7 +69,8 @@ function sse_get_configured_wp_cli_path(): string {
 	 *
 	 * @param string $configured_path Explicit WP-CLI path, or empty string.
 	 */
-	return trim( sse_normalize_string_value( apply_filters( 'sse_wp_cli_path', $configured_path ) ) );
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Published filter name, kept for existing sites.
+	return trim( esse_normalize_string_value( apply_filters( 'sse_wp_cli_path', $configured_path ) ) );
 }
 
 /**
@@ -79,8 +80,8 @@ function sse_get_configured_wp_cli_path(): string {
  * @param string $path Candidate executable path.
  * @return string|WP_Error Resolved executable path on success, WP_Error on failure.
  */
-function sse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
-	if ( '' === $path || ! sse_is_absolute_path( $path ) ) {
+function esse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
+	if ( '' === $path || ! esse_is_absolute_path( $path ) ) {
 		return new WP_Error( 'wp_cli_invalid_path', __( 'The configured WP-CLI path must be absolute.', 'enginescript-site-exporter' ) );
 	}
 
@@ -89,7 +90,7 @@ function sse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
 		return new WP_Error( 'wp_cli_not_executable', __( 'The WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
 	}
 
-	$filesystem = sse_get_filesystem();
+	$filesystem = esse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return $filesystem;
 	}
@@ -98,15 +99,15 @@ function sse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
 		return new WP_Error( 'wp_cli_not_executable', __( 'The WP-CLI executable was not found or is not executable.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! sse_wp_cli_has_safe_mode( $resolved_path ) ) {
+	if ( ! esse_wp_cli_has_safe_mode( $resolved_path ) ) {
 		return new WP_Error( 'wp_cli_unsafe_mode', __( 'The WP-CLI executable has unsafe writable permissions.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! sse_wp_cli_has_safe_owner( $resolved_path ) ) {
+	if ( ! esse_wp_cli_has_safe_owner( $resolved_path ) ) {
 		return new WP_Error( 'wp_cli_unsafe_owner', __( 'The ownership of the WP-CLI executable is not trusted.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! sse_wp_cli_has_safe_parent_directories( $resolved_path ) ) {
+	if ( ! esse_wp_cli_has_safe_parent_directories( $resolved_path ) ) {
 		return new WP_Error( 'wp_cli_unsafe_parent', __( 'The WP-CLI executable is located below an untrusted writable directory.', 'enginescript-site-exporter' ) );
 	}
 
@@ -120,11 +121,11 @@ function sse_validate_wp_cli_executable_path( string $path ): string|WP_Error {
  * @param string $path Resolved executable path.
  * @return bool True when every parent directory is trusted.
  */
-function sse_wp_cli_has_safe_parent_directories( string $path ): bool {
+function esse_wp_cli_has_safe_parent_directories( string $path ): bool {
 	$directory = dirname( $path );
 
 	while ( true ) {
-		$permissions = sse_get_filesystem_mode( $directory );
+		$permissions = esse_get_filesystem_mode( $directory );
 		$owner       = fileowner( $directory );
 
 		if ( false === $permissions || false === $owner || 0 !== ( $permissions & 0022 ) ) {
@@ -152,7 +153,7 @@ function sse_wp_cli_has_safe_parent_directories( string $path ): bool {
  * @return array{dev: int, ino: int}|WP_Error Device and inode identity.
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_get_executable_identity( string $path ): array|WP_Error {
+function esse_get_executable_identity( string $path ): array|WP_Error {
 	clearstatcache( true, $path );
 	$metadata = @stat( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A replacement race must return a bounded identity error without leaking the local path.
 	if ( false === $metadata || ! isset( $metadata['dev'], $metadata['ino'] ) ) {
@@ -176,14 +177,14 @@ function sse_get_executable_identity( string $path ): array|WP_Error {
  * @phpstan-return non-empty-list<string>|WP_Error
  * @psalm-return non-empty-list<string>|WP_Error
  */
-function sse_get_wp_cli_process_group_launcher(): array|WP_Error {
+function esse_get_wp_cli_process_group_launcher(): array|WP_Error {
 	foreach ( [ '/usr/bin/setsid', '/bin/setsid' ] as $launcher_path ) {
 		$resolved_path = realpath( $launcher_path );
-		if ( false === $resolved_path || ! sse_wp_cli_has_safe_parent_directories( $launcher_path ) ) {
+		if ( false === $resolved_path || ! esse_wp_cli_has_safe_parent_directories( $launcher_path ) ) {
 			continue;
 		}
 
-		$validated_path = sse_validate_wp_cli_executable_path( $resolved_path );
+		$validated_path = esse_validate_wp_cli_executable_path( $resolved_path );
 		if ( is_wp_error( $validated_path ) ) {
 			continue;
 		}
@@ -203,7 +204,7 @@ function sse_get_wp_cli_process_group_launcher(): array|WP_Error {
  * @param int $process_group_id Positive owned process-group identifier.
  * @return bool True while the group exists or cannot be signaled safely.
  */
-function sse_is_wp_cli_process_group_running( int $process_group_id ): bool {
+function esse_is_wp_cli_process_group_running( int $process_group_id ): bool {
 	if ( $process_group_id <= 0 ) {
 		return false;
 	}
@@ -224,7 +225,7 @@ function sse_is_wp_cli_process_group_running( int $process_group_id ): bool {
  * @param string     $output Previously captured output.
  * @return string Bounded diagnostic output.
  */
-function sse_drain_process_output( array $pipes, string $output ): string {
+function esse_drain_process_output( array $pipes, string $output ): string {
 	foreach ( $pipes as $pipe ) {
 		$chunk = stream_get_contents( $pipe, 32768 );
 		if ( is_string( $chunk ) && '' !== $chunk ) {
@@ -243,11 +244,11 @@ function sse_drain_process_output( array $pipes, string $output ): string {
  * @param int      $process_group_id Owned process-group identifier, or zero before assignment.
  * @return array{running:bool,exit_code:int,pid:int} Normalized status.
  */
-function sse_get_wp_cli_process_status( $process, int $process_group_id = 0 ): array {
+function esse_get_wp_cli_process_status( $process, int $process_group_id = 0 ): array {
 	$status = proc_get_status( $process );
 
 	return [
-		'running'   => $status['running'] || sse_is_wp_cli_process_group_running( $process_group_id ),
+		'running'   => $status['running'] || esse_is_wp_cli_process_group_running( $process_group_id ),
 		'exit_code' => $status['exitcode'],
 		'pid'       => $status['pid'],
 	];
@@ -267,8 +268,8 @@ function sse_get_wp_cli_process_status( $process, int $process_group_id = 0 ): a
  * @param string     $output           Previously captured diagnostics.
  * @return array{exit_code:int,output:string}|WP_Error Stopped result or error.
  */
-function sse_terminate_wp_cli_process( $process, int $process_group_id, array $pipes, string $output ): array|WP_Error {
-	$status    = sse_get_wp_cli_process_status( $process, $process_group_id );
+function esse_terminate_wp_cli_process( $process, int $process_group_id, array $pipes, string $output ): array|WP_Error {
+	$status    = esse_get_wp_cli_process_status( $process, $process_group_id );
 	$exit_code = $status['exit_code'];
 	if ( ! $status['running'] ) {
 		return [
@@ -280,12 +281,12 @@ function sse_terminate_wp_cli_process( $process, int $process_group_id, array $p
 	if ( ! posix_kill( -$process_group_id, 15 ) ) {
 		proc_terminate( $process );
 	}
-	$grace_milliseconds = min( 10000, sse_get_export_resource_limit( 'sse_wp_cli_termination_grace_milliseconds', SSE_DEFAULT_PROCESS_TERMINATION_GRACE_MILLISECONDS ) );
-	$grace_deadline     = sse_get_monotonic_time() + ( (float) $grace_milliseconds / 1000.0 );
+	$grace_milliseconds = min( 10000, esse_get_export_resource_limit( 'sse_wp_cli_termination_grace_milliseconds', ESSE_DEFAULT_PROCESS_TERMINATION_GRACE_MILLISECONDS ) );
+	$grace_deadline     = esse_get_monotonic_time() + ( (float) $grace_milliseconds / 1000.0 );
 
 	do {
-		$output = sse_drain_process_output( $pipes, $output );
-		$status = sse_get_wp_cli_process_status( $process, $process_group_id );
+		$output = esse_drain_process_output( $pipes, $output );
+		$status = esse_get_wp_cli_process_status( $process, $process_group_id );
 		if ( $status['exit_code'] >= 0 ) {
 			$exit_code = $status['exit_code'];
 		}
@@ -296,17 +297,17 @@ function sse_terminate_wp_cli_process( $process, int $process_group_id, array $p
 			];
 		}
 		usleep( 100000 );
-	} while ( sse_get_monotonic_time() < $grace_deadline );
+	} while ( esse_get_monotonic_time() < $grace_deadline );
 
 	if ( ! posix_kill( -$process_group_id, 9 ) ) {
 		proc_terminate( $process, 9 );
 	}
 
-	$force_milliseconds = min( 10000, sse_get_export_resource_limit( 'sse_wp_cli_force_grace_milliseconds', SSE_DEFAULT_PROCESS_FORCE_GRACE_MILLISECONDS ) );
-	$force_deadline     = sse_get_monotonic_time() + ( (float) $force_milliseconds / 1000.0 );
+	$force_milliseconds = min( 10000, esse_get_export_resource_limit( 'sse_wp_cli_force_grace_milliseconds', ESSE_DEFAULT_PROCESS_FORCE_GRACE_MILLISECONDS ) );
+	$force_deadline     = esse_get_monotonic_time() + ( (float) $force_milliseconds / 1000.0 );
 	do {
-		$output = sse_drain_process_output( $pipes, $output );
-		$status = sse_get_wp_cli_process_status( $process, $process_group_id );
+		$output = esse_drain_process_output( $pipes, $output );
+		$status = esse_get_wp_cli_process_status( $process, $process_group_id );
 		if ( $status['exit_code'] >= 0 ) {
 			$exit_code = $status['exit_code'];
 		}
@@ -317,7 +318,7 @@ function sse_terminate_wp_cli_process( $process, int $process_group_id, array $p
 			];
 		}
 		usleep( 100000 );
-	} while ( sse_get_monotonic_time() < $force_deadline );
+	} while ( esse_get_monotonic_time() < $force_deadline );
 
 	return new WP_Error( 'wp_cli_termination_failed', __( 'The WP-CLI database export could not be stopped safely.', 'enginescript-site-exporter' ) );
 }
@@ -336,7 +337,7 @@ function sse_terminate_wp_cli_process( $process, int $process_group_id, array $p
  * @param string $private_directory Private export directory of this export.
  * @return array<string,string> Environment for the child process.
  */
-function sse_get_wp_cli_process_environment( string $private_directory ): array {
+function esse_get_wp_cli_process_environment( string $private_directory ): array {
 	$environment = [];
 	foreach ( array_keys( getenv() ) as $name ) {
 		$value = getenv( $name, true );
@@ -363,8 +364,8 @@ function sse_get_wp_cli_process_environment( string $private_directory ): array 
  * @psalm-param non-empty-list<string> $command
  * @return array{process:resource,process_group_id:int,pipes:array<int,resource>}|WP_Error Open process data or error.
  */
-function sse_open_wp_cli_process( array $command, string $private_directory ): array|WP_Error {
-	$launcher = sse_get_wp_cli_process_group_launcher();
+function esse_open_wp_cli_process( array $command, string $private_directory ): array|WP_Error {
+	$launcher = esse_get_wp_cli_process_group_launcher();
 	if ( is_wp_error( $launcher ) ) {
 		return $launcher;
 	}
@@ -376,17 +377,17 @@ function sse_open_wp_cli_process( array $command, string $private_directory ): a
 	];
 	$pipes         = [];
 	$owned_command = array_merge( $launcher, $command );
-	$process       = proc_open( $owned_command, $descriptors, $pipes, '/', sse_get_wp_cli_process_environment( $private_directory ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open,Generic.PHP.ForbiddenFunctions.Found -- Verified executables and shell-free argv run in an owned, time-bounded process group; WP_Filesystem cannot create or supervise processes.
+	$process       = proc_open( $owned_command, $descriptors, $pipes, '/', esse_get_wp_cli_process_environment( $private_directory ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.system_calls_proc_open,Generic.PHP.ForbiddenFunctions.Found -- Verified executables and shell-free argv run in an owned, time-bounded process group; WP_Filesystem cannot create or supervise processes.
 	if ( ! is_resource( $process ) ) {
 		return new WP_Error( 'wp_cli_start_failed', __( 'Could not start the WP-CLI database export.', 'enginescript-site-exporter' ) );
 	}
 
-	$status           = sse_get_wp_cli_process_status( $process );
+	$status           = esse_get_wp_cli_process_status( $process );
 	$process_group_id = $status['pid'];
-	$group_deadline   = sse_get_monotonic_time() + 1.0;
-	while ( $status['running'] && posix_getpgid( $process_group_id ) !== $process_group_id && sse_get_monotonic_time() < $group_deadline ) {
+	$group_deadline   = esse_get_monotonic_time() + 1.0;
+	while ( $status['running'] && posix_getpgid( $process_group_id ) !== $process_group_id && esse_get_monotonic_time() < $group_deadline ) {
 		usleep( 10000 );
-		$status = sse_get_wp_cli_process_status( $process );
+		$status = esse_get_wp_cli_process_status( $process );
 	}
 
 	if ( $status['running'] && posix_getpgid( $process_group_id ) !== $process_group_id ) {
@@ -425,14 +426,14 @@ function sse_open_wp_cli_process( array $command, string $private_directory ): a
  * @param float      $timeout          Derived child timeout in seconds.
  * @return array{exit_code:int,output:string,timed_out:bool,process_error:WP_Error|null,process_is_stopped:bool} Monitor result.
  */
-function sse_monitor_wp_cli_process( $process, int $process_group_id, array $pipes, string $output_path, float $timeout ): array {
-	$started_at = sse_get_monotonic_time();
+function esse_monitor_wp_cli_process( $process, int $process_group_id, array $pipes, string $output_path, float $timeout ): array {
+	$started_at = esse_get_monotonic_time();
 	$output     = '';
 	$exit_code  = -1;
 
 	while ( true ) {
-		$output = sse_drain_process_output( $pipes, $output );
-		$status = sse_get_wp_cli_process_status( $process, $process_group_id );
+		$output = esse_drain_process_output( $pipes, $output );
+		$status = esse_get_wp_cli_process_status( $process, $process_group_id );
 		if ( $status['exit_code'] >= 0 ) {
 			$exit_code = $status['exit_code'];
 		}
@@ -446,7 +447,7 @@ function sse_monitor_wp_cli_process( $process, int $process_group_id, array $pip
 			];
 		}
 
-		$budget_check = sse_record_generated_export_file( $output_path );
+		$budget_check = esse_record_generated_export_file( $output_path );
 		if ( is_wp_error( $budget_check ) ) {
 			return [
 				'exit_code'          => -1,
@@ -457,7 +458,7 @@ function sse_monitor_wp_cli_process( $process, int $process_group_id, array $pip
 			];
 		}
 
-		if ( sse_get_monotonic_time() - $started_at >= $timeout ) {
+		if ( esse_get_monotonic_time() - $started_at >= $timeout ) {
 			return [
 				'exit_code'          => -1,
 				'output'             => $output,
@@ -478,7 +479,7 @@ function sse_monitor_wp_cli_process( $process, int $process_group_id, array $pip
  * @param resource[] $pipes Process pipes.
  * @return void
  */
-function sse_close_wp_cli_process_pipes( array $pipes ): void {
+function esse_close_wp_cli_process_pipes( array $pipes ): void {
 	foreach ( $pipes as $pipe ) {
 		fclose( $pipe ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Release owned child-process streams; WP_Filesystem cannot close process pipes.
 	}
@@ -495,7 +496,7 @@ function sse_close_wp_cli_process_pipes( array $pipes ): void {
  * @psalm-param non-empty-list<string> $command
  * @return float|WP_Error Derived timeout in seconds or error.
  */
-function sse_prepare_wp_cli_process( array $command, array $expected_identity, string $output_path ): float|WP_Error {
+function esse_prepare_wp_cli_process( array $command, array $expected_identity, string $output_path ): float|WP_Error {
 	if (
 		'/' !== DIRECTORY_SEPARATOR
 		|| ! function_exists( 'proc_open' )
@@ -505,27 +506,27 @@ function sse_prepare_wp_cli_process( array $command, array $expected_identity, s
 		|| ! function_exists( 'posix_getpgid' )
 		|| ! function_exists( 'posix_kill' )
 		|| ! function_exists( 'posix_get_last_error' )
-		|| is_wp_error( sse_get_wp_cli_process_group_launcher() )
+		|| is_wp_error( esse_get_wp_cli_process_group_launcher() )
 	) {
 		return new WP_Error( 'proc_open_disabled', __( 'Secure process execution is disabled on this server.', 'enginescript-site-exporter' ) );
 	}
 
-	$current_identity = sse_get_executable_identity( $command[0] );
+	$current_identity = esse_get_executable_identity( $command[0] );
 	if ( is_wp_error( $current_identity ) || $current_identity !== $expected_identity ) {
 		return new WP_Error( 'wp_cli_identity_changed', __( 'WP-CLI changed after validation, so the export was stopped.', 'enginescript-site-exporter' ) );
 	}
 
-	$budget_check = sse_record_generated_export_file( $output_path );
+	$budget_check = esse_record_generated_export_file( $output_path );
 	if ( is_wp_error( $budget_check ) ) {
 		return $budget_check;
 	}
 
-	$remaining_seconds = sse_get_remaining_export_seconds();
+	$remaining_seconds = esse_get_remaining_export_seconds();
 	if ( is_wp_error( $remaining_seconds ) ) {
 		return $remaining_seconds;
 	}
 
-	$configured_timeout = sse_get_export_resource_limit( 'sse_wp_cli_timeout', SSE_DEFAULT_MAX_EXPORT_SECONDS );
+	$configured_timeout = esse_get_export_resource_limit( 'sse_wp_cli_timeout', ESSE_DEFAULT_MAX_EXPORT_SECONDS );
 	return min( (float) $configured_timeout, $remaining_seconds );
 }
 
@@ -540,13 +541,13 @@ function sse_prepare_wp_cli_process( array $command, array $expected_identity, s
  * @psalm-param non-empty-list<string> $command
  * @return array{exit_code:int,output:string,timed_out:bool}|WP_Error Process result.
  */
-function sse_run_wp_cli_process( array $command, array $expected_identity, string $output_path ): array|WP_Error {
-	$timeout = sse_prepare_wp_cli_process( $command, $expected_identity, $output_path );
+function esse_run_wp_cli_process( array $command, array $expected_identity, string $output_path ): array|WP_Error {
+	$timeout = esse_prepare_wp_cli_process( $command, $expected_identity, $output_path );
 	if ( is_wp_error( $timeout ) ) {
 		return $timeout;
 	}
 
-	$opened_process = sse_open_wp_cli_process( $command, dirname( $output_path ) );
+	$opened_process = esse_open_wp_cli_process( $command, dirname( $output_path ) );
 	if ( is_wp_error( $opened_process ) ) {
 		return $opened_process;
 	}
@@ -554,14 +555,14 @@ function sse_run_wp_cli_process( array $command, array $expected_identity, strin
 	$process          = $opened_process['process'];
 	$process_group_id = $opened_process['process_group_id'];
 	$pipes            = $opened_process['pipes'];
-	$monitor          = sse_monitor_wp_cli_process( $process, $process_group_id, $pipes, $output_path, $timeout );
+	$monitor          = esse_monitor_wp_cli_process( $process, $process_group_id, $pipes, $output_path, $timeout );
 	$output           = $monitor['output'];
 	$exit_code        = $monitor['exit_code'];
 
 	if ( ! $monitor['process_is_stopped'] ) {
-		$termination = sse_terminate_wp_cli_process( $process, $process_group_id, $pipes, $output );
+		$termination = esse_terminate_wp_cli_process( $process, $process_group_id, $pipes, $output );
 		if ( is_wp_error( $termination ) ) {
-			sse_close_wp_cli_process_pipes( $pipes );
+			esse_close_wp_cli_process_pipes( $pipes );
 			return $termination;
 		}
 
@@ -569,8 +570,8 @@ function sse_run_wp_cli_process( array $command, array $expected_identity, strin
 		$exit_code = $termination['exit_code'];
 	}
 
-	$output = sse_drain_process_output( $pipes, $output );
-	sse_close_wp_cli_process_pipes( $pipes );
+	$output = esse_drain_process_output( $pipes, $output );
+	esse_close_wp_cli_process_pipes( $pipes );
 
 	$close_code = proc_close( $process );
 	if ( $exit_code < 0 ) {
@@ -595,7 +596,7 @@ function sse_run_wp_cli_process( array $command, array $expected_identity, strin
  * @param string $output Raw process output.
  * @return string Safe diagnostic summary.
  */
-function sse_sanitize_wp_cli_output( string $output ): string {
+function esse_sanitize_wp_cli_output( string $output ): string {
 	$output_lines = preg_split( '/\r?\n/', $output );
 	if ( false === $output_lines ) {
 		return '';
@@ -623,7 +624,7 @@ function sse_sanitize_wp_cli_output( string $output ): string {
  * @param string $path Path to check.
  * @return bool True when the path is absolute.
  */
-function sse_is_absolute_path( string $path ): bool {
+function esse_is_absolute_path( string $path ): bool {
 	return str_starts_with( $path, '/' );
 }
 
@@ -634,8 +635,8 @@ function sse_is_absolute_path( string $path ): bool {
  * @param string $path Resolved executable path.
  * @return bool True when mode is not group/public writable.
  */
-function sse_wp_cli_has_safe_mode( string $path ): bool {
-	$permissions = sse_get_filesystem_mode( $path );
+function esse_wp_cli_has_safe_mode( string $path ): bool {
+	$permissions = esse_get_filesystem_mode( $path );
 	if ( false === $permissions ) {
 		return false;
 	}
@@ -656,10 +657,10 @@ function sse_wp_cli_has_safe_mode( string $path ): bool {
  * @return bool True when ownership and owner-write bits are acceptable.
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_wp_cli_has_safe_owner( string $path ): bool {
+function esse_wp_cli_has_safe_owner( string $path ): bool {
 	clearstatcache( true, $path );
 	$owner       = @fileowner( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Native numeric UID is required because WP_Filesystem_Direct::owner() reports root UID 0 as failure; replacement races fail closed.
-	$permissions = sse_get_filesystem_mode( $path );
+	$permissions = esse_get_filesystem_mode( $path );
 
 	if ( false === $owner || false === $permissions ) {
 		return false;

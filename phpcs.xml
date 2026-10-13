@@ -36,6 +36,92 @@
         <exclude name="WordPressVIPMinimum.JS.StringConcat"/>
         <exclude name="WordPressVIPMinimum.JS.StrippingTags"/>
         <exclude name="WordPressVIPMinimum.JS.Window"/>
+        <!--
+            WordPress.PHP.NoSilencedErrors (from WordPress-Extra) already checks the @ operator, and
+            allows it only on functions whose failure the calling code handles. This sniff forbids it
+            on every function, including those.
+        -->
+        <exclude name="Generic.PHP.NoSilencedErrors"/>
+    </rule>
+
+    <!--
+        WordPress-VIP-Go switches the checks below off, because they do not matter on the VIP
+        platform. This plugin runs on other hosts as well, so each one gets its default severity back.
+    -->
+    <rule ref="Generic.PHP.DisallowShortOpenTag.EchoFound">
+        <severity>5</severity>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EmptyLines">
+        <severity>5</severity>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EndLine">
+        <severity>5</severity>
+    </rule>
+    <rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_key">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput.MissingUnslash">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chgrp">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chmod">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chown">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fclose">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fputs">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fwrite">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_is_writable">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_is_writeable">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_mkdir">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_readfile">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_rmdir">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_touch">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.rename_rename">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.strip_tags_strip_tags">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.unlink_unlink">
+        <severity>5</severity>
     </rule>
 
     <!-- WordPress documentation standards -->
@@ -111,6 +197,15 @@
         </properties>
     </rule>
 
+    <!-- Every function, class, constant, global variable and hook that the plugin declares starts with its prefix. -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="esse"/>
+            </property>
+        </properties>
+    </rule>
+
     <!-- WordPress naming conventions (snake_case) -->
     <rule ref="WordPress.NamingConventions.ValidFunctionName"/>
     <rule ref="WordPress.NamingConventions.ValidVariableName"/>
@@ -136,6 +231,9 @@
     <!-- Set minimum WordPress version for deprecated function checks -->
     <config name="minimum_wp_version" value="6.8"/>
     <config name="testVersion" value="8.2-"/>
+
+    <!-- Report every message, including those that a standard rates below the default severity of 5. -->
+    <arg name="severity" value="1"/>
 
     <!-- Show progress -->
     <arg value="p"/>

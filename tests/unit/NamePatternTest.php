@@ -29,7 +29,7 @@ final class NamePatternTest extends SseTestCase {
 	public function test_archive_filename_is_built_from_identifier_marker_and_timestamp(): void {
 		$this->assertSame(
 			'example.com_enginescript_site_export_20260101_120000.zip',
-			sse_get_engine_script_archive_filename( 'example.com', '20260101_120000' )
+			esse_get_engine_script_archive_filename( 'example.com', '20260101_120000' )
 		);
 	}
 
@@ -41,8 +41,8 @@ final class NamePatternTest extends SseTestCase {
 	 */
 	#[DataProvider( 'accepted_archive_names' )]
 	public function test_generated_archive_names_are_accepted( string $filename ): void {
-		$this->assertTrue( sse_is_engine_script_archive_filename( $filename ) );
-		$this->assertTrue( sse_validate_filename_format( $filename ) );
+		$this->assertTrue( esse_is_engine_script_archive_filename( $filename ) );
+		$this->assertTrue( esse_validate_filename_format( $filename ) );
 	}
 
 	/**
@@ -68,7 +68,7 @@ final class NamePatternTest extends SseTestCase {
 	 */
 	#[DataProvider( 'refused_archive_names' )]
 	public function test_other_archive_names_are_refused( string $filename ): void {
-		$this->assertFalse( sse_is_engine_script_archive_filename( $filename ) );
+		$this->assertFalse( esse_is_engine_script_archive_filename( $filename ) );
 	}
 
 	/**
@@ -110,17 +110,17 @@ final class NamePatternTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_filename_format_errors_are_specific(): void {
-		$empty = sse_validate_filename_format( '' );
+		$empty = esse_validate_filename_format( '' );
 		$this->assertInstanceOf( WP_Error::class, $empty );
 		$this->assertSame( 'invalid_request', $empty->get_error_code() );
 
 		foreach ( array( 'a/b_enginescript_site_export_20260101_120000.zip', 'a\\b_enginescript_site_export_20260101_120000.zip' ) as $with_separator ) {
-			$error = sse_validate_filename_format( $with_separator );
+			$error = esse_validate_filename_format( $with_separator );
 			$this->assertInstanceOf( WP_Error::class, $error );
 			$this->assertSame( 'invalid_filename', $error->get_error_code() );
 		}
 
-		$format = sse_validate_filename_format( 'backup.zip' );
+		$format = esse_validate_filename_format( 'backup.zip' );
 		$this->assertInstanceOf( WP_Error::class, $format );
 		$this->assertSame( 'invalid_format', $format->get_error_code() );
 	}
@@ -131,9 +131,9 @@ final class NamePatternTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_private_directory_names_the_plugin_generates_are_accepted(): void {
-		$this->assertTrue( sse_is_export_private_directory_name( $this->directory_name() ) );
-		$this->assertTrue( sse_validate_export_directory_name_format( $this->directory_name() ) );
-		$this->assertStringStartsWith( '/^' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ), sse_get_export_private_directory_name_pattern() );
+		$this->assertTrue( esse_is_export_private_directory_name( $this->directory_name() ) );
+		$this->assertTrue( esse_validate_export_directory_name_format( $this->directory_name() ) );
+		$this->assertStringStartsWith( '/^' . preg_quote( ESSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ), esse_get_export_private_directory_name_pattern() );
 	}
 
 	/**
@@ -144,9 +144,9 @@ final class NamePatternTest extends SseTestCase {
 	 */
 	#[DataProvider( 'refused_directory_names' )]
 	public function test_other_private_directory_names_are_refused( string $name ): void {
-		$this->assertFalse( sse_is_export_private_directory_name( $name ) );
+		$this->assertFalse( esse_is_export_private_directory_name( $name ) );
 
-		$error = sse_validate_export_directory_name_format( $name );
+		$error = esse_validate_export_directory_name_format( $name );
 		$this->assertInstanceOf( WP_Error::class, $error );
 		$this->assertSame( 'invalid_export_directory', $error->get_error_code() );
 	}
@@ -188,11 +188,11 @@ final class NamePatternTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_generated_private_directory_names_are_valid_and_differ(): void {
-		$first  = sse_generate_private_export_directory_name();
-		$second = sse_generate_private_export_directory_name();
+		$first  = esse_generate_private_export_directory_name();
+		$second = esse_generate_private_export_directory_name();
 
-		$this->assertTrue( sse_is_export_private_directory_name( $first ) );
-		$this->assertTrue( sse_is_export_private_directory_name( $second ) );
+		$this->assertTrue( esse_is_export_private_directory_name( $first ) );
+		$this->assertTrue( esse_is_export_private_directory_name( $second ) );
 		$this->assertNotSame( $first, $second );
 	}
 
@@ -205,7 +205,7 @@ final class NamePatternTest extends SseTestCase {
 	 */
 	#[DataProvider( 'site_identifier_cases' )]
 	public function test_site_identifier( string $host, string $expected ): void {
-		$this->assertSame( $expected, sse_build_export_site_identifier( $host ) );
+		$this->assertSame( $expected, esse_build_export_site_identifier( $host ) );
 	}
 
 	/**
@@ -239,7 +239,7 @@ final class NamePatternTest extends SseTestCase {
 			$this->markTestSkipped( 'The intl extension is not loaded.' );
 		}
 
-		$this->assertSame( 'xn--bcher-kva.example', sse_build_export_site_identifier( "b\u{00FC}cher.example" ) );
+		$this->assertSame( 'xn--bcher-kva.example', esse_build_export_site_identifier( "b\u{00FC}cher.example" ) );
 	}
 
 	/**
@@ -248,7 +248,7 @@ final class NamePatternTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_site_identifier_is_cut_to_100_bytes(): void {
-		$identifier = sse_build_export_site_identifier( str_repeat( 'a', 98 ) . '.-' . str_repeat( 'b', 50 ) . '.com' );
+		$identifier = esse_build_export_site_identifier( str_repeat( 'a', 98 ) . '.-' . str_repeat( 'b', 50 ) . '.com' );
 
 		$this->assertSame( str_repeat( 'a', 98 ), $identifier, 'The cut left a dot and a hyphen at the end; both are removed.' );
 		$this->assertLessThanOrEqual( 100, strlen( $identifier ) );
@@ -262,9 +262,9 @@ final class NamePatternTest extends SseTestCase {
 	 */
 	#[DataProvider( 'hostile_hosts' )]
 	public function test_every_identifier_gives_a_valid_archive_name( string $host ): void {
-		$filename = sse_get_engine_script_archive_filename( sse_build_export_site_identifier( $host ), '20260101_120000' );
+		$filename = esse_get_engine_script_archive_filename( esse_build_export_site_identifier( $host ), '20260101_120000' );
 
-		$this->assertTrue( sse_is_engine_script_archive_filename( $filename ), $filename );
+		$this->assertTrue( esse_is_engine_script_archive_filename( $filename ), $filename );
 	}
 
 	/**

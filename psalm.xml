@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <psalm
-    errorLevel="2"
+    errorLevel="1"
     resolveFromConfigFile="true"
     phpVersion="8.2"
     allFunctionsGlobal="true"
     allConstantsGlobal="true"
+    findUnusedCode="true"
 >
     <projectFiles>
         <file name="enginescript-site-exporter.php" />

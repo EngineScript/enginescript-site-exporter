@@ -49,3 +49,22 @@ updates:
     allow:
       - dependency-type: "direct"
       - dependency-type: "indirect"
+
+  # Updates for the npm development tools
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "09:00"
+    # Set custom labels on pull requests
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "automated"
+      - "maintenance"
+    # Limit the number of open PRs
+    open-pull-requests-limit: 10
+    # Group all of the development tooling together
+    groups:
+      dev-dependencies:
+        dependency-type: "development"

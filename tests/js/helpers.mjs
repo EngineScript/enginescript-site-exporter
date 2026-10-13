@@ -15,7 +15,7 @@ const renderScript = fileURLToPath( new URL( './render-admin-page.php', import.m
 
 /** Markup rendered by PHP: the page with no archive, and the controls of one archive. */
 export const page = JSON.parse(
-	execFileSync( 'php', [ '-d', 'display_errors=stderr', renderScript ], { encoding: 'utf8' } )
+	execFileSync( 'php', [ '-d', 'display_errors=stderr', renderScript ], { encoding: 'utf8' } ),
 );
 
 /** The script under test. */
@@ -24,11 +24,11 @@ export const source = readFileSync( new URL( '../../js/admin.js', import.meta.ur
 /**
  * Load the exporter page and run the admin script in it.
  *
- * @param {Object} options - Options.
- * @param {number} options.archives - How many archives the page lists.
- * @param {boolean} options.confirmResult - What confirm() answers.
- * @param {string|null} options.html - Markup to use in place of the rendered page.
- * @returns {Promise<Object>} The window, its document, and the recorders.
+ * @param {Object}      options               - Options.
+ * @param {number}      options.archives      - How many archives the page lists.
+ * @param {boolean}     options.confirmResult - What confirm() answers.
+ * @param {string|null} options.html          - Markup to use in place of the rendered page.
+ * @return {Promise<Object>} The window, its document, and the recorders.
  */
 export async function loadPage( { archives = 0, confirmResult = true, html = null } = {} ) {
 	const warnings = [];
@@ -92,9 +92,9 @@ export async function loadPage( { archives = 0, confirmResult = true, html = nul
 /**
  * Submit a form the way a click on its submit button would.
  *
- * @param {Object} view - Value returned by loadPage().
+ * @param {Object}          view - Value returned by loadPage().
  * @param {HTMLFormElement} form - Form.
- * @returns {Event} The submit event; defaultPrevented tells whether the form would be sent.
+ * @return {Event} The submit event; defaultPrevented tells whether the form would be sent.
  */
 export function submit( view, form ) {
 	const event = new view.window.Event( 'submit', { bubbles: true, cancelable: true } );
@@ -107,9 +107,9 @@ export function submit( view, form ) {
 /**
  * Show the page again, as the browser does after a load or when it restores the page from its back-forward cache.
  *
- * @param {Object} view - Value returned by loadPage().
+ * @param {Object}  view      - Value returned by loadPage().
  * @param {boolean} persisted - Whether the page came from the back-forward cache.
- * @returns {void}
+ * @return {void}
  */
 export function showPage( view, persisted ) {
 	const event = new view.window.Event( 'pageshow' );

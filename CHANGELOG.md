@@ -8,6 +8,7 @@ see the current README and Security Policy for supported behavior and guidance.
 
 ### Architecture
 
+- **Longer Code Prefix**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, because WordPress asks for a prefix of at least four characters. `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`. Code that calls a plugin function directly, or defines one of the plugin's `SSE_` constants in `wp-config.php`, has to use the new name. The names that sites and other code already depend on are unchanged: the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions.
 - **Earlier Export Directory**: Cleanup no longer looks in the fixed-name export directory that versions before 2.1.1 used, and works only in this installation's own export directory. The plugin no longer removes anything from the earlier directory. If `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand.
 
 ## 2.1.2 - October 7, 2026

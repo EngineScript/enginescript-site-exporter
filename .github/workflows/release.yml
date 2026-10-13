@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -87,6 +87,7 @@ jobs:
              "PHPMD (PHP 8.3)", "Psalm Static Analysis (PHP 8.3)",
              "Security Scan (PHP 8.3)", "PHPStan for WP (PHP 8.3)",
              "Admin Script Tests (Node 24)",
+             "Lint (Node 24)", "Unit Test Coverage (PHP 8.4)",
              ( ["8.2", "8.3", "8.4", "8.5"][] as $php |
                ["6.8", "latest", "nightly"][] as $wp |
                "Test WordPress \($wp) with PHP \($php) (highest deps)" ),
@@ -127,6 +128,8 @@ jobs:
 
       - name: Create zip file
         if: steps.check_release.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
           PLUGIN_FILE="${PLUGIN_SLUG}.php"
           rm -rf "$PLUGIN_SLUG"
@@ -138,24 +141,27 @@ jobs:
           cp readme.txt "$PLUGIN_SLUG/"
           cp LICENSE "$PLUGIN_SLUG/"
           cp -r languages "$PLUGIN_SLUG/"
-          zip -r "${PLUGIN_SLUG}-${{ steps.get_version.outputs.version }}.zip" "$PLUGIN_SLUG"
+          zip -r "${PLUGIN_SLUG}-${VERSION}.zip" "$PLUGIN_SLUG"
           python3 .github/scripts/check-plugin-package.py "$PLUGIN_SLUG" \
-            --zip "${PLUGIN_SLUG}-${{ steps.get_version.outputs.version }}.zip"
+            --zip "${PLUGIN_SLUG}-${VERSION}.zip"
 
       - name: Get changelog entry
         if: steps.check_release.outputs.exists == 'false'
         id: get_changelog
+        env:
+          VERSION: ${{ steps.get_version.outputs.version }}
         run: |
-          CHANGELOG_ENTRY=$(awk -v ver="${{ steps.get_version.outputs.version }}" 'BEGIN{flag=0; target="^## \\[?" ver "\\]?([[:space:]-]|$)"} $0 ~ target {flag=1; print; next} /^## \[?[0-9]+\.[0-9]+\.[0-9]+\]?([[:space:]-]|$)/ {flag=0} flag {print}' CHANGELOG.md | tail -n +2)
+          CHANGELOG_ENTRY=$(awk -v ver="$VERSION" 'BEGIN{flag=0; target="^## \\[?" ver "\\]?([[:space:]-]|$)"} $0 ~ target {flag=1; print; next} /^## \[?[0-9]+\.[0-9]+\.[0-9]+\]?([[:space:]-]|$)/ {flag=0} flag {print}' CHANGELOG.md | tail -n +2)
           {
             echo "changelog<<EOF"
             echo "$CHANGELOG_ENTRY"
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Create Release
+      # softprops/action-gh-release attaches the archive and fails when the file is missing.
+      - name: Create Release  # zizmor: ignore[superfluous-actions]
         if: steps.check_release.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64  # v3.0.3
         with:
           tag_name: v${{ steps.get_version.outputs.version }}
           target_commitish: ${{ github.sha }}

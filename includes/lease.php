@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 2.1.1
  * @return string Lease option name.
  */
-function sse_get_export_lease_option_name(): string {
+function esse_get_export_lease_option_name(): string {
 	return 'sse_export_lease';
 }
 
@@ -31,7 +31,7 @@ function sse_get_export_lease_option_name(): string {
  * @param mixed $lease Untrusted lease value.
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|null Canonical lease or null.
  */
-function sse_normalize_export_lease( mixed $lease ): ?array {
+function esse_normalize_export_lease( mixed $lease ): ?array {
 	if (
 		! is_array( $lease )
 		|| ! isset( $lease['owner'], $lease['started_at'], $lease['heartbeat_at'], $lease['expires_at'], $lease['export_dir_name'] )
@@ -49,7 +49,7 @@ function sse_normalize_export_lease( mixed $lease ): ?array {
 		$lease['started_at'] < 0
 		|| $lease['heartbeat_at'] < $lease['started_at']
 		|| $lease['expires_at'] <= $lease['heartbeat_at']
-		|| ( '' !== $lease['export_dir_name'] && ! sse_is_export_private_directory_name( $lease['export_dir_name'] ) )
+		|| ( '' !== $lease['export_dir_name'] && ! esse_is_export_private_directory_name( $lease['export_dir_name'] ) )
 	) {
 		return null;
 	}
@@ -69,13 +69,13 @@ function sse_normalize_export_lease( mixed $lease ): ?array {
  * @since 2.1.1
  * @return array{table:string,key_column:string,value_column:string,scope_column:string,scope_id:int,cache_group:string,cache_key:string}|WP_Error Repository data.
  */
-function sse_get_export_lease_repository(): array|WP_Error {
-	$database = sse_get_wordpress_database();
+function esse_get_export_lease_repository(): array|WP_Error {
+	$database = esse_get_wordpress_database();
 	if ( null === $database ) {
 		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
-	$option_name = sse_get_export_lease_option_name();
+	$option_name = esse_get_export_lease_option_name();
 	if ( ! is_multisite() ) {
 		return [
 			'table'        => $database->options,
@@ -112,7 +112,7 @@ function sse_get_export_lease_repository(): array|WP_Error {
  * @psalm-param array{cache_group:string,cache_key:string,...} $repository
  * @return void
  */
-function sse_invalidate_export_lease_cache( array $repository ): void {
+function esse_invalidate_export_lease_cache( array $repository ): void {
 	wp_cache_delete( $repository['cache_key'], $repository['cache_group'] );
 }
 
@@ -126,25 +126,25 @@ function sse_invalidate_export_lease_cache( array $repository ): void {
  * @since 2.1.1
  * @return array<int,string|null>|WP_Error Raw stored values, or a storage error.
  */
-function sse_get_stored_export_lease_rows(): array|WP_Error {
-	$repository = sse_get_export_lease_repository();
-	$database   = sse_get_wordpress_database();
+function esse_get_stored_export_lease_rows(): array|WP_Error {
+	$repository = esse_get_export_lease_repository();
+	$database   = esse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
 		return is_wp_error( $repository ) ? $repository : new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( '' === $repository['scope_column'] ) {
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'SELECT %i FROM %i WHERE %i = %s LIMIT 50',
 				$repository['value_column'],
 				$repository['table'],
 				$repository['key_column'],
-				sse_get_export_lease_option_name()
+				esse_get_export_lease_option_name()
 			)
 		);
 	} else {
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'SELECT %i FROM %i WHERE %i = %d AND %i = %s LIMIT 50',
 				$repository['value_column'],
@@ -152,7 +152,7 @@ function sse_get_stored_export_lease_rows(): array|WP_Error {
 				$repository['scope_column'],
 				$repository['scope_id'],
 				$repository['key_column'],
-				sse_get_export_lease_option_name()
+				esse_get_export_lease_option_name()
 			)
 		);
 	}
@@ -185,12 +185,12 @@ function sse_get_stored_export_lease_rows(): array|WP_Error {
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|null Canonical lease, or null when invalid.
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_decode_export_lease_row( ?string $raw_value ): ?array {
+function esse_decode_export_lease_row( ?string $raw_value ): ?array {
 	if ( null === $raw_value || ! is_serialized( $raw_value ) ) {
 		return null;
 	}
 
-	return sse_normalize_export_lease( @unserialize( trim( $raw_value ), [ 'allowed_classes' => false ] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize,WordPress.PHP.NoSilencedErrors.Discouraged -- The row was written by add_option(); classes are disallowed, and a corrupt row must fail validation quietly.
+	return esse_normalize_export_lease( @unserialize( trim( $raw_value ), [ 'allowed_classes' => false ] ) ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_unserialize,WordPress.PHP.NoSilencedErrors.Discouraged -- The row was written by add_option(); classes are disallowed, and a corrupt row must fail validation quietly.
 }
 
 /**
@@ -199,8 +199,8 @@ function sse_decode_export_lease_row( ?string $raw_value ): ?array {
  * @since 2.1.1
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error|null Lease, error, or null when absent.
  */
-function sse_get_stored_export_lease(): array|WP_Error|null {
-	$rows = sse_get_stored_export_lease_rows();
+function esse_get_stored_export_lease(): array|WP_Error|null {
+	$rows = esse_get_stored_export_lease_rows();
 	if ( is_wp_error( $rows ) ) {
 		return $rows;
 	}
@@ -213,7 +213,7 @@ function sse_get_stored_export_lease(): array|WP_Error|null {
 		return new WP_Error( 'export_lease_ambiguous', __( 'The export state is inconsistent, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
-	$lease = sse_decode_export_lease_row( $rows[0] );
+	$lease = esse_decode_export_lease_row( $rows[0] );
 	if ( null === $lease ) {
 		return new WP_Error( 'export_lease_invalid', __( 'The export state is invalid, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
@@ -234,18 +234,18 @@ function sse_get_stored_export_lease(): array|WP_Error|null {
  * @return bool True when inserted.
  * @phpstan-impure
  */
-function sse_add_export_lease_option( array $lease ): bool {
-	$repository = sse_get_export_lease_repository();
+function esse_add_export_lease_option( array $lease ): bool {
+	$repository = esse_get_export_lease_repository();
 	if ( is_wp_error( $repository ) ) {
 		return false;
 	}
 
-	sse_invalidate_export_lease_cache( $repository );
+	esse_invalidate_export_lease_cache( $repository );
 	if ( is_multisite() ) {
-		return add_network_option( $repository['scope_id'], sse_get_export_lease_option_name(), $lease );
+		return add_network_option( $repository['scope_id'], esse_get_export_lease_option_name(), $lease );
 	}
 
-	return add_option( sse_get_export_lease_option_name(), $lease, '', false );
+	return add_option( esse_get_export_lease_option_name(), $lease, '', false );
 }
 
 /**
@@ -254,15 +254,15 @@ function sse_add_export_lease_option( array $lease ): bool {
  * @since 2.1.1
  * @return string|WP_Error Lock name on success.
  */
-function sse_acquire_export_lease_repository_lock(): string|WP_Error {
-	$repository = sse_get_export_lease_repository();
-	$database   = sse_get_wordpress_database();
+function esse_acquire_export_lease_repository_lock(): string|WP_Error {
+	$repository = esse_get_export_lease_repository();
+	$database   = esse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
 		return is_wp_error( $repository ) ? $repository : new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
-	$lock_name = 'sse:' . substr( hash( 'sha256', $repository['table'] . ':' . $repository['scope_id'] . ':' . sse_get_export_lease_option_name() ), 0, 48 );
-	$query     = sse_normalize_string_value( $database->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, 5 ) );
+	$lock_name = 'sse:' . substr( hash( 'sha256', $repository['table'] . ':' . $repository['scope_id'] . ':' . esse_get_export_lease_option_name() ), 0, 48 );
+	$query     = esse_normalize_string_value( $database->prepare( 'SELECT GET_LOCK(%s, %d)', $lock_name, 5 ) );
 	if ( '' === $query || '1' !== (string) $database->get_var( $query ) ) {
 		return new WP_Error( 'export_lease_lock_unavailable', __( 'The export state is busy or unavailable. Please try again.', 'enginescript-site-exporter' ) );
 	}
@@ -277,17 +277,17 @@ function sse_acquire_export_lease_repository_lock(): string|WP_Error {
  * @param string $lock_name Acquired lock name.
  * @return void
  */
-function sse_release_export_lease_repository_lock( string $lock_name ): void {
+function esse_release_export_lease_repository_lock( string $lock_name ): void {
 	if ( '' === $lock_name ) {
 		return;
 	}
 
-	$database = sse_get_wordpress_database();
+	$database = esse_get_wordpress_database();
 	if ( null === $database ) {
 		return;
 	}
 
-	$query = sse_normalize_string_value( $database->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+	$query = esse_normalize_string_value( $database->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
 	if ( '' !== $query ) {
 		$database->get_var( $query );
 	}
@@ -303,28 +303,28 @@ function sse_release_export_lease_repository_lock( string $lock_name ): void {
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $updated_lease
  * @return true|WP_Error True when exactly one row was replaced.
  */
-function sse_compare_and_update_export_lease( array $expected_lease, array $updated_lease ): true|WP_Error {
-	$repository = sse_get_export_lease_repository();
-	$database   = sse_get_wordpress_database();
+function esse_compare_and_update_export_lease( array $expected_lease, array $updated_lease ): true|WP_Error {
+	$repository = esse_get_export_lease_repository();
+	$database   = esse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
 		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	if ( '' === $repository['scope_column'] ) {
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'UPDATE %i SET %i = %s WHERE %i = %s AND BINARY %i = BINARY %s',
 				$repository['table'],
 				$repository['value_column'],
 				maybe_serialize( $updated_lease ),
 				$repository['key_column'],
-				sse_get_export_lease_option_name(),
+				esse_get_export_lease_option_name(),
 				$repository['value_column'],
 				maybe_serialize( $expected_lease )
 			)
 		);
 	} else {
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'UPDATE %i SET %i = %s WHERE %i = %d AND %i = %s AND BINARY %i = BINARY %s',
 				$repository['table'],
@@ -333,7 +333,7 @@ function sse_compare_and_update_export_lease( array $expected_lease, array $upda
 				$repository['scope_column'],
 				$repository['scope_id'],
 				$repository['key_column'],
-				sse_get_export_lease_option_name(),
+				esse_get_export_lease_option_name(),
 				$repository['value_column'],
 				maybe_serialize( $expected_lease )
 			)
@@ -344,8 +344,8 @@ function sse_compare_and_update_export_lease( array $expected_lease, array $upda
 		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
-	sse_invalidate_export_lease_cache( $repository );
-	$stored_lease = sse_get_stored_export_lease();
+	esse_invalidate_export_lease_cache( $repository );
+	$stored_lease = esse_get_stored_export_lease();
 	if ( is_wp_error( $stored_lease ) || $stored_lease !== $updated_lease ) {
 		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
@@ -360,9 +360,9 @@ function sse_compare_and_update_export_lease( array $expected_lease, array $upda
  * @param string|null $raw_value Exact stored value, or null for a NULL column.
  * @return int|false Number of rows deleted, or false when the query failed.
  */
-function sse_delete_export_lease_rows_by_value( ?string $raw_value ): int|false {
-	$repository = sse_get_export_lease_repository();
-	$database   = sse_get_wordpress_database();
+function esse_delete_export_lease_rows_by_value( ?string $raw_value ): int|false {
+	$repository = esse_get_export_lease_repository();
+	$database   = esse_get_wordpress_database();
 	if ( is_wp_error( $repository ) || null === $database ) {
 		return false;
 	}
@@ -373,37 +373,37 @@ function sse_delete_export_lease_rows_by_value( ?string $raw_value ): int|false 
 			return 0;
 		}
 
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'DELETE FROM %i WHERE %i = %d AND %i = %s AND %i IS NULL',
 				$repository['table'],
 				$repository['scope_column'],
 				$repository['scope_id'],
 				$repository['key_column'],
-				sse_get_export_lease_option_name(),
+				esse_get_export_lease_option_name(),
 				$repository['value_column']
 			)
 		);
 	} elseif ( '' === $repository['scope_column'] ) {
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'DELETE FROM %i WHERE %i = %s AND BINARY %i = BINARY %s',
 				$repository['table'],
 				$repository['key_column'],
-				sse_get_export_lease_option_name(),
+				esse_get_export_lease_option_name(),
 				$repository['value_column'],
 				$raw_value
 			)
 		);
 	} else {
-		$query = sse_normalize_string_value(
+		$query = esse_normalize_string_value(
 			$database->prepare(
 				'DELETE FROM %i WHERE %i = %d AND %i = %s AND BINARY %i = BINARY %s',
 				$repository['table'],
 				$repository['scope_column'],
 				$repository['scope_id'],
 				$repository['key_column'],
-				sse_get_export_lease_option_name(),
+				esse_get_export_lease_option_name(),
 				$repository['value_column'],
 				$raw_value
 			)
@@ -416,7 +416,7 @@ function sse_delete_export_lease_rows_by_value( ?string $raw_value ): int|false 
 	}
 
 	if ( $deleted > 0 ) {
-		sse_invalidate_export_lease_cache( $repository );
+		esse_invalidate_export_lease_cache( $repository );
 	}
 
 	return $deleted;
@@ -430,10 +430,10 @@ function sse_delete_export_lease_rows_by_value( ?string $raw_value ): int|false 
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $expected_lease
  * @return bool True when exactly one row was deleted.
  */
-function sse_compare_and_delete_export_lease( array $expected_lease ): bool {
-	$raw_value = sse_normalize_string_value( maybe_serialize( $expected_lease ) );
+function esse_compare_and_delete_export_lease( array $expected_lease ): bool {
+	$raw_value = esse_normalize_string_value( maybe_serialize( $expected_lease ) );
 
-	return '' !== $raw_value && 1 === sse_delete_export_lease_rows_by_value( $raw_value );
+	return '' !== $raw_value && 1 === esse_delete_export_lease_rows_by_value( $raw_value );
 }
 
 /**
@@ -442,9 +442,9 @@ function sse_compare_and_delete_export_lease( array $expected_lease ): bool {
  * @since 2.1.1
  * @return int Lease lifetime in seconds.
  */
-function sse_get_export_lease_lifetime(): int {
-	$max_seconds = sse_get_export_resource_limit( 'sse_max_export_seconds', SSE_DEFAULT_MAX_EXPORT_SECONDS );
-	$grace       = sse_get_export_resource_limit( 'sse_export_recovery_grace_seconds', SSE_DEFAULT_EXPORT_RECOVERY_GRACE_SECONDS );
+function esse_get_export_lease_lifetime(): int {
+	$max_seconds = esse_get_export_resource_limit( 'sse_max_export_seconds', ESSE_DEFAULT_MAX_EXPORT_SECONDS );
+	$grace       = esse_get_export_resource_limit( 'sse_export_recovery_grace_seconds', ESSE_DEFAULT_EXPORT_RECOVERY_GRACE_SECONDS );
 
 	return $max_seconds > PHP_INT_MAX - $grace ? PHP_INT_MAX : $max_seconds + $grace;
 }
@@ -455,10 +455,10 @@ function sse_get_export_lease_lifetime(): int {
  * @since 2.1.1
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error Lease data on success.
  */
-function sse_acquire_export_lease(): array|WP_Error {
+function esse_acquire_export_lease(): array|WP_Error {
 	$now      = time();
-	$lifetime = sse_get_export_lease_lifetime();
-	$owner    = sse_normalize_string_value( wp_generate_uuid4() );
+	$lifetime = esse_get_export_lease_lifetime();
+	$owner    = esse_normalize_string_value( wp_generate_uuid4() );
 	if ( ! wp_is_uuid( $owner, 4 ) || $lifetime >= PHP_INT_MAX - $now ) {
 		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
@@ -471,15 +471,15 @@ function sse_acquire_export_lease(): array|WP_Error {
 		'export_dir_name' => '',
 	];
 
-	$lock_name = sse_acquire_export_lease_repository_lock();
+	$lock_name = esse_acquire_export_lease_repository_lock();
 	if ( is_wp_error( $lock_name ) ) {
 		return $lock_name;
 	}
 
 	try {
-		return sse_insert_export_lease_under_lock( $lease, $now );
+		return esse_insert_export_lease_under_lock( $lease, $now );
 	} finally {
-		sse_release_export_lease_repository_lock( $lock_name );
+		esse_release_export_lease_repository_lock( $lock_name );
 	}
 }
 
@@ -495,8 +495,8 @@ function sse_acquire_export_lease(): array|WP_Error {
  * @param int $now Current wall-clock timestamp.
  * @return int|WP_Error Number of rows left in place, or a storage error.
  */
-function sse_remove_unusable_export_lease_rows( int $now ): int|WP_Error {
-	$rows = sse_get_stored_export_lease_rows();
+function esse_remove_unusable_export_lease_rows( int $now ): int|WP_Error {
+	$rows = esse_get_stored_export_lease_rows();
 	if ( is_wp_error( $rows ) ) {
 		return $rows;
 	}
@@ -511,20 +511,20 @@ function sse_remove_unusable_export_lease_rows( int $now ): int|WP_Error {
 		}
 		$seen[ $seen_key ] = true;
 
-		$lease = sse_decode_export_lease_row( $raw_value );
+		$lease = esse_decode_export_lease_row( $raw_value );
 		if ( null !== $lease && $lease['expires_at'] > $now ) {
 			++$remaining;
 			continue;
 		}
 
-		$deleted = sse_delete_export_lease_rows_by_value( $raw_value );
+		$deleted = esse_delete_export_lease_rows_by_value( $raw_value );
 		if ( false === $deleted || 0 === $deleted ) {
 			++$remaining;
 			continue;
 		}
 
 		if ( null === $lease ) {
-			sse_log( 'Removed an invalid stored export lease.', 'security' );
+			esse_log( 'Removed an invalid stored export lease.', 'security' );
 		}
 	}
 
@@ -540,19 +540,19 @@ function sse_remove_unusable_export_lease_rows( int $now ): int|WP_Error {
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $lease
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error Inserted lease or error.
  */
-function sse_insert_export_lease_under_lock( array $lease, int $now ): array|WP_Error {
-	$remaining = sse_remove_unusable_export_lease_rows( $now );
+function esse_insert_export_lease_under_lock( array $lease, int $now ): array|WP_Error {
+	$remaining = esse_remove_unusable_export_lease_rows( $now );
 	if ( is_wp_error( $remaining ) ) {
 		return $remaining;
 	}
 
-	if ( $remaining > 0 || ! sse_add_export_lease_option( $lease ) ) {
+	if ( $remaining > 0 || ! esse_add_export_lease_option( $lease ) ) {
 		return new WP_Error( 'export_lease_conflict', __( 'An export process is already running. Please wait for it to complete before starting a new one.', 'enginescript-site-exporter' ) );
 	}
 
-	$stored_lease = sse_get_stored_export_lease();
+	$stored_lease = esse_get_stored_export_lease();
 	if ( is_wp_error( $stored_lease ) || $stored_lease !== $lease ) {
-		sse_compare_and_delete_export_lease( $lease );
+		esse_compare_and_delete_export_lease( $lease );
 		return new WP_Error( 'export_lease_storage_unavailable', __( 'The export state could not be verified, so the export was not started.', 'enginescript-site-exporter' ) );
 	}
 
@@ -567,8 +567,8 @@ function sse_insert_export_lease_under_lock( array $lease, int $now ): array|WP_
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $lease
  * @return void
  */
-function sse_set_current_export_lease( array $lease ): void {
-	$GLOBALS['sse_current_export_lease'] = $lease;
+function esse_set_current_export_lease( array $lease ): void {
+	$GLOBALS['esse_current_export_lease'] = $lease;
 }
 
 /**
@@ -577,8 +577,8 @@ function sse_set_current_export_lease( array $lease ): void {
  * @since 2.1.1
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|null Canonical lease or null.
  */
-function sse_get_current_export_lease(): ?array {
-	return sse_normalize_export_lease( $GLOBALS['sse_current_export_lease'] ?? null );
+function esse_get_current_export_lease(): ?array {
+	return esse_normalize_export_lease( $GLOBALS['esse_current_export_lease'] ?? null );
 }
 
 /**
@@ -587,8 +587,8 @@ function sse_get_current_export_lease(): ?array {
  * @since 2.1.1
  * @return void
  */
-function sse_clear_current_export_lease(): void {
-	unset( $GLOBALS['sse_current_export_lease'] );
+function esse_clear_current_export_lease(): void {
+	unset( $GLOBALS['esse_current_export_lease'] );
 }
 
 /**
@@ -597,15 +597,16 @@ function sse_clear_current_export_lease(): void {
  * @since 2.1.1
  * @param bool $force Whether to renew even before the heartbeat interval.
  * @return true|WP_Error True while the current owner remains live.
+ * @SuppressWarnings("PHPMD.BooleanArgumentFlag") The flag only skips the interval check; both paths renew the same lease.
  */
-function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
-	$lease = sse_get_current_export_lease();
+function esse_renew_current_export_lease( bool $force = false ): true|WP_Error {
+	$lease = esse_get_current_export_lease();
 	if ( null === $lease ) {
 		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	$now              = time();
-	$maximum_interval = max( 1, intdiv( sse_get_export_resource_limit( 'sse_max_export_seconds', SSE_DEFAULT_MAX_EXPORT_SECONDS ), 4 ) );
+	$maximum_interval = max( 1, intdiv( esse_get_export_resource_limit( 'sse_max_export_seconds', ESSE_DEFAULT_MAX_EXPORT_SECONDS ), 4 ) );
 	$renewal_interval = min( 60, $maximum_interval );
 	if ( ! $force && $lease['expires_at'] > $now && $now - $lease['heartbeat_at'] < $renewal_interval ) {
 		return true;
@@ -617,7 +618,7 @@ function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
 
 	// A backward clock step must not produce a heartbeat earlier than the last one.
 	$heartbeat = max( $now, $lease['heartbeat_at'] );
-	$lifetime  = sse_get_export_lease_lifetime();
+	$lifetime  = esse_get_export_lease_lifetime();
 	if ( $lifetime >= PHP_INT_MAX - $heartbeat ) {
 		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
@@ -627,16 +628,16 @@ function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
 	$updated_lease['expires_at']   = $heartbeat + $lifetime;
 
 	if ( $updated_lease === $lease ) {
-		$stored_lease = sse_get_stored_export_lease();
+		$stored_lease = esse_get_stored_export_lease();
 		return $stored_lease === $lease ? true : new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
-	$renewed = sse_compare_and_update_export_lease( $lease, $updated_lease );
+	$renewed = esse_compare_and_update_export_lease( $lease, $updated_lease );
 	if ( is_wp_error( $renewed ) ) {
 		return $renewed;
 	}
 
-	sse_set_current_export_lease( $updated_lease );
+	esse_set_current_export_lease( $updated_lease );
 	return true;
 }
 
@@ -649,19 +650,19 @@ function sse_renew_current_export_lease( bool $force = false ): true|WP_Error {
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $lease
  * @return array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string}|WP_Error Updated lease data.
  */
-function sse_update_export_lease_directory( array $lease, string $export_dir_name ): array|WP_Error {
-	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
+function esse_update_export_lease_directory( array $lease, string $export_dir_name ): array|WP_Error {
+	if ( ! esse_is_export_private_directory_name( $export_dir_name ) ) {
 		return new WP_Error( 'export_lease_lost', __( 'The export lost its lock, so it was stopped.', 'enginescript-site-exporter' ) );
 	}
 
 	$updated_lease                    = $lease;
 	$updated_lease['export_dir_name'] = $export_dir_name;
-	$updated                          = sse_compare_and_update_export_lease( $lease, $updated_lease );
+	$updated                          = esse_compare_and_update_export_lease( $lease, $updated_lease );
 	if ( is_wp_error( $updated ) ) {
 		return $updated;
 	}
 
-	sse_set_current_export_lease( $updated_lease );
+	esse_set_current_export_lease( $updated_lease );
 	return $updated_lease;
 }
 
@@ -673,6 +674,6 @@ function sse_update_export_lease_directory( array $lease, string $export_dir_nam
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $lease
  * @return bool True when the owned lease was released.
  */
-function sse_release_export_lease( array $lease ): bool {
-	return sse_compare_and_delete_export_lease( $lease );
+function esse_release_export_lease( array $lease ): bool {
+	return esse_compare_and_delete_export_lease( $lease );
 }

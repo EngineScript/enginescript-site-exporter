@@ -18,11 +18,11 @@ final class PluginWiringTest extends SseTestCase {
 	public function test_loading_the_plugin_registers_its_entry_points(): void {
 		$loaded = $GLOBALS['sse_test_load_time'];
 
-		$this->assertContains( 'sse_init_plugin', $loaded['hooks']['plugins_loaded'][10] );
-		$this->assertSame( array( array( SSE_PLUGIN_FILE, 'sse_activate_plugin' ) ), $loaded['activation'] );
-		$this->assertSame( array( array( SSE_PLUGIN_FILE, 'sse_deactivate_plugin' ) ), $loaded['deactivation'] );
+		$this->assertContains( 'esse_init_plugin', $loaded['hooks']['plugins_loaded'][10] );
+		$this->assertSame( array( array( ESSE_PLUGIN_FILE, 'esse_activate_plugin' ) ), $loaded['activation'] );
+		$this->assertSame( array( array( ESSE_PLUGIN_FILE, 'esse_deactivate_plugin' ) ), $loaded['deactivation'] );
 		$this->assertSame( array(), $loaded['uninstall'], 'The uninstall callback is registered on activation, not on every load.' );
-		$this->assertSame( dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR . 'enginescript-site-exporter.php', SSE_PLUGIN_FILE );
+		$this->assertSame( dirname( __DIR__, 2 ) . DIRECTORY_SEPARATOR . 'enginescript-site-exporter.php', ESSE_PLUGIN_FILE );
 	}
 
 	/**
@@ -31,19 +31,19 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_start_up_registers_every_handler(): void {
-		sse_init_plugin();
+		esse_init_plugin();
 
 		$expected = array(
-			'admin_menu'                     => 'sse_admin_menu',
-			'network_admin_menu'             => 'sse_network_admin_menu',
-			'admin_enqueue_scripts'          => 'sse_enqueue_admin_assets',
-			'admin_post_sse_export_site'     => 'sse_handle_export',
-			'admin_post_sse_secure_download' => 'sse_handle_secure_download',
-			'admin_post_sse_delete_export'   => 'sse_handle_export_deletion',
-			'sse_delete_export_file'         => 'sse_delete_export_file_handler',
-			'sse_bulk_cleanup_exports'       => 'sse_bulk_cleanup_exports_handler',
-			'sse_recover_expired_export'     => 'sse_recover_expired_export_handler',
-			'sse_export_housekeeping'        => 'sse_export_housekeeping_handler',
+			'admin_menu'                     => 'esse_admin_menu',
+			'network_admin_menu'             => 'esse_network_admin_menu',
+			'admin_enqueue_scripts'          => 'esse_enqueue_admin_assets',
+			'admin_post_sse_export_site'     => 'esse_handle_export',
+			'admin_post_sse_secure_download' => 'esse_handle_secure_download',
+			'admin_post_sse_delete_export'   => 'esse_handle_export_deletion',
+			'sse_delete_export_file'         => 'esse_delete_export_file_handler',
+			'sse_bulk_cleanup_exports'       => 'esse_bulk_cleanup_exports_handler',
+			'sse_recover_expired_export'     => 'esse_recover_expired_export_handler',
+			'sse_export_housekeeping'        => 'esse_export_housekeeping_handler',
 		);
 
 		foreach ( $expected as $hook => $callback ) {
@@ -64,7 +64,7 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_no_route_is_open_to_logged_out_visitors(): void {
-		sse_init_plugin();
+		esse_init_plugin();
 
 		foreach ( array_keys( $GLOBALS['sse_test']['hooks'] ) as $hook ) {
 			$this->assertStringNotContainsString( 'nopriv', $hook );
@@ -77,9 +77,9 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_every_scheduled_hook_name_has_a_handler(): void {
-		sse_init_plugin();
+		esse_init_plugin();
 
-		$names = sse_get_scheduled_hook_names();
+		$names = esse_get_scheduled_hook_names();
 		$this->assertCount( 4, $names );
 		foreach ( $names as $hook ) {
 			$this->assertArrayHasKey( $hook, $GLOBALS['sse_test']['hooks'], $hook );
@@ -92,14 +92,14 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_housekeeping_is_scheduled_once(): void {
-		sse_init_plugin();
+		esse_init_plugin();
 
 		$event = $GLOBALS['sse_test']['recurring_event']['sse_export_housekeeping'];
 		$this->assertSame( 'daily', $event['recurrence'] );
 		$this->assertEqualsWithDelta( time() + HOUR_IN_SECONDS, $event['time'], 5 );
 
 		$GLOBALS['sse_test']['recurring_event']['sse_export_housekeeping']['time'] = 123;
-		sse_schedule_export_housekeeping();
+		esse_schedule_export_housekeeping();
 		$this->assertSame( 123, $GLOBALS['sse_test']['recurring_event']['sse_export_housekeeping']['time'], 'An existing event is left as it is.' );
 	}
 
@@ -112,15 +112,15 @@ final class PluginWiringTest extends SseTestCase {
 		$GLOBALS['sse_test']['multisite'] = true;
 		$GLOBALS['sse_test']['main_site'] = false;
 
-		sse_schedule_export_housekeeping();
+		esse_schedule_export_housekeeping();
 		$this->assertArrayNotHasKey( 'sse_export_housekeeping', $GLOBALS['sse_test']['recurring_event'] );
 
 		wp_schedule_event( 500, 'daily', 'sse_export_housekeeping' );
-		sse_schedule_export_housekeeping();
+		esse_schedule_export_housekeeping();
 		$this->assertArrayNotHasKey( 'sse_export_housekeeping', $GLOBALS['sse_test']['recurring_event'], 'An event left by an earlier version is removed.' );
 
 		$GLOBALS['sse_test']['main_site'] = true;
-		sse_schedule_export_housekeeping();
+		esse_schedule_export_housekeeping();
 		$this->assertArrayHasKey( 'sse_export_housekeeping', $GLOBALS['sse_test']['recurring_event'] );
 	}
 
@@ -130,18 +130,18 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_single_site_menu(): void {
-		sse_network_admin_menu();
+		esse_network_admin_menu();
 		$this->assertSame( array(), $GLOBALS['sse_test']['pages'], 'The network menu adds nothing on a single site.' );
 
-		sse_admin_menu();
+		esse_admin_menu();
 
 		$this->assertCount( 1, $GLOBALS['sse_test']['pages'] );
 		$page = $GLOBALS['sse_test']['pages'][0];
 		$this->assertSame( 'tools.php', $page['parent_slug'] );
 		$this->assertSame( 'manage_options', $page['capability'] );
 		$this->assertSame( 'enginescript-site-exporter', $page['menu_slug'] );
-		$this->assertSame( 'sse_exporter_page_html', $page['callback'] );
-		$this->assertSame( 'tools_page_enginescript-site-exporter', sse_get_exporter_page_hook_suffix() );
+		$this->assertSame( 'esse_exporter_page_html', $page['callback'] );
+		$this->assertSame( 'tools_page_enginescript-site-exporter', esse_get_exporter_page_hook_suffix() );
 	}
 
 	/**
@@ -153,17 +153,17 @@ final class PluginWiringTest extends SseTestCase {
 		$GLOBALS['sse_test']['multisite'] = true;
 		$GLOBALS['sse_test']['page_hook'] = 'settings_page_enginescript-site-exporter-network';
 
-		sse_admin_menu();
+		esse_admin_menu();
 		$this->assertSame( array(), $GLOBALS['sse_test']['pages'], 'No site of a network gets the page in its own dashboard.' );
 
-		sse_network_admin_menu();
+		esse_network_admin_menu();
 
 		$this->assertCount( 1, $GLOBALS['sse_test']['pages'] );
 		$page = $GLOBALS['sse_test']['pages'][0];
 		$this->assertSame( 'settings.php', $page['parent_slug'] );
 		$this->assertSame( 'manage_network_options', $page['capability'] );
-		$this->assertSame( 'sse_exporter_page_html', $page['callback'] );
-		$this->assertSame( 'settings_page_enginescript-site-exporter-network', sse_get_exporter_page_hook_suffix() );
+		$this->assertSame( 'esse_exporter_page_html', $page['callback'] );
+		$this->assertSame( 'settings_page_enginescript-site-exporter-network', esse_get_exporter_page_hook_suffix() );
 	}
 
 	/**
@@ -172,12 +172,12 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_a_page_that_was_not_added_leaves_no_hook(): void {
-		sse_admin_menu();
-		$this->assertNotSame( '', sse_get_exporter_page_hook_suffix() );
+		esse_admin_menu();
+		$this->assertNotSame( '', esse_get_exporter_page_hook_suffix() );
 
 		$GLOBALS['sse_test']['page_hook'] = false;
-		sse_admin_menu();
-		$this->assertSame( '', sse_get_exporter_page_hook_suffix() );
+		esse_admin_menu();
+		$this->assertSame( '', esse_get_exporter_page_hook_suffix() );
 	}
 
 	/**
@@ -186,31 +186,31 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_assets_load_on_the_exporter_page_only(): void {
-		sse_enqueue_admin_assets( 'tools_page_enginescript-site-exporter' );
+		esse_enqueue_admin_assets( 'tools_page_enginescript-site-exporter' );
 		$this->assertSame( array(), $GLOBALS['sse_test']['scripts'], 'Before the page is registered nothing loads.' );
 
-		sse_enqueue_admin_assets( '' );
+		esse_enqueue_admin_assets( '' );
 		$this->assertSame( array(), $GLOBALS['sse_test']['scripts'], 'An empty page hook never matches.' );
 
-		sse_admin_menu();
+		esse_admin_menu();
 		foreach ( array( 'index.php', 'tools.php', 'plugins.php', 'tools_page_other-plugin', 'tools_page_enginescript-site-exporter-2' ) as $other_page ) {
-			sse_enqueue_admin_assets( $other_page );
+			esse_enqueue_admin_assets( $other_page );
 		}
 		$this->assertSame( array(), $GLOBALS['sse_test']['scripts'] );
 		$this->assertSame( array(), $GLOBALS['sse_test']['styles'] );
 
-		sse_enqueue_admin_assets( 'tools_page_enginescript-site-exporter' );
+		esse_enqueue_admin_assets( 'tools_page_enginescript-site-exporter' );
 
 		$script = $GLOBALS['sse_test']['scripts']['sse-admin'];
-		$this->assertSame( plugin_dir_url( SSE_PLUGIN_FILE ) . 'js/admin.js', $script['src'] );
-		$this->assertSame( ES_SITE_EXPORTER_VERSION, $script['version'] );
+		$this->assertSame( plugin_dir_url( ESSE_PLUGIN_FILE ) . 'js/admin.js', $script['src'] );
+		$this->assertSame( ESSE_VERSION, $script['version'] );
 		$this->assertSame( array(), $script['dependencies'], 'The script needs no other script.' );
 		$this->assertTrue( $script['args']['in_footer'] );
 		$this->assertSame( 'defer', $script['args']['strategy'] );
 
 		$style = $GLOBALS['sse_test']['styles']['sse-admin'];
-		$this->assertSame( plugin_dir_url( SSE_PLUGIN_FILE ) . 'css/admin.css', $style['src'] );
-		$this->assertSame( ES_SITE_EXPORTER_VERSION, $style['version'] );
+		$this->assertSame( plugin_dir_url( ESSE_PLUGIN_FILE ) . 'css/admin.css', $style['src'] );
+		$this->assertSame( ESSE_VERSION, $style['version'] );
 	}
 
 	/**
@@ -219,8 +219,8 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_the_enqueued_files_exist(): void {
-		$this->assertFileExists( dirname( SSE_PLUGIN_FILE ) . '/js/admin.js' );
-		$this->assertFileExists( dirname( SSE_PLUGIN_FILE ) . '/css/admin.css' );
+		$this->assertFileExists( dirname( ESSE_PLUGIN_FILE ) . '/js/admin.js' );
+		$this->assertFileExists( dirname( ESSE_PLUGIN_FILE ) . '/css/admin.css' );
 	}
 
 	/**
@@ -229,11 +229,11 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_single_site_capability(): void {
-		$this->assertSame( 'manage_options', sse_get_exporter_menu_capability() );
-		$this->assertTrue( sse_current_user_can_export_site() );
+		$this->assertSame( 'manage_options', esse_get_exporter_menu_capability() );
+		$this->assertTrue( esse_current_user_can_export_site() );
 
 		$GLOBALS['sse_test']['capabilities'] = array( 'edit_posts', 'manage_network_options' );
-		$this->assertFalse( sse_current_user_can_export_site() );
+		$this->assertFalse( esse_current_user_can_export_site() );
 	}
 
 	/**
@@ -244,15 +244,15 @@ final class PluginWiringTest extends SseTestCase {
 	public function test_network_capability(): void {
 		$GLOBALS['sse_test']['multisite'] = true;
 
-		$this->assertSame( 'manage_network_options', sse_get_exporter_menu_capability() );
-		$this->assertFalse( sse_current_user_can_export_site(), 'manage_options alone.' );
+		$this->assertSame( 'manage_network_options', esse_get_exporter_menu_capability() );
+		$this->assertFalse( esse_current_user_can_export_site(), 'manage_options alone.' );
 
 		$GLOBALS['sse_test']['capabilities'] = array( 'manage_network_options' );
-		$this->assertTrue( sse_current_user_can_export_site() );
+		$this->assertTrue( esse_current_user_can_export_site() );
 
 		$GLOBALS['sse_test']['capabilities'] = array();
 		$GLOBALS['sse_test']['super_admin']  = true;
-		$this->assertTrue( sse_current_user_can_export_site() );
+		$this->assertTrue( esse_current_user_can_export_site() );
 	}
 
 	/**
@@ -261,14 +261,14 @@ final class PluginWiringTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_activation_registers_the_uninstall_callback(): void {
-		sse_activate_plugin();
-		$this->assertSame( array( array( SSE_PLUGIN_FILE, 'sse_uninstall_plugin' ) ), $GLOBALS['sse_test']['uninstall'] );
-		$this->assertTrue( function_exists( 'sse_uninstall_plugin' ) );
+		esse_activate_plugin();
+		$this->assertSame( array( array( ESSE_PLUGIN_FILE, 'esse_uninstall_plugin' ) ), $GLOBALS['sse_test']['uninstall'] );
+		$this->assertTrue( function_exists( 'esse_uninstall_plugin' ) );
 
 		sse_test_reset();
 		$GLOBALS['sse_test']['multisite'] = true;
 		$GLOBALS['sse_test']['main_site'] = false;
-		sse_activate_plugin( true );
+		esse_activate_plugin( true );
 		$this->assertSame( array(), $GLOBALS['sse_test']['uninstall'] );
 	}
 
@@ -280,12 +280,12 @@ final class PluginWiringTest extends SseTestCase {
 	public function test_export_directory_path(): void {
 		$GLOBALS['sse_test']['temp_dir'] = '/srv/tmp';
 
-		$path = sse_get_export_directory_path();
+		$path = esse_get_export_directory_path();
 		$this->assertMatchesRegularExpression( '#\A/srv/tmp/enginescript-site-exporter-exports-[a-f0-9]{16}\z#', $path );
-		$this->assertSame( $path, sse_get_export_directory_path(), 'The path is stable.' );
+		$this->assertSame( $path, esse_get_export_directory_path(), 'The path is stable.' );
 
 		$GLOBALS['sse_test']['temp_dir'] = '';
-		$error                           = sse_get_export_directory_path();
+		$error                           = esse_get_export_directory_path();
 		$this->assertInstanceOf( WP_Error::class, $error );
 		$this->assertSame( 'temp_dir_unavailable', $error->get_error_code() );
 	}

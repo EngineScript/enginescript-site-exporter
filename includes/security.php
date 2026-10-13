@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param string $normalized_file_path The normalized file path to check.
  * @return bool True if the path is safe, false if it contains traversal patterns.
  */
-function sse_check_path_traversal( string $normalized_file_path ): bool {
+function esse_check_path_traversal( string $normalized_file_path ): bool {
 	$has_parent_traversal  = str_contains( $normalized_file_path, '..' );
 	$has_current_directory = str_contains( $normalized_file_path, '/./' );
 	$has_windows_separator = str_contains( $normalized_file_path, '\\' );
@@ -40,9 +40,9 @@ function sse_check_path_traversal( string $normalized_file_path ): bool {
  * @param string $normalized_file_path The normalized file path.
  * @return string|false Real file path on success, false on failure.
  */
-function sse_resolve_file_path( string $normalized_file_path ): string|false {
+function esse_resolve_file_path( string $normalized_file_path ): string|false {
 	// Security: Only allow files with safe extensions.
-	if ( ! sse_validate_file_extension( $normalized_file_path ) ) {
+	if ( ! esse_validate_file_extension( $normalized_file_path ) ) {
 		return false;
 	}
 
@@ -56,7 +56,7 @@ function sse_resolve_file_path( string $normalized_file_path ): string|false {
  * @param string $path Path to resolve.
  * @return string|false Normalized real path on success, false on failure.
  */
-function sse_normalize_realpath( string $path ): string|false {
+function esse_normalize_realpath( string $path ): string|false {
 	$real_path = realpath( $path );
 	if ( false === $real_path ) {
 		return false;
@@ -73,9 +73,9 @@ function sse_normalize_realpath( string $path ): string|false {
  * @param string $directory Directory that must contain the path.
  * @return bool True if path resolves inside directory, false otherwise.
  */
-function sse_is_path_within_directory( string $path, string $directory ): bool {
-	$real_path      = sse_normalize_realpath( $path );
-	$real_directory = sse_normalize_realpath( $directory );
+function esse_is_path_within_directory( string $path, string $directory ): bool {
+	$real_path      = esse_normalize_realpath( $path );
+	$real_directory = esse_normalize_realpath( $directory );
 
 	if ( false === $real_path || false === $real_directory ) {
 		return false;
@@ -93,11 +93,11 @@ function sse_is_path_within_directory( string $path, string $directory ): bool {
  * @param string $file_path The file path to check.
  * @return bool True if extension is allowed, false otherwise.
  */
-function sse_validate_file_extension( string $file_path ): bool {
+function esse_validate_file_extension( string $file_path ): bool {
 	$file_extension = strtolower( pathinfo( $file_path, PATHINFO_EXTENSION ) );
 
-	if ( ! in_array( $file_extension, SSE_ALLOWED_EXTENSIONS, true ) ) {
-		sse_log( 'Rejected file access - invalid extension: ' . $file_extension, 'security' );
+	if ( ! in_array( $file_extension, ESSE_ALLOWED_EXTENSIONS, true ) ) {
+		esse_log( 'Rejected file access - invalid extension: ' . $file_extension, 'security' );
 		return false;
 	}
 
@@ -112,7 +112,7 @@ function sse_validate_file_extension( string $file_path ): bool {
  * @param string       $real_base_dir  The real base directory path.
  * @return bool True if the file is within the base directory, false otherwise.
  */
-function sse_check_path_within_base( string|false $real_file_path, string $real_base_dir ): bool {
+function esse_check_path_within_base( string|false $real_file_path, string $real_base_dir ): bool {
 	// Ensure both paths are available for comparison.
 	if ( false === $real_file_path ) {
 		return false;
@@ -125,7 +125,7 @@ function sse_check_path_within_base( string|false $real_file_path, string $real_
 	$is_within_base = str_starts_with( $real_file_path, $real_base_dir );
 
 	if ( ! $is_within_base ) {
-		sse_log( 'Path validation failed - path outside base directory. File: ' . $real_file_path . ', Base: ' . $real_base_dir, 'warning' );
+		esse_log( 'Path validation failed - path outside base directory. File: ' . $real_file_path . ', Base: ' . $real_base_dir, 'warning' );
 	}
 
 	return $is_within_base;
@@ -139,28 +139,28 @@ function sse_check_path_within_base( string|false $real_file_path, string $real_
  * @param string $base_dir  The base directory that the file should be within.
  * @return bool True if the file path is safe, false otherwise.
  */
-function sse_validate_filepath( string $file_path, string $base_dir ): bool {
+function esse_validate_filepath( string $file_path, string $base_dir ): bool {
 	// Sanitize and normalize paths to handle different separators and resolve . and ..
 	$normalized_file_path = wp_normalize_path( $file_path );
 	$normalized_base_dir  = wp_normalize_path( $base_dir );
 
 	// Check for directory traversal attempts.
-	if ( ! sse_check_path_traversal( $normalized_file_path ) ) {
+	if ( ! esse_check_path_traversal( $normalized_file_path ) ) {
 		return false;
 	}
 
 	// Resolve real paths to prevent directory traversal.
-	$real_file_path = sse_resolve_file_path( $normalized_file_path );
+	$real_file_path = esse_resolve_file_path( $normalized_file_path );
 	$real_base_dir  = realpath( $normalized_base_dir );
 
 	// Base directory must be resolvable for security.
 	if ( false === $real_base_dir ) {
-		sse_log( 'Could not resolve base directory: ' . $normalized_base_dir, 'security' );
+		esse_log( 'Could not resolve base directory: ' . $normalized_base_dir, 'security' );
 		return false;
 	}
 
 	// Validate path is within base directory.
-	return sse_check_path_within_base( $real_file_path, $real_base_dir );
+	return esse_check_path_within_base( $real_file_path, $real_base_dir );
 }
 
 /**
@@ -171,13 +171,13 @@ function sse_validate_filepath( string $file_path, string $base_dir ): bool {
  * @param string $export_dir_name Private export directory basename.
  * @return array{filepath:string,filename:string,filesize:int,device:int,inode:int}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_export_file_for_download( string $filename, string $export_dir_name ): array|WP_Error {
-	$basic_validation = sse_validate_basic_export_file( $filename, $export_dir_name );
+function esse_validate_export_file_for_download( string $filename, string $export_dir_name ): array|WP_Error {
+	$basic_validation = esse_validate_basic_export_file( $filename, $export_dir_name );
 	if ( is_wp_error( $basic_validation ) ) {
 		return $basic_validation;
 	}
 
-	$filesystem = sse_get_filesystem();
+	$filesystem = esse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return $filesystem;
 	}
@@ -189,7 +189,7 @@ function sse_validate_export_file_for_download( string $filename, string $export
 		return new WP_Error( 'file_not_readable', __( 'The export file is not readable.', 'enginescript-site-exporter' ) );
 	}
 
-	$identity = sse_get_export_file_native_identity( $file_path );
+	$identity = esse_get_export_file_native_identity( $file_path );
 	if ( is_wp_error( $identity ) ) {
 		return $identity;
 	}
@@ -210,7 +210,7 @@ function sse_validate_export_file_for_download( string $filename, string $export
  * @param array<array-key,mixed>|false $metadata Native stat or fstat result.
  * @return array{filesize:int,device:int,inode:int}|null Regular-file identity or null.
  */
-function sse_normalize_native_file_identity( array|false $metadata ): ?array {
+function esse_normalize_native_file_identity( array|false $metadata ): ?array {
 	if (
 		false === $metadata
 		|| ! isset( $metadata['mode'], $metadata['size'], $metadata['dev'], $metadata['ino'] )
@@ -239,14 +239,14 @@ function sse_normalize_native_file_identity( array|false $metadata ): ?array {
  * @return array{filesize:int,device:int,inode:int}|WP_Error Native identity or error.
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_get_export_file_native_identity( string $file_path ): array|WP_Error {
+function esse_get_export_file_native_identity( string $file_path ): array|WP_Error {
 	clearstatcache( true, $file_path );
 	if ( is_link( $file_path ) ) {
 		return new WP_Error( 'file_identity_error', __( 'Could not verify the identity of the export file.', 'enginescript-site-exporter' ) );
 	}
 
-	$link_identity = sse_normalize_native_file_identity( @lstat( $file_path ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
-	$file_identity = sse_normalize_native_file_identity( @stat( $file_path ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
+	$link_identity = esse_normalize_native_file_identity( @lstat( $file_path ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
+	$file_identity = esse_normalize_native_file_identity( @stat( $file_path ) ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- An expected path-replacement race must fail without emitting output before download headers.
 	if ( null === $link_identity || null === $file_identity || $link_identity !== $file_identity ) {
 		return new WP_Error( 'file_identity_error', __( 'Could not verify the identity of the export file.', 'enginescript-site-exporter' ) );
 	}
@@ -262,13 +262,13 @@ function sse_get_export_file_native_identity( string $file_path ): array|WP_Erro
  * @param string $export_dir_name Private export directory basename.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_basic_export_file( string $filename, string $export_dir_name ): array|WP_Error {
-	$basic_checks = sse_validate_filename_format( $filename );
+function esse_validate_basic_export_file( string $filename, string $export_dir_name ): array|WP_Error {
+	$basic_checks = esse_validate_filename_format( $filename );
 	if ( is_wp_error( $basic_checks ) ) {
 		return $basic_checks;
 	}
 
-	return sse_validate_export_file_path( $filename, $export_dir_name );
+	return esse_validate_export_file_path( $filename, $export_dir_name );
 }
 
 /**
@@ -278,7 +278,7 @@ function sse_validate_basic_export_file( string $filename, string $export_dir_na
  * @param string $filename The filename to validate.
  * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_validate_filename_format( string $filename ): true|WP_Error {
+function esse_validate_filename_format( string $filename ): true|WP_Error {
 	if ( empty( $filename ) ) {
 		return new WP_Error( 'invalid_request', __( 'No file specified.', 'enginescript-site-exporter' ) );
 	}
@@ -289,7 +289,7 @@ function sse_validate_filename_format( string $filename ): true|WP_Error {
 	}
 
 	// Validate the canonical EngineScript combined site archive filename.
-	if ( ! sse_is_engine_script_archive_filename( $filename ) ) {
+	if ( ! esse_is_engine_script_archive_filename( $filename ) ) {
 		return new WP_Error( 'invalid_format', __( 'Invalid export file format.', 'enginescript-site-exporter' ) );
 	}
 
@@ -303,7 +303,7 @@ function sse_validate_filename_format( string $filename ): true|WP_Error {
  * @param string $export_dir_name Private export directory basename.
  * @return true|WP_Error True on success, WP_Error on failure.
  */
-function sse_validate_export_directory_name_format( string $export_dir_name ): true|WP_Error {
+function esse_validate_export_directory_name_format( string $export_dir_name ): true|WP_Error {
 	if ( '' === $export_dir_name ) {
 		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
 	}
@@ -312,7 +312,7 @@ function sse_validate_export_directory_name_format( string $export_dir_name ): t
 		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
 	}
 
-	if ( ! sse_is_export_private_directory_name( $export_dir_name ) ) {
+	if ( ! esse_is_export_private_directory_name( $export_dir_name ) ) {
 		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
 	}
 
@@ -327,24 +327,24 @@ function sse_validate_export_directory_name_format( string $export_dir_name ): t
  * @param string $export_dir_name Private export directory basename.
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
-function sse_validate_export_file_path( string $filename, string $export_dir_name ): array|WP_Error {
+function esse_validate_export_file_path( string $filename, string $export_dir_name ): array|WP_Error {
 	// Get the full path to the file.
-	$export_dir = sse_get_export_directory_path();
+	$export_dir = esse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}
 
-	$dir_validation = sse_validate_export_directory_name_format( $export_dir_name );
+	$dir_validation = esse_validate_export_directory_name_format( $export_dir_name );
 	if ( is_wp_error( $dir_validation ) ) {
 		return $dir_validation;
 	}
 
-	$format_validation = sse_validate_filename_format( $filename );
+	$format_validation = esse_validate_filename_format( $filename );
 	if ( is_wp_error( $format_validation ) ) {
 		return $format_validation;
 	}
 
-	$filesystem = sse_get_filesystem();
+	$filesystem = esse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return $filesystem;
 	}
@@ -359,7 +359,7 @@ function sse_validate_export_file_path( string $filename, string $export_dir_nam
 	}
 
 	// Validate the file path is within our export directory.
-	if ( ! sse_validate_filepath( $file_path, $export_dir ) ) {
+	if ( ! esse_validate_filepath( $file_path, $export_dir ) ) {
 		return new WP_Error( 'invalid_path', __( 'Invalid file path.', 'enginescript-site-exporter' ) );
 	}
 

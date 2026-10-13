@@ -20,7 +20,7 @@ final class PathRuleTest extends SseTestCase {
 	 */
 	#[DataProvider( 'excluded_paths' )]
 	public function test_excluded_paths( string $relative_path ): void {
-		$this->assertTrue( sse_should_exclude_file( $relative_path ) );
+		$this->assertTrue( esse_should_exclude_file( $relative_path ) );
 	}
 
 	/**
@@ -55,7 +55,7 @@ final class PathRuleTest extends SseTestCase {
 	 */
 	#[DataProvider( 'kept_paths' )]
 	public function test_kept_paths( string $relative_path ): void {
-		$this->assertFalse( sse_should_exclude_file( $relative_path ) );
+		$this->assertFalse( esse_should_exclude_file( $relative_path ) );
 	}
 
 	/**
@@ -87,10 +87,10 @@ final class PathRuleTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_traversal_check(): void {
-		$this->assertTrue( sse_check_path_traversal( '/tmp/exports/export-1/site.zip' ) );
+		$this->assertTrue( esse_check_path_traversal( '/tmp/exports/export-1/site.zip' ) );
 
 		foreach ( array( '/tmp/exports/../secret.zip', '../site.zip', '/tmp/./site.zip', '/tmp/exports\\site.zip', 'C:\\exports\\site.zip', '/tmp/a..b/site.zip' ) as $path ) {
-			$this->assertFalse( sse_check_path_traversal( $path ), $path );
+			$this->assertFalse( esse_check_path_traversal( $path ), $path );
 		}
 	}
 
@@ -100,11 +100,11 @@ final class PathRuleTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_only_the_zip_extension_is_allowed(): void {
-		$this->assertTrue( sse_validate_file_extension( '/tmp/site.zip' ) );
-		$this->assertTrue( sse_validate_file_extension( '/tmp/site.ZIP' ) );
+		$this->assertTrue( esse_validate_file_extension( '/tmp/site.zip' ) );
+		$this->assertTrue( esse_validate_file_extension( '/tmp/site.ZIP' ) );
 
 		foreach ( array( '/tmp/site.zip.php', '/tmp/site.php', '/tmp/site', '/tmp/site.tar.gz', '/tmp/.zip/readme', '/tmp/site.zip ' ) as $path ) {
-			$this->assertFalse( sse_validate_file_extension( $path ), $path );
+			$this->assertFalse( esse_validate_file_extension( $path ), $path );
 		}
 	}
 
@@ -114,7 +114,7 @@ final class PathRuleTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_a_refused_extension_is_recorded(): void {
-		sse_validate_file_extension( '/tmp/site.php' );
+		esse_validate_file_extension( '/tmp/site.php' );
 
 		$records = get_option( 'sse_error_logs' );
 		$this->assertCount( 1, $records );
@@ -128,14 +128,14 @@ final class PathRuleTest extends SseTestCase {
 	 * @return void
 	 */
 	public function test_path_within_base(): void {
-		$this->assertTrue( sse_check_path_within_base( '/tmp/exports/export-1/site.zip', '/tmp/exports' ) );
-		$this->assertTrue( sse_check_path_within_base( '/tmp/exports/export-1/site.zip', '/tmp/exports/' ) );
-		$this->assertTrue( sse_check_path_within_base( 'C:\\tmp\\exports\\export-1\\site.zip', 'C:/tmp/exports' ), 'Both separators are read alike.' );
+		$this->assertTrue( esse_check_path_within_base( '/tmp/exports/export-1/site.zip', '/tmp/exports' ) );
+		$this->assertTrue( esse_check_path_within_base( '/tmp/exports/export-1/site.zip', '/tmp/exports/' ) );
+		$this->assertTrue( esse_check_path_within_base( 'C:\\tmp\\exports\\export-1\\site.zip', 'C:/tmp/exports' ), 'Both separators are read alike.' );
 
-		$this->assertFalse( sse_check_path_within_base( '/tmp/exports-other/site.zip', '/tmp/exports' ), 'A sibling whose name starts alike is outside.' );
-		$this->assertFalse( sse_check_path_within_base( '/tmp/site.zip', '/tmp/exports' ) );
-		$this->assertFalse( sse_check_path_within_base( '/etc/passwd', '/tmp/exports' ) );
-		$this->assertFalse( sse_check_path_within_base( false, '/tmp/exports' ), 'A path that could not be resolved is outside.' );
+		$this->assertFalse( esse_check_path_within_base( '/tmp/exports-other/site.zip', '/tmp/exports' ), 'A sibling whose name starts alike is outside.' );
+		$this->assertFalse( esse_check_path_within_base( '/tmp/site.zip', '/tmp/exports' ) );
+		$this->assertFalse( esse_check_path_within_base( '/etc/passwd', '/tmp/exports' ) );
+		$this->assertFalse( esse_check_path_within_base( false, '/tmp/exports' ), 'A path that could not be resolved is outside.' );
 	}
 
 	/**
@@ -152,15 +152,15 @@ final class PathRuleTest extends SseTestCase {
 		touch( $inside . DIRECTORY_SEPARATOR . 'file.zip' );
 
 		try {
-			$this->assertTrue( sse_is_path_within_directory( $inside, $base ) );
-			$this->assertTrue( sse_is_path_within_directory( $inside . DIRECTORY_SEPARATOR . 'file.zip', $base ) );
-			$this->assertTrue( sse_is_path_within_directory( $base, $base ), 'A directory contains itself.' );
-			$this->assertTrue( sse_is_path_within_directory( $inside . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'inside', $base ), 'The path is resolved first.' );
+			$this->assertTrue( esse_is_path_within_directory( $inside, $base ) );
+			$this->assertTrue( esse_is_path_within_directory( $inside . DIRECTORY_SEPARATOR . 'file.zip', $base ) );
+			$this->assertTrue( esse_is_path_within_directory( $base, $base ), 'A directory contains itself.' );
+			$this->assertTrue( esse_is_path_within_directory( $inside . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'inside', $base ), 'The path is resolved first.' );
 
-			$this->assertFalse( sse_is_path_within_directory( $sibling, $base ), 'A sibling whose name starts alike is outside.' );
-			$this->assertFalse( sse_is_path_within_directory( $inside . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..', $base ) );
-			$this->assertFalse( sse_is_path_within_directory( $base . DIRECTORY_SEPARATOR . 'missing', $base ), 'Something that does not exist is not inside.' );
-			$this->assertFalse( sse_is_path_within_directory( $inside, $base . DIRECTORY_SEPARATOR . 'missing' ) );
+			$this->assertFalse( esse_is_path_within_directory( $sibling, $base ), 'A sibling whose name starts alike is outside.' );
+			$this->assertFalse( esse_is_path_within_directory( $inside . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..', $base ) );
+			$this->assertFalse( esse_is_path_within_directory( $base . DIRECTORY_SEPARATOR . 'missing', $base ), 'Something that does not exist is not inside.' );
+			$this->assertFalse( esse_is_path_within_directory( $inside, $base . DIRECTORY_SEPARATOR . 'missing' ) );
 		} finally {
 			rmdir( $sibling );
 		}
@@ -176,13 +176,40 @@ final class PathRuleTest extends SseTestCase {
 		$outside = $this->make_temporary_directory();
 		$link    = $base . DIRECTORY_SEPARATOR . 'link';
 
-		// Creating a link needs a privilege that Windows does not give every account.
-		if ( ! @symlink( $outside, $link ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A refused link is the skip condition.
+		// Creating a symbolic link needs a privilege that Windows does not give every
+		// account. A directory junction needs none, and realpath() follows it the same way.
+		// phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- A refused link is the skip condition.
+		if ( ! @symlink( $outside, $link ) && ! $this->make_junction( $outside, $link ) ) {
 			$this->markTestSkipped( 'This account cannot create symbolic links.' );
 		}
 
-		// The link is removed with its directory when the test ends.
-		$this->assertFalse( sse_is_path_within_directory( $link, $base ) );
+		try {
+			$this->assertFalse( esse_is_path_within_directory( $link, $base ) );
+		} finally {
+			// Elsewhere the link is removed with its directory when the test ends. On
+			// Windows it is removed here, because PHP does not report a junction as a link.
+			if ( 'Windows' === PHP_OS_FAMILY ) {
+				rmdir( $link );
+			}
+		}
+	}
+
+	/**
+	 * Create a Windows directory junction, which needs no special privilege.
+	 *
+	 * @param string $target Directory the junction leads to.
+	 * @param string $link   Path of the junction.
+	 * @return bool Whether the junction exists.
+	 */
+	private function make_junction( string $target, string $link ): bool {
+		if ( 'Windows' !== PHP_OS_FAMILY ) {
+			return false;
+		}
+
+		// Both paths are temporary directories that this test created.
+		exec( 'mklink /J ' . escapeshellarg( $link ) . ' ' . escapeshellarg( $target ) . ' 2>NUL', $output, $status );
+
+		return 0 === $status && is_dir( $link );
 	}
 
 	/**
@@ -204,16 +231,16 @@ final class PathRuleTest extends SseTestCase {
 				'device'   => 66305,
 				'inode'    => 1234,
 			),
-			sse_normalize_native_file_identity( $regular )
+			esse_normalize_native_file_identity( $regular )
 		);
 
-		$this->assertNull( sse_normalize_native_file_identity( false ) );
-		$this->assertNull( sse_normalize_native_file_identity( array() ) );
-		$this->assertNull( sse_normalize_native_file_identity( array( 'mode' => 0040700 ) + $regular ), 'A directory.' );
-		$this->assertNull( sse_normalize_native_file_identity( array( 'mode' => 0120777 ) + $regular ), 'A symbolic link.' );
-		$this->assertNull( sse_normalize_native_file_identity( array( 'mode' => 0010600 ) + $regular ), 'A named pipe.' );
-		$this->assertNull( sse_normalize_native_file_identity( array( 'size' => 0 ) + $regular ), 'An empty file.' );
-		$this->assertNull( sse_normalize_native_file_identity( array( 'size' => '2048' ) + $regular ), 'A size that is not an integer.' );
-		$this->assertNull( sse_normalize_native_file_identity( array_diff_key( $regular, array( 'ino' => 0 ) ) ), 'No inode.' );
+		$this->assertNull( esse_normalize_native_file_identity( false ) );
+		$this->assertNull( esse_normalize_native_file_identity( array() ) );
+		$this->assertNull( esse_normalize_native_file_identity( array( 'mode' => 0040700 ) + $regular ), 'A directory.' );
+		$this->assertNull( esse_normalize_native_file_identity( array( 'mode' => 0120777 ) + $regular ), 'A symbolic link.' );
+		$this->assertNull( esse_normalize_native_file_identity( array( 'mode' => 0010600 ) + $regular ), 'A named pipe.' );
+		$this->assertNull( esse_normalize_native_file_identity( array( 'size' => 0 ) + $regular ), 'An empty file.' );
+		$this->assertNull( esse_normalize_native_file_identity( array( 'size' => '2048' ) + $regular ), 'A size that is not an integer.' );
+		$this->assertNull( esse_normalize_native_file_identity( array_diff_key( $regular, array( 'ino' => 0 ) ) ), 'No inode.' );
 	}
 }

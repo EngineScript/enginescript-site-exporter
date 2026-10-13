@@ -17,14 +17,14 @@ afterEach( () => {
 test( 'every selector the script uses exists in the rendered page', async () => {
 	const selectors = Array.from(
 		source.matchAll( /\b(document|form)\.querySelector(?:All)?\(\s*'([^']+)'/g ),
-		( match ) => ( { scope: match[ 1 ], selector: match[ 2 ] } )
+		( match ) => ( { scope: match[ 1 ], selector: match[ 2 ] } ),
 	);
 
 	assert.ok( selectors.length >= 4, 'The pattern found the selectors the script uses.' );
 	assert.equal(
 		( source.match( /querySelector(?:All)?\(/g ) || [] ).length,
 		selectors.length,
-		'Every selector in the script is a plain string that this test can read.'
+		'Every selector in the script is a plain string that this test can read.',
 	);
 
 	view = await loadPage( { archives: 1 } );

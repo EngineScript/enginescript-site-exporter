@@ -9,9 +9,11 @@ import os
 import re
 import subprocess  # nosec B404
 import sys
-from collections.abc import Sequence
 from pathlib import Path
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # Bandit: every subprocess call in this file runs a fixed argument list without a shell.
 
@@ -53,6 +55,7 @@ class Failure(TypedDict):
 
 
 def main() -> int:
+    """Check the metadata, fix it when asked to, and return the exit code."""
     args = parse_args()
     latest_version = get_latest_wordpress_major_minor()
     excluded_dirs = get_excluded_dirs()
@@ -89,10 +92,7 @@ def main() -> int:
 
     if updated_paths:
         path_label = "file" if len(updated_paths) == 1 else "files"
-        print(
-            f"Updated Tested up to metadata to WordPress {latest_version} "
-            f"in {len(updated_paths)} {path_label}."
-        )
+        print(f"Updated Tested up to metadata to WordPress {latest_version} in {len(updated_paths)} {path_label}.")
         for path in updated_paths:
             print(f"- {path}")
         return 0
@@ -102,9 +102,8 @@ def main() -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description='Check WordPress "Tested up to" metadata against the latest release.'
-    )
+    """Parse the command-line arguments."""
+    parser = argparse.ArgumentParser(description='Check WordPress "Tested up to" metadata against the latest release.')
     parser.add_argument(
         "--fix",
         action="store_true",
@@ -115,13 +114,12 @@ def parse_args() -> argparse.Namespace:
 
 
 def get_latest_wordpress_major_minor() -> str:
+    """Return the latest stable WordPress release as major.minor."""
     if WORDPRESS_LATEST_VERSION:
         return normalize_major_minor(WORDPRESS_LATEST_VERSION)
 
     if not WORDPRESS_VERSION_CHECK_FILE.is_file():
-        raise RuntimeError(
-            "WORDPRESS_LATEST_VERSION must be set, or wordpress-version-check.json must exist."
-        )
+        raise RuntimeError("WORDPRESS_LATEST_VERSION must be set, or wordpress-version-check.json must exist.")
 
     payload = json.loads(WORDPRESS_VERSION_CHECK_FILE.read_text(encoding="utf-8"))
     versions = []
@@ -142,6 +140,7 @@ def get_latest_wordpress_major_minor() -> str:
 
 
 def normalize_major_minor(version: str) -> str:
+    """Reduce a version to major.minor; an invalid version raises ValueError."""
     parts = version.split(".")
 
     if not VERSION_PATTERN.fullmatch(version):
@@ -151,10 +150,12 @@ def normalize_major_minor(version: str) -> str:
 
 
 def version_sort_key(version: str) -> tuple[int, ...]:
+    """Return a version as a tuple of integers, for sorting."""
     return tuple(int(part) for part in version.split("."))
 
 
 def get_excluded_dirs() -> set[str]:
+    """Return the default excluded directories and those named in the environment."""
     configured = os.environ.get("WORDPRESS_TESTED_UP_TO_EXCLUDE_DIRS", "")
     extra_dirs = {item.strip() for item in configured.split(",") if item.strip()}
 
@@ -164,9 +165,10 @@ def get_excluded_dirs() -> set[str]:
 def find_tested_up_to_entries(
     excluded_dirs: set[str],
 ) -> list[Finding]:
+    """Collect every "Tested up to" line of the authoritative metadata files."""
     findings: list[Finding] = []
 
-    for path in get_scanned_files(excluded_dirs):
+    for path in get_scanned_files():
         if not should_scan(path, excluded_dirs):
             continue
 
@@ -194,10 +196,15 @@ def find_tested_up_to_entries(
     return findings
 
 
-def get_scanned_files(excluded_dirs: set[str]) -> list[Path]:
-    tracked = subprocess.run(  # nosec B603 B607
-        ["git", "ls-files", "-z"], check=True, capture_output=True
-    ).stdout.decode("utf-8").split("\0")
+def get_scanned_files() -> list[Path]:
+    """Return the authoritative metadata files, which must be tracked regular files."""
+    tracked = (
+        subprocess.run(  # nosec B603 B607
+            ["git", "ls-files", "-z"], check=True, capture_output=True
+        )
+        .stdout.decode("utf-8")
+        .split("\0")
+    )
     if not all(path.as_posix() in tracked for path in METADATA_PATHS):
         raise ValueError("Authoritative metadata files must both be tracked.")
     for path in METADATA_PATHS:
@@ -207,6 +214,7 @@ def get_scanned_files(excluded_dirs: set[str]) -> list[Path]:
 
 
 def should_scan(path: Path, excluded_dirs: set[str]) -> bool:
+    """Tell whether a path is an authoritative metadata file outside the excluded directories."""
     if path not in METADATA_PATHS:
         return False
 
@@ -217,6 +225,7 @@ def get_failures(
     latest_version: str,
     findings: list[Finding],
 ) -> list[Failure]:
+    """Return the entries that are missing, malformed, or behind the latest release."""
     failures: list[Failure] = []
 
     for finding in findings:
@@ -250,27 +259,21 @@ def update_tested_up_to_entries(
     findings: list[Finding],
     latest_version: str,
 ) -> list[str]:
+    """Rewrite the stale entries to the latest release and return the changed paths."""
     paths_to_update = {
         str(finding["path"])
         for finding in findings
-        if finding["version"] is None
-        or normalize_major_minor(str(finding["version"])) != latest_version
+        if finding["version"] is None or normalize_major_minor(str(finding["version"])) != latest_version
     }
 
     for path_string in paths_to_update:
-        path_findings = [
-            finding for finding in findings if str(finding["path"]) == path_string
-        ]
+        path_findings = [finding for finding in findings if str(finding["path"]) == path_string]
         path = Path(path_string)
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines(
-            keepends=True
-        )
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines(keepends=True)
 
         for finding in path_findings:
             line_index = int(finding["line"]) - 1
-            lines[line_index] = replace_tested_up_to_line(
-                lines[line_index], latest_version
-            )
+            lines[line_index] = replace_tested_up_to_line(lines[line_index], latest_version)
 
         path.write_text("".join(lines), encoding="utf-8")
 
@@ -278,14 +281,16 @@ def update_tested_up_to_entries(
 
 
 def replace_tested_up_to_line(line: str, latest_version: str) -> str:
+    """Return a metadata line with its version replaced."""
     match = TESTED_UP_TO_PATTERN.search(line)
     if match:
-        return f"{line[:match.start(1)]}{latest_version}{line[match.end(1):]}"
+        return f"{line[: match.start(1)]}{latest_version}{line[match.end(1) :]}"
 
     raise ValueError("Refusing to rewrite an invalid metadata line.")
 
 
 def format_failure(failure: Failure) -> str:
+    """Format a failure as "path:line: message"."""
     return f"{failure['path']}:{failure['line']}: {failure['message']}"
 
 
@@ -295,6 +300,7 @@ def write_summary(
     failures: Sequence[Failure | str],
     updated_paths: list[str] | None = None,
 ) -> None:
+    """Append the result to the GitHub step summary, when the workflow provides one."""
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if not summary_path:
         return
@@ -309,10 +315,7 @@ def write_summary(
 
     if failures:
         lines.append("## Failures")
-        lines.extend(
-            f"- {format_failure(failure) if isinstance(failure, dict) else failure}"
-            for failure in failures
-        )
+        lines.extend(f"- {format_failure(failure) if isinstance(failure, dict) else failure}" for failure in failures)
     elif updated_paths:
         lines.append("## Updates")
         lines.append(f"Updated Tested up to metadata in `{len(updated_paths)}` file(s).")
@@ -320,12 +323,13 @@ def write_summary(
     else:
         lines.append("All Tested up to entries are current.")
 
-    with open(summary_path, "a", encoding="utf-8") as summary:
+    with Path(summary_path).open("a", encoding="utf-8") as summary:
         summary.write("\n".join(lines))
         summary.write("\n")
 
 
 def print_github_error(message: str, path: str | None = None, line: int | None = None) -> None:
+    """Print a GitHub Actions error annotation."""
     if path is None:
         print(f"::error::{escape_github_command_data(message)}")
         return
@@ -338,22 +342,19 @@ def print_github_error(message: str, path: str | None = None, line: int | None =
 
 
 def escape_github_command_property(value: str) -> str:
-    return (
-        value.replace("%", "%25")
-        .replace("\r", "%0D")
-        .replace("\n", "%0A")
-        .replace(":", "%3A")
-        .replace(",", "%2C")
-    )
+    """Escape a value for a workflow command property."""
+    return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A").replace(":", "%3A").replace(",", "%2C")
 
 
 def escape_github_command_data(value: str) -> str:
+    """Escape a value for the data of a workflow command."""
     return value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
 
 
 if __name__ == "__main__":
     try:
         sys.exit(main())
-    except Exception as exc:
+    # Whatever fails, the workflow gets one error annotation in place of a traceback.
+    except Exception as exc:  # noqa: BLE001
         print_github_error(str(exc))
         sys.exit(1)

@@ -20,10 +20,33 @@ RELEASE_DIRS = {"includes", "css", "js", "languages"}
 # File rules of the WordPress.org plugin directory, as the Plugin Check plugin
 # applies them: no compressed archive, PHP archive, or application file.
 FORBIDDEN_EXTENSIONS = {
-    "7z", "gz", "rar", "tar", "tgz", "zip",
+    "7z",
+    "gz",
+    "rar",
+    "tar",
+    "tgz",
+    "zip",
     "phar",
-    "a", "bin", "bpk", "deploy", "dist", "distz", "dmg", "dms", "dump", "elc", "exe",
-    "iso", "lha", "lrf", "lzh", "o", "obj", "pkg", "sh", "so",
+    "a",
+    "bin",
+    "bpk",
+    "deploy",
+    "dist",
+    "distz",
+    "dmg",
+    "dms",
+    "dump",
+    "elc",
+    "exe",
+    "iso",
+    "lha",
+    "lrf",
+    "lzh",
+    "o",
+    "obj",
+    "pkg",
+    "sh",
+    "so",
 }
 # This project's own rule: readme.txt is the only readme and changelog that ships.
 FORBIDDEN_EXTENSIONS.add("md")
@@ -32,9 +55,13 @@ FORBIDDEN_NAME_CHARACTERS = set("!@#$%^&*()+=[]{};:\"'<>,?\\|`~")
 
 def tracked_files(root: Path, *options: str) -> set[str]:
     """List tracked files, optionally narrowed by more `git ls-files` options."""
-    listing = subprocess.run(  # nosec B603 B607
-        ["git", "ls-files", "-z", *options], cwd=root, check=True, capture_output=True
-    ).stdout.decode("utf-8").split("\0")
+    listing = (
+        subprocess.run(  # nosec B603 B607
+            ["git", "ls-files", "-z", *options], cwd=root, check=True, capture_output=True
+        )
+        .stdout.decode("utf-8")
+        .split("\0")
+    )
     return {name for name in listing if name}
 
 
@@ -49,10 +76,7 @@ def check_distignore(root: Path, tracked: set[str], names: set[str]) -> None:
     excluded = tracked_files(root, "--cached", "--ignored", "--exclude-from=.distignore")
     difference = sorted((tracked - excluded) ^ names)
     if difference:
-        raise ValueError(
-            "The .distignore file and the release allowlist disagree about: "
-            + ", ".join(difference)
-        )
+        raise ValueError("The .distignore file and the release allowlist disagree about: " + ", ".join(difference))
 
 
 def directory_rule_problem(name: str) -> str | None:
@@ -72,10 +96,7 @@ def directory_rule_problem(name: str) -> str | None:
 def check_directory_rules(names: set[str]) -> None:
     """Refuse a package that breaks a file rule of the WordPress.org plugin directory."""
     problems = [
-        f"{name} ({problem})"
-        for name in sorted(names)
-        for problem in [directory_rule_problem(name)]
-        if problem
+        f"{name} ({problem})" for name in sorted(names) for problem in [directory_rule_problem(name)] if problem
     ]
     lowered: dict[str, str] = {}
     for name in sorted(names):
@@ -90,15 +111,13 @@ def expected_contents(root: Path) -> dict[str, bytes]:
     """Read only tracked regular production/public files, never vendor output."""
     tracked = tracked_files(root)
     names = {
-        name for name in tracked
-        if name in RELEASE_FILES or Path(name).parts[:1] in
-        {(directory,) for directory in RELEASE_DIRS}
+        name
+        for name in tracked
+        if name in RELEASE_FILES or Path(name).parts[:1] in {(directory,) for directory in RELEASE_DIRS}
     }
     check_directory_rules(names)
     check_distignore(root, tracked, names)
-    required = RELEASE_FILES | {
-        "css/admin.css", "js/admin.js", f"languages/{SLUG}.pot"
-    }
+    required = RELEASE_FILES | {"css/admin.css", "js/admin.js", f"languages/{SLUG}.pot"}
     if not required <= names or not any(name.startswith("includes/") for name in names):
         raise ValueError("Tracked release sources are incomplete.")
     contents = {}
@@ -118,9 +137,7 @@ def _allowed_directories(expected: dict[str, bytes]) -> set[str]:
     return allowed_dirs
 
 
-def _validate_build_directory(
-    build: Path, expected: dict[str, bytes], allowed_dirs: set[str]
-) -> None:
+def _validate_build_directory(build: Path, expected: dict[str, bytes], allowed_dirs: set[str]) -> None:
     """Reject missing, extra, linked, or altered files in the build directory."""
     if build.name != SLUG or build.is_symlink() or not build.is_dir():
         raise ValueError("Unexpected plugin build root.")
@@ -138,9 +155,7 @@ def _validate_build_directory(
         raise ValueError("Package file set or bytes differ from tracked sources.")
 
 
-def _zip_member_name(
-    member: ZipInfo, expected: dict[str, bytes], zip_dirs: set[str]
-) -> str | None:
+def _zip_member_name(member: ZipInfo, expected: dict[str, bytes], zip_dirs: set[str]) -> str | None:
     """Return a file member's plugin-relative name, or None for an allowed directory."""
     if stat.S_ISLNK(member.external_attr >> 16):
         raise ValueError("Linked ZIP member.")
@@ -151,20 +166,15 @@ def _zip_member_name(
     prefix = f"{SLUG}/"
     if not member.filename.startswith(prefix):
         raise ValueError("ZIP member outside plugin root.")
-    name = member.filename[len(prefix):]
+    name = member.filename[len(prefix) :]
     if name not in expected or member.file_size != len(expected[name]):
         raise ValueError("Unexpected ZIP member or size.")
     return name
 
 
-def _validate_archive(
-    archive: Path, expected: dict[str, bytes], allowed_dirs: set[str]
-) -> None:
+def _validate_archive(archive: Path, expected: dict[str, bytes], allowed_dirs: set[str]) -> None:
     """Reject missing, extra, duplicate, linked, or altered members in the ZIP."""
-    zip_dirs = {
-        f"{SLUG}/" if directory == "." else f"{SLUG}/{directory}/"
-        for directory in allowed_dirs
-    }
+    zip_dirs = {f"{SLUG}/" if directory == "." else f"{SLUG}/{directory}/" for directory in allowed_dirs}
     with ZipFile(archive) as zipped:
         members = zipped.infolist()
         names = [member.filename for member in members]

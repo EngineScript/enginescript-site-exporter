@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param mixed $value Value to normalize.
  * @return array<array-key, mixed> The supplied array, or an empty array.
  */
-function sse_normalize_array_value( mixed $value ): array {
+function esse_normalize_array_value( mixed $value ): array {
 	return is_array( $value ) ? $value : [];
 }
 
@@ -29,7 +29,7 @@ function sse_normalize_array_value( mixed $value ): array {
  * @param string $fallback Value returned when the supplied value is not a string.
  * @return string The supplied string or fallback.
  */
-function sse_normalize_string_value( mixed $value, string $fallback = '' ): string {
+function esse_normalize_string_value( mixed $value, string $fallback = '' ): string {
 	return is_string( $value ) ? $value : $fallback;
 }
 
@@ -40,7 +40,7 @@ function sse_normalize_string_value( mixed $value, string $fallback = '' ): stri
  * @param mixed $value Value to normalize.
  * @return int|false Non-negative integer, or false for an invalid value.
  */
-function sse_normalize_nonnegative_integer( mixed $value ): int|false {
+function esse_normalize_nonnegative_integer( mixed $value ): int|false {
 	if ( ! is_numeric( $value ) ) {
 		return false;
 	}
@@ -56,7 +56,7 @@ function sse_normalize_nonnegative_integer( mixed $value ): int|false {
  * @param mixed $value Value returned by the WordPress Filesystem API.
  * @return int|string|false Supported metadata value, or false.
  */
-function sse_normalize_filesystem_scalar( mixed $value ): int|string|false {
+function esse_normalize_filesystem_scalar( mixed $value ): int|string|false {
 	return is_int( $value ) || is_string( $value ) ? $value : false;
 }
 
@@ -71,12 +71,12 @@ function sse_normalize_filesystem_scalar( mixed $value ): int|string|false {
  * @param string $level   The log level.
  * @return void
  */
-function sse_store_log_in_database( string $message, string $level ): void {
-	$logs   = sse_get_retained_stored_logs( get_option( 'sse_error_logs', [] ), time() - ( 7 * DAY_IN_SECONDS ) );
+function esse_store_log_in_database( string $message, string $level ): void {
+	$logs   = esse_get_retained_stored_logs( get_option( 'sse_error_logs', [] ), time() - ( 7 * DAY_IN_SECONDS ) );
 	$record = [
 		'time'    => time(),
 		'level'   => sanitize_key( $level ),
-		'message' => sse_sanitize_stored_log_message( $message ),
+		'message' => esse_sanitize_stored_log_message( $message ),
 		'user_id' => get_current_user_id(),
 	];
 
@@ -113,9 +113,9 @@ function sse_store_log_in_database( string $message, string $level ): void {
  * @param string $message What happened, and to which archive.
  * @return void
  */
-function sse_record_activity( string $message ): void {
-	sse_store_log_in_database( $message, 'activity' );
-	sse_log( $message, 'info' );
+function esse_record_activity( string $message ): void {
+	esse_store_log_in_database( $message, 'activity' );
+	esse_log( $message, 'info' );
 }
 
 /**
@@ -129,8 +129,8 @@ function sse_record_activity( string $message ): void {
  * @param int   $cutoff      Oldest retained Unix timestamp.
  * @return array<int,array{time:int,level:string,message:string,user_id:int}> Retained records.
  */
-function sse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array {
-	$logs     = sse_normalize_array_value( $stored_logs );
+function esse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array {
+	$logs     = esse_normalize_array_value( $stored_logs );
 	$retained = [];
 
 	foreach ( $logs as $log ) {
@@ -149,7 +149,7 @@ function sse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array 
 		$retained[] = [
 			'time'    => (int) $log['time'],
 			'level'   => sanitize_key( $log['level'] ),
-			'message' => sse_sanitize_stored_log_message( $log['message'] ),
+			'message' => esse_sanitize_stored_log_message( $log['message'] ),
 			'user_id' => (int) $log['user_id'],
 		];
 	}
@@ -163,10 +163,10 @@ function sse_get_retained_stored_logs( mixed $stored_logs, int $cutoff ): array 
  * @since 2.1.1
  * @return int Number of records removed or normalized away.
  */
-function sse_prune_expired_stored_logs(): int {
-	$stored_logs = sse_normalize_array_value( get_option( 'sse_error_logs', [] ) );
+function esse_prune_expired_stored_logs(): int {
+	$stored_logs = esse_normalize_array_value( get_option( 'sse_error_logs', [] ) );
 	$original    = $stored_logs;
-	$retained    = sse_get_retained_stored_logs( $stored_logs, time() - ( 7 * DAY_IN_SECONDS ) );
+	$retained    = esse_get_retained_stored_logs( $stored_logs, time() - ( 7 * DAY_IN_SECONDS ) );
 	$removed     = max( 0, count( $original ) - count( $retained ) );
 
 	// update_option() avoids a database write when the normalized value is unchanged.
@@ -182,7 +182,7 @@ function sse_prune_expired_stored_logs(): int {
  * @param string $message Log message.
  * @return string Sanitized, bounded message.
  */
-function sse_sanitize_stored_log_message( string $message ): string {
+function esse_sanitize_stored_log_message( string $message ): string {
 	$known_paths = [ ABSPATH, get_temp_dir() ];
 	foreach ( $known_paths as $known_path ) {
 		if ( '' !== $known_path ) {
@@ -205,8 +205,8 @@ function sse_sanitize_stored_log_message( string $message ): string {
  * @param string $formatted_message The formatted log message.
  * @return void
  */
-function sse_output_log_message( string $formatted_message ): void {
-	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WordPress has no universally available arbitrary debug-log wrapper; sse_log() already checks WP_DEBUG_LOG.
+function esse_output_log_message( string $formatted_message ): void {
+	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WordPress has no universally available arbitrary debug-log wrapper; esse_log() already checks WP_DEBUG_LOG.
 }
 
 /**
@@ -221,11 +221,11 @@ function sse_output_log_message( string $formatted_message ): void {
  * @param string $message Log message.
  * @return string Message on one line, without private directory names.
  */
-function sse_prepare_log_message( string $message ): string {
-	$message = sse_normalize_string_value( preg_replace( '/[\x00-\x1F\x7F]+/', ' ', $message ) );
+function esse_prepare_log_message( string $message ): string {
+	$message = esse_normalize_string_value( preg_replace( '/[\x00-\x1F\x7F]+/', ' ', $message ) );
 
-	return sse_normalize_string_value(
-		preg_replace( '/' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}/', SSE_EXPORT_PRIVATE_DIR_PREFIX . '[private]', $message ),
+	return esse_normalize_string_value(
+		preg_replace( '/' . preg_quote( ESSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}/', ESSE_EXPORT_PRIVATE_DIR_PREFIX . '[private]', $message ),
 		$message
 	);
 }
@@ -242,11 +242,11 @@ function sse_prepare_log_message( string $message ): string {
  * @param string $level   The log level (error, warning, info, or security).
  * @return void
  */
-function sse_log( string $message, string $level = 'info' ): void {
-	$message = sse_prepare_log_message( $message );
+function esse_log( string $message, string $level = 'info' ): void {
+	$message = esse_prepare_log_message( $message );
 
 	if ( 'error' === $level || 'security' === $level ) {
-		sse_store_log_in_database( $message, $level );
+		esse_store_log_in_database( $message, $level );
 	}
 
 	// Check if WP_DEBUG is enabled.
@@ -268,7 +268,7 @@ function sse_log( string $message, string $level = 'info' ): void {
 		return;
 	}
 
-	sse_output_log_message( $formatted_message );
+	esse_output_log_message( $formatted_message );
 }
 
 /**
@@ -277,7 +277,7 @@ function sse_log( string $message, string $level = 'info' ): void {
  * @since 1.0.0
  * @return int Current PHP execution time limit in seconds.
  */
-function sse_get_execution_time_limit(): int {
+function esse_get_execution_time_limit(): int {
 	// Get the current execution time limit.
 	$max_exec_time = ini_get( 'max_execution_time' );
 
@@ -308,8 +308,8 @@ function sse_get_execution_time_limit(): int {
  * @param string $timestamp       Export timestamp in Ymd_His format.
  * @return string Combined ZIP filename.
  */
-function sse_get_engine_script_archive_filename( string $site_identifier, string $timestamp ): string {
-	return $site_identifier . '_' . SSE_EXPORT_ARCHIVE_MARKER . '_' . $timestamp . '.zip';
+function esse_get_engine_script_archive_filename( string $site_identifier, string $timestamp ): string {
+	return $site_identifier . '_' . ESSE_EXPORT_ARCHIVE_MARKER . '_' . $timestamp . '.zip';
 }
 
 /**
@@ -318,8 +318,8 @@ function sse_get_engine_script_archive_filename( string $site_identifier, string
  * @since 2.0.0
  * @return non-empty-string Regex pattern with site_identifier and timestamp capture groups.
  */
-function sse_get_engine_script_archive_filename_pattern(): string {
-	return '/^(?P<site_identifier>[a-zA-Z0-9._-]+)_' . preg_quote( SSE_EXPORT_ARCHIVE_MARKER, '/' ) . '_(?P<timestamp>\d{8}_\d{6})\.zip$/';
+function esse_get_engine_script_archive_filename_pattern(): string {
+	return '/^(?P<site_identifier>[a-zA-Z0-9._-]+)_' . preg_quote( ESSE_EXPORT_ARCHIVE_MARKER, '/' ) . '_(?P<timestamp>\d{8}_\d{6})\.zip$/';
 }
 
 /**
@@ -329,8 +329,8 @@ function sse_get_engine_script_archive_filename_pattern(): string {
  * @param string $filename Filename to validate.
  * @return bool True when the filename matches the generated archive format.
  */
-function sse_is_engine_script_archive_filename( string $filename ): bool {
-	if ( ! preg_match( sse_get_engine_script_archive_filename_pattern(), $filename, $matches ) ) {
+function esse_is_engine_script_archive_filename( string $filename ): bool {
+	if ( ! preg_match( esse_get_engine_script_archive_filename_pattern(), $filename, $matches ) ) {
 		return false;
 	}
 
@@ -341,7 +341,7 @@ function sse_is_engine_script_archive_filename( string $filename ): bool {
 		return false;
 	}
 
-	return sse_get_engine_script_archive_filename( $site_identifier, $timestamp ) === $filename;
+	return esse_get_engine_script_archive_filename( $site_identifier, $timestamp ) === $filename;
 }
 
 /**
@@ -360,13 +360,13 @@ function sse_is_engine_script_archive_filename( string $filename ): bool {
  * @since 2.0.0
  * @return string|WP_Error Export directory path on success, WP_Error on failure.
  */
-function sse_get_export_directory_path(): string|WP_Error {
+function esse_get_export_directory_path(): string|WP_Error {
 	$temp_dir = get_temp_dir();
 	if ( '' === $temp_dir ) {
 		return new WP_Error( 'temp_dir_unavailable', __( 'Could not determine a private temporary directory for exports.', 'enginescript-site-exporter' ) );
 	}
 
-	return trailingslashit( $temp_dir ) . SSE_EXPORT_DIR_NAME . '-' . substr( sse_normalize_string_value( wp_hash( 'sse-export-base|' . ABSPATH ) ), 0, 16 );
+	return trailingslashit( $temp_dir ) . ESSE_EXPORT_DIR_NAME . '-' . substr( esse_normalize_string_value( wp_hash( 'sse-export-base|' . ABSPATH ) ), 0, 16 );
 }
 
 /**
@@ -375,7 +375,7 @@ function sse_get_export_directory_path(): string|WP_Error {
  * @since 2.1.1
  * @return string WordPress capability.
  */
-function sse_get_exporter_menu_capability(): string {
+function esse_get_exporter_menu_capability(): string {
 	return is_multisite() ? 'manage_network_options' : 'manage_options';
 }
 
@@ -388,7 +388,7 @@ function sse_get_exporter_menu_capability(): string {
  * @since 2.1.1
  * @return bool True when the current user may export, download, or delete exports.
  */
-function sse_current_user_can_export_site(): bool {
+function esse_current_user_can_export_site(): bool {
 	if ( is_multisite() ) {
 		return is_super_admin() || current_user_can( 'manage_network_options' );
 	}
@@ -402,9 +402,9 @@ function sse_current_user_can_export_site(): bool {
  * @since 2.1.1
  * @return non-empty-string Regex pattern for generated private directory names.
  */
-function sse_get_export_private_directory_name_pattern(): string {
+function esse_get_export_private_directory_name_pattern(): string {
 	// The pattern ends in \z, not $: a dollar sign also matches before a final line break.
-	return '/^' . preg_quote( SSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}\z/';
+	return '/^' . preg_quote( ESSE_EXPORT_PRIVATE_DIR_PREFIX, '/' ) . '\d{8}_\d{6}-[a-f0-9]{32}\z/';
 }
 
 /**
@@ -414,8 +414,8 @@ function sse_get_export_private_directory_name_pattern(): string {
  * @param string $directory_name Directory basename to validate.
  * @return bool True when the directory name matches the generated format.
  */
-function sse_is_export_private_directory_name( string $directory_name ): bool {
-	return 1 === preg_match( sse_get_export_private_directory_name_pattern(), $directory_name );
+function esse_is_export_private_directory_name( string $directory_name ): bool {
+	return 1 === preg_match( esse_get_export_private_directory_name_pattern(), $directory_name );
 }
 
 /**
@@ -424,7 +424,7 @@ function sse_is_export_private_directory_name( string $directory_name ): bool {
  * @since 2.1.1
  * @return string Private export directory basename.
  */
-function sse_generate_private_export_directory_name(): string {
+function esse_generate_private_export_directory_name(): string {
 	try {
 		$random_suffix = bin2hex( random_bytes( 16 ) );
 	} catch ( Exception ) {
@@ -434,7 +434,7 @@ function sse_generate_private_export_directory_name(): string {
 		}
 	}
 
-	return SSE_EXPORT_PRIVATE_DIR_PREFIX . gmdate( 'Ymd_His' ) . '-' . $random_suffix;
+	return ESSE_EXPORT_PRIVATE_DIR_PREFIX . gmdate( 'Ymd_His' ) . '-' . $random_suffix;
 }
 
 /**
@@ -444,8 +444,8 @@ function sse_generate_private_export_directory_name(): string {
  * @param string $path Path to inspect.
  * @return bool True when group/other permissions are not set.
  */
-function sse_has_private_mode( string $path ): bool {
-	$permissions = sse_get_filesystem_mode( $path );
+function esse_has_private_mode( string $path ): bool {
+	$permissions = esse_get_filesystem_mode( $path );
 	if ( false === $permissions ) {
 		return false;
 	}
@@ -460,13 +460,13 @@ function sse_has_private_mode( string $path ): bool {
  * @param string $path Path to inspect.
  * @return int|false Octal permissions as an integer, or false on failure.
  */
-function sse_get_filesystem_mode( string $path ): int|false {
-	$filesystem = sse_get_filesystem();
+function esse_get_filesystem_mode( string $path ): int|false {
+	$filesystem = esse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return false;
 	}
 
-	$chmod = sse_normalize_filesystem_scalar( $filesystem->getchmod( $path ) );
+	$chmod = esse_normalize_filesystem_scalar( $filesystem->getchmod( $path ) );
 	if ( false === $chmod ) {
 		return false;
 	}
@@ -489,9 +489,9 @@ function sse_get_filesystem_mode( string $path ): int|false {
  * @param string $file_path File path to inspect.
  * @return bool True when the file exists and is non-empty.
  */
-function sse_filesystem_file_has_content( string $file_path ): bool {
+function esse_filesystem_file_has_content( string $file_path ): bool {
 	clearstatcache( true, $file_path );
-	$filesystem = sse_get_filesystem();
+	$filesystem = esse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return false;
 	}
@@ -500,7 +500,7 @@ function sse_filesystem_file_has_content( string $file_path ): bool {
 		return false;
 	}
 
-	$file_size = sse_normalize_nonnegative_integer( $filesystem->size( $file_path ) );
+	$file_size = esse_normalize_nonnegative_integer( $filesystem->size( $file_path ) );
 	return false !== $file_size && $file_size > 0;
 }
 
@@ -512,8 +512,8 @@ function sse_filesystem_file_has_content( string $file_path ): bool {
  * @param int    $mode Mode to apply.
  * @return bool True when chmod succeeds and no group/public bits remain.
  */
-function sse_chmod_private_path( string $path, int $mode ): bool {
-	$filesystem = sse_get_filesystem();
+function esse_chmod_private_path( string $path, int $mode ): bool {
+	$filesystem = esse_get_filesystem();
 	if ( is_wp_error( $filesystem ) ) {
 		return false;
 	}
@@ -524,7 +524,7 @@ function sse_chmod_private_path( string $path, int $mode ): bool {
 
 	clearstatcache( true, $path );
 
-	return sse_has_private_mode( $path );
+	return esse_has_private_mode( $path );
 }
 
 /**
@@ -534,8 +534,8 @@ function sse_chmod_private_path( string $path, int $mode ): bool {
  * @param string $directory Directory path.
  * @return bool True when the directory is private.
  */
-function sse_chmod_private_directory( string $directory ): bool {
-	return sse_chmod_private_path( $directory, SSE_PRIVATE_DIR_MODE );
+function esse_chmod_private_directory( string $directory ): bool {
+	return esse_chmod_private_path( $directory, ESSE_PRIVATE_DIR_MODE );
 }
 
 /**
@@ -545,8 +545,8 @@ function sse_chmod_private_directory( string $directory ): bool {
  * @param string $file_path File path.
  * @return bool True when the file is private.
  */
-function sse_chmod_private_file( string $file_path ): bool {
-	return sse_chmod_private_path( $file_path, SSE_PRIVATE_FILE_MODE );
+function esse_chmod_private_file( string $file_path ): bool {
+	return esse_chmod_private_path( $file_path, ESSE_PRIVATE_FILE_MODE );
 }
 
 /**
@@ -558,7 +558,7 @@ function sse_chmod_private_file( string $file_path ): bool {
  * @since 2.1.1
  * @return string Canonical exporter admin URL.
  */
-function sse_get_exporter_admin_page_url(): string {
+function esse_get_exporter_admin_page_url(): string {
 	$admin_url = is_multisite() ? network_admin_url( 'settings.php' ) : admin_url( 'tools.php' );
 
 	return add_query_arg( [ 'page' => 'enginescript-site-exporter' ], $admin_url );
@@ -569,9 +569,10 @@ function sse_get_exporter_admin_page_url(): string {
  *
  * @since 2.0.0
  * @return never
+ * @SuppressWarnings("PHPMD.ExitExpression") A redirect must end the request.
  */
-function sse_redirect_to_exporter_page(): never {
-	wp_safe_redirect( sse_get_exporter_admin_page_url() );
+function esse_redirect_to_exporter_page(): never {
+	wp_safe_redirect( esse_get_exporter_admin_page_url() );
 	exit;
 }
 
@@ -585,7 +586,7 @@ function sse_redirect_to_exporter_page(): never {
  *
  * @psalm-suppress InvalidReturnType WordPress exits from wp_die() at runtime.
  */
-function sse_wp_die( string $message, int $response = 500 ): never {
+function esse_wp_die( string $message, int $response = 500 ): never {
 	wp_die(
 		esc_html( $message ),
 		'',
@@ -601,7 +602,7 @@ function sse_wp_die( string $message, int $response = 500 ): never {
  * @since 2.1.1
  * @return WP_Filesystem_Direct|null Current verified direct transport, or null.
  */
-function sse_get_direct_global_filesystem(): ?WP_Filesystem_Direct {
+function esse_get_direct_global_filesystem(): ?WP_Filesystem_Direct {
 	if ( isset( $GLOBALS['wp_filesystem'] ) && $GLOBALS['wp_filesystem'] instanceof WP_Filesystem_Direct ) {
 		return $GLOBALS['wp_filesystem'];
 	}
@@ -615,7 +616,7 @@ function sse_get_direct_global_filesystem(): ?WP_Filesystem_Direct {
  * @since 2.1.1
  * @return wpdb|null Current database object, or null when unavailable.
  */
-function sse_get_wordpress_database(): ?wpdb {
+function esse_get_wordpress_database(): ?wpdb {
 	if ( isset( $GLOBALS['wpdb'] ) && $GLOBALS['wpdb'] instanceof wpdb ) {
 		return $GLOBALS['wpdb'];
 	}
@@ -634,8 +635,8 @@ function sse_get_wordpress_database(): ?wpdb {
  * @since 2.1.1
  * @return WP_Filesystem_Direct|WP_Error Direct filesystem instance on success.
  */
-function sse_get_filesystem(): WP_Filesystem_Direct|WP_Error {
-	$filesystem = sse_get_direct_global_filesystem();
+function esse_get_filesystem(): WP_Filesystem_Direct|WP_Error {
+	$filesystem = esse_get_direct_global_filesystem();
 	if ( null !== $filesystem ) {
 		return $filesystem;
 	}
@@ -647,13 +648,13 @@ function sse_get_filesystem(): WP_Filesystem_Direct|WP_Error {
 	 */
 	require_once ABSPATH . 'wp-admin/includes/file.php';
 	if ( ! WP_Filesystem() ) {
-		sse_log( 'Failed to initialize the WordPress Filesystem API.', 'error' );
+		esse_log( 'Failed to initialize the WordPress Filesystem API.', 'error' );
 		return new WP_Error( 'filesystem_init_failed', __( 'Could not initialize the WordPress Filesystem API.', 'enginescript-site-exporter' ) );
 	}
 
-	$filesystem = sse_get_direct_global_filesystem();
+	$filesystem = esse_get_direct_global_filesystem();
 	if ( null === $filesystem ) {
-		sse_log( 'Export operations require the direct WordPress filesystem transport.', 'error' );
+		esse_log( 'Export operations require the direct WordPress filesystem transport.', 'error' );
 		return new WP_Error( 'filesystem_method_unsupported', __( 'This server does not provide the direct filesystem access required for secure exports.', 'enginescript-site-exporter' ) );
 	}
 

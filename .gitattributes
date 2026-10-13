@@ -8,8 +8,13 @@
 /.codacy.yml export-ignore
 /.gitignore export-ignore
 /.markdownlint.json export-ignore
+/.markdownlint-cli2.jsonc export-ignore
+/.mypy.ini export-ignore
+/.ruff.toml export-ignore
+/.stylelintrc.json export-ignore
 /.yamllint.yml export-ignore
 /composer.json export-ignore
+/eslint.config.mjs export-ignore
 /composer.lock export-ignore
 /CHANGELOG.md export-ignore
 /GEMINI.md export-ignore

@@ -9,7 +9,8 @@ on:
   # pull_request_target is used only so the workflow can post this static
   # guidance comment on forked PRs. Do not add checkout, build, or script steps
   # here because this event has access to repository-scoped credentials.
-  pull_request_target:
+  # No step checks out or runs code from the pull request; the job only reads the event.
+  pull_request_target:  # zizmor: ignore[dangerous-triggers]
     types: [opened]
 
 permissions: read-all
@@ -25,7 +26,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Post guidance comment on new PR
-        uses: peter-evans/create-or-update-comment@v5
+        uses: peter-evans/create-or-update-comment@e8674b075228eee787fea43ef493e45ece1004c9  # v5.0.0
         with:
           issue-number: ${{ github.event.pull_request.number }}
           body: |

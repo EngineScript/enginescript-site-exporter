@@ -56,9 +56,14 @@
 
 # Development tooling and its configuration
 /.markdownlint.json
+/.markdownlint-cli2.jsonc
+/.mypy.ini
+/.ruff.toml
+/.stylelintrc.json
 /.yamllint.yml
 /composer.json
 /composer.lock
+/eslint.config.mjs
 /phpcs.xml
 /phpmd.xml
 /phpstan.neon

@@ -27,7 +27,7 @@ abstract class SseTestCase extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		sse_test_reset();
-		unset( $GLOBALS['sse_exporter_page_hook_suffix'] );
+		unset( $GLOBALS['esse_exporter_page_hook_suffix'] );
 	}
 
 	/**

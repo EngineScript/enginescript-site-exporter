@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @param int $length Field length in bytes, including the terminator.
  * @return string Field of exactly the given length.
  */
-function sse_tar_format_octal_field( int $value, int $length ): string {
+function esse_tar_format_octal_field( int $value, int $length ): string {
 	$digits = $length - 1;
 
 	return substr( str_pad( decoct( max( 0, $value ) ), $digits, '0', STR_PAD_LEFT ), -$digits ) . "\0";
@@ -39,10 +39,10 @@ function sse_tar_format_octal_field( int $value, int $length ): string {
  * @param int $size Entry size in bytes.
  * @return string Field of exactly 12 bytes.
  */
-function sse_tar_format_size_field( int $size ): string {
+function esse_tar_format_size_field( int $size ): string {
 	$size = max( 0, $size );
 	if ( $size <= 077777777777 ) {
-		return sse_tar_format_octal_field( $size, 12 );
+		return esse_tar_format_octal_field( $size, 12 );
 	}
 
 	return "\x80\0\0\0" . pack( 'J', $size );
@@ -52,7 +52,7 @@ function sse_tar_format_size_field( int $size ): string {
  * Builds one 512-byte TAR header.
  *
  * The name field holds at most 100 bytes. Callers store a longer path with
- * sse_tar_build_long_name_record() first; readers then ignore this field.
+ * esse_tar_build_long_name_record() first; readers then ignore this field.
  *
  * @since 2.1.1
  * @param string $name  Archive path. A directory path ends in a slash.
@@ -62,13 +62,13 @@ function sse_tar_format_size_field( int $size ): string {
  * @param string $type  One-byte type flag: "0" file, "5" directory, "L" long name.
  * @return string Header of exactly 512 bytes.
  */
-function sse_tar_build_header( string $name, int $size, int $mode, int $mtime, string $type ): string {
+function esse_tar_build_header( string $name, int $size, int $mode, int $mtime, string $type ): string {
 	$header = str_pad( substr( $name, 0, 100 ), 100, "\0" )
-		. sse_tar_format_octal_field( $mode & 0777, 8 )
-		. sse_tar_format_octal_field( 0, 8 )
-		. sse_tar_format_octal_field( 0, 8 )
-		. sse_tar_format_size_field( $size )
-		. sse_tar_format_octal_field( min( max( 0, $mtime ), 077777777777 ), 12 )
+		. esse_tar_format_octal_field( $mode & 0777, 8 )
+		. esse_tar_format_octal_field( 0, 8 )
+		. esse_tar_format_octal_field( 0, 8 )
+		. esse_tar_format_size_field( $size )
+		. esse_tar_format_octal_field( min( max( 0, $mtime ), 077777777777 ), 12 )
 		. '        '
 		. substr( $type . '0', 0, 1 )
 		. str_repeat( "\0", 100 )
@@ -76,9 +76,9 @@ function sse_tar_build_header( string $name, int $size, int $mode, int $mtime, s
 		. str_repeat( "\0", 247 );
 
 	// The checksum is the byte sum of the header with its own field read as eight spaces.
-	$checksum = array_sum( sse_tar_get_byte_values( $header ) );
+	$checksum = array_sum( esse_tar_get_byte_values( $header ) );
 
-	return substr_replace( $header, sse_tar_format_octal_field( $checksum, 7 ) . ' ', 148, 8 );
+	return substr_replace( $header, esse_tar_format_octal_field( $checksum, 7 ) . ' ', 148, 8 );
 }
 
 /**
@@ -88,7 +88,7 @@ function sse_tar_build_header( string $name, int $size, int $mode, int $mtime, s
  * @param string $bytes Input bytes.
  * @return array<int,int> Byte values.
  */
-function sse_tar_get_byte_values( string $bytes ): array {
+function esse_tar_get_byte_values( string $bytes ): array {
 	return array_map( 'ord', str_split( $bytes ) );
 }
 
@@ -99,12 +99,12 @@ function sse_tar_get_byte_values( string $bytes ): array {
  * @param string $path Full archive path of the entry that follows.
  * @return string Header and padded content, a multiple of 512 bytes.
  */
-function sse_tar_build_long_name_record( string $path ): string {
+function esse_tar_build_long_name_record( string $path ): string {
 	$content = $path . "\0";
 
-	return sse_tar_build_header( '././@LongLink', strlen( $content ), 0644, 0, 'L' )
+	return esse_tar_build_header( '././@LongLink', strlen( $content ), 0644, 0, 'L' )
 		. $content
-		. sse_tar_get_padding( strlen( $content ) );
+		. esse_tar_get_padding( strlen( $content ) );
 }
 
 /**
@@ -118,10 +118,10 @@ function sse_tar_build_long_name_record( string $path ): string {
  * @param string $type  One-byte type flag: "0" file, "5" directory.
  * @return string One header, preceded by a long-name record when the path needs one.
  */
-function sse_tar_build_entry_header( string $path, int $size, int $mode, int $mtime, string $type ): string {
-	$long_name = strlen( $path ) > 100 ? sse_tar_build_long_name_record( $path ) : '';
+function esse_tar_build_entry_header( string $path, int $size, int $mode, int $mtime, string $type ): string {
+	$long_name = strlen( $path ) > 100 ? esse_tar_build_long_name_record( $path ) : '';
 
-	return $long_name . sse_tar_build_header( $path, $size, $mode, $mtime, $type );
+	return $long_name . esse_tar_build_header( $path, $size, $mode, $mtime, $type );
 }
 
 /**
@@ -131,7 +131,7 @@ function sse_tar_build_entry_header( string $path, int $size, int $mode, int $mt
  * @param int $size Content size in bytes.
  * @return string Between 0 and 511 NUL bytes.
  */
-function sse_tar_get_padding( int $size ): string {
+function esse_tar_get_padding( int $size ): string {
 	$remainder = max( 0, $size ) % 512;
 
 	return 0 === $remainder ? '' : str_repeat( "\0", 512 - $remainder );
@@ -143,7 +143,7 @@ function sse_tar_get_padding( int $size ): string {
  * @since 2.1.1
  * @return string 1,024 NUL bytes.
  */
-function sse_tar_get_end_of_archive(): string {
+function esse_tar_get_end_of_archive(): string {
 	return str_repeat( "\0", 1024 );
 }
 
@@ -155,7 +155,7 @@ function sse_tar_get_end_of_archive(): string {
  * @param string $path Archive path, with the trailing slash for a directory.
  * @return int Bytes written for the headers, the content, and its padding.
  */
-function sse_tar_get_entry_bytes( int $size, string $path ): int {
+function esse_tar_get_entry_bytes( int $size, string $path ): int {
 	$size       = max( 0, $size );
 	$path_bytes = strlen( $path );
 	$bytes      = 512 + $size + ( ( 512 - ( $size % 512 ) ) % 512 );

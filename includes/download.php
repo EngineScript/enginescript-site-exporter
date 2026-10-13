@@ -16,12 +16,12 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 2.0.0
  * @return void
  */
-function sse_handle_secure_download(): void {
+function esse_handle_secure_download(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
 	$filename        = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_text_field( (string) wp_unslash( $_GET['file'] ) ) : '';
 	$export_dir_name = isset( $_GET['export_dir'] ) && is_string( $_GET['export_dir'] ) ? sanitize_text_field( (string) wp_unslash( $_GET['export_dir'] ) ) : '';
 	if ( '' === $filename || '' === $export_dir_name ) {
-		sse_wp_die( __( 'Invalid download request.', 'enginescript-site-exporter' ), 400 );
+		esse_wp_die( __( 'Invalid download request.', 'enginescript-site-exporter' ), 400 );
 	}
 
 	$nonce_action = 'sse_secure_download_' . $filename . '_' . $export_dir_name;
@@ -29,23 +29,23 @@ function sse_handle_secure_download(): void {
 	check_admin_referer( $nonce_action );
 
 	// Verify user capabilities.
-	if ( ! sse_current_user_can_export_site() ) {
-		sse_wp_die( __( 'You do not have permission to download export files.', 'enginescript-site-exporter' ), 403 );
+	if ( ! esse_current_user_can_export_site() ) {
+		esse_wp_die( __( 'You do not have permission to download export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	$validation = sse_validate_export_file_for_download( $filename, $export_dir_name );
+	$validation = esse_validate_export_file_for_download( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
-		sse_record_activity( 'Export download refused: ' . $validation->get_error_message() );
-		sse_wp_die( $validation->get_error_message(), 404 );
+		esse_record_activity( 'Export download refused: ' . $validation->get_error_message() );
+		esse_wp_die( $validation->get_error_message(), 404 );
 	}
 
 	// Rate limiting check. The limit is consumed later, once the file has been opened.
-	if ( ! sse_check_download_rate_limit() ) {
-		sse_wp_die( __( 'You can download one export per minute. Please wait before trying again.', 'enginescript-site-exporter' ), 429 );
+	if ( ! esse_check_download_rate_limit() ) {
+		esse_wp_die( __( 'You can download one export per minute. Please wait before trying again.', 'enginescript-site-exporter' ), 429 );
 	}
 
-	sse_serve_file_download( $validation );
+	esse_serve_file_download( $validation );
 }
 
 /**
@@ -54,12 +54,12 @@ function sse_handle_secure_download(): void {
  * @since 2.0.0
  * @return void
  */
-function sse_handle_export_deletion(): void {
+function esse_handle_export_deletion(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
 	$filename        = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['file'] ) ) : '';
 	$export_dir_name = isset( $_POST['export_dir'] ) && is_string( $_POST['export_dir'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['export_dir'] ) ) : '';
 	if ( '' === $filename || '' === $export_dir_name ) {
-		sse_wp_die( __( 'Invalid deletion request.', 'enginescript-site-exporter' ), 400 );
+		esse_wp_die( __( 'Invalid deletion request.', 'enginescript-site-exporter' ), 400 );
 	}
 
 	$nonce_action = 'sse_delete_export_' . $filename . '_' . $export_dir_name;
@@ -67,37 +67,37 @@ function sse_handle_export_deletion(): void {
 	check_admin_referer( $nonce_action );
 
 	// Verify user capabilities.
-	if ( ! sse_current_user_can_export_site() ) {
-		sse_wp_die( __( 'You do not have permission to delete export files.', 'enginescript-site-exporter' ), 403 );
+	if ( ! esse_current_user_can_export_site() ) {
+		esse_wp_die( __( 'You do not have permission to delete export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	$validation = sse_validate_basic_export_file( $filename, $export_dir_name );
+	$validation = esse_validate_basic_export_file( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
-		sse_record_activity( 'Export deletion refused: ' . $validation->get_error_message() );
-		sse_wp_die( $validation->get_error_message(), 404 );
+		esse_record_activity( 'Export deletion refused: ' . $validation->get_error_message() );
+		esse_wp_die( $validation->get_error_message(), 404 );
 	}
 
-	if ( sse_safely_delete_file( $validation['filepath'] ) ) {
-		sse_unschedule_export_cleanup( $validation['filepath'] );
-		sse_record_activity( 'Export deleted: ' . $validation['filename'] );
-		sse_set_exporter_notice(
+	if ( esse_safely_delete_file( $validation['filepath'] ) ) {
+		esse_unschedule_export_cleanup( $validation['filepath'] );
+		esse_record_activity( 'Export deleted: ' . $validation['filename'] );
+		esse_set_exporter_notice(
 			[
 				'type'    => 'success',
 				'message' => __( 'Export file successfully deleted.', 'enginescript-site-exporter' ),
 			]
 		);
-		sse_redirect_to_exporter_page();
+		esse_redirect_to_exporter_page();
 	}
 
-	sse_log( 'Failed manual deletion of export file: ' . $validation['filepath'], 'error' );
-	sse_set_exporter_notice(
+	esse_log( 'Failed manual deletion of export file: ' . $validation['filepath'], 'error' );
+	esse_set_exporter_notice(
 		[
 			'type'    => 'error',
 			'message' => __( 'Could not delete the export file.', 'enginescript-site-exporter' ),
 		]
 	);
-	sse_redirect_to_exporter_page();
+	esse_redirect_to_exporter_page();
 }
 
 /**
@@ -106,8 +106,8 @@ function sse_handle_export_deletion(): void {
  * @since 2.0.0
  * @return bool True if request is within rate limits, false otherwise.
  */
-function sse_check_download_rate_limit(): bool {
-	$last_download = sse_normalize_nonnegative_integer( get_transient( 'sse_download_rate_limit_' . get_current_user_id() ) );
+function esse_check_download_rate_limit(): bool {
+	$last_download = esse_normalize_nonnegative_integer( get_transient( 'sse_download_rate_limit_' . get_current_user_id() ) );
 
 	// Allow one download per minute per user.
 	return false === $last_download || ( time() - $last_download ) >= 60;
@@ -122,7 +122,7 @@ function sse_check_download_rate_limit(): bool {
  * @since 2.1.1
  * @return void
  */
-function sse_start_download_rate_limit(): void {
+function esse_start_download_rate_limit(): void {
 	set_transient( 'sse_download_rate_limit_' . get_current_user_id(), time(), 60 );
 }
 
@@ -134,7 +134,7 @@ function sse_start_download_rate_limit(): void {
  * @param int    $filesize  The file size in bytes.
  * @return void
  */
-function sse_set_download_headers( string $filename, int $filesize ): void {
+function esse_set_download_headers( string $filename, int $filesize ): void {
 	// Security: Set safe Content-Type based on file extension to prevent XSS.
 	$file_extension = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
 	switch ( $file_extension ) {
@@ -167,22 +167,22 @@ function sse_set_download_headers( string $filename, int $filesize ): void {
  * @param string $filepath The file path to validate.
  * @return string|WP_Error The realpath()-resolved file path or error.
  */
-function sse_validate_file_output_security( string $filepath ): string|WP_Error {
+function esse_validate_file_output_security( string $filepath ): string|WP_Error {
 	// Validate the local file type and containment before opening the download.
-	if ( ! sse_validate_file_extension( $filepath ) ) {
-		sse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . pathinfo( $filepath, PATHINFO_EXTENSION ), 'security' );
+	if ( ! esse_validate_file_extension( $filepath ) ) {
+		esse_log( 'Security: Blocked attempt to serve file with invalid extension: ' . pathinfo( $filepath, PATHINFO_EXTENSION ), 'security' );
 		return new WP_Error( 'invalid_download_type', __( 'Access denied: invalid file type.', 'enginescript-site-exporter' ) );
 	}
 
 	// Security: Ensure file is within our controlled directory before serving.
-	$export_dir = sse_get_export_directory_path();
+	$export_dir = esse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
 		return $export_dir;
 	}
 
-	$real_file_path = sse_normalize_realpath( $filepath );
-	if ( is_link( $filepath ) || false === $real_file_path || ! sse_is_path_within_directory( $real_file_path, $export_dir ) ) {
-		sse_log( 'Security: File not within controlled export directory: ' . $filepath, 'security' );
+	$real_file_path = esse_normalize_realpath( $filepath );
+	if ( is_link( $filepath ) || false === $real_file_path || ! esse_is_path_within_directory( $real_file_path, $export_dir ) ) {
+		esse_log( 'Security: File not within controlled export directory: ' . $filepath, 'security' );
 		return new WP_Error( 'invalid_download_path', __( 'Access denied.', 'enginescript-site-exporter' ) );
 	}
 
@@ -197,7 +197,7 @@ function sse_validate_file_output_security( string $filepath ): string|WP_Error 
  * @param array{filesize:int,device:int,inode:int} $actual   Actual identity.
  * @return bool True when device, inode, and size match.
  */
-function sse_download_file_identity_matches( array $expected, array $actual ): bool {
+function esse_download_file_identity_matches( array $expected, array $actual ): bool {
 	return $expected['device'] === $actual['device']
 		&& $expected['inode'] === $actual['inode']
 		&& $expected['filesize'] === $actual['filesize'];
@@ -211,8 +211,8 @@ function sse_download_file_identity_matches( array $expected, array $actual ): b
  * @return array{handle:resource,filename:string,filesize:int}|WP_Error Opened download or error.
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  */
-function sse_open_validated_export_download( array $file_data ): array|WP_Error {
-	$resolved_path = sse_validate_file_output_security( $file_data['filepath'] );
+function esse_open_validated_export_download( array $file_data ): array|WP_Error {
+	$resolved_path = esse_validate_file_output_security( $file_data['filepath'] );
 	if ( is_wp_error( $resolved_path ) ) {
 		return $resolved_path;
 	}
@@ -222,14 +222,14 @@ function sse_open_validated_export_download( array $file_data ): array|WP_Error 
 		return new WP_Error( 'download_open_failed', __( 'Could not serve the file download.', 'enginescript-site-exporter' ) );
 	}
 
-	$handle_identity = sse_normalize_native_file_identity( fstat( $handle ) );
-	$current_path    = sse_validate_file_output_security( $file_data['filepath'] );
+	$handle_identity = esse_normalize_native_file_identity( fstat( $handle ) );
+	$current_path    = esse_validate_file_output_security( $file_data['filepath'] );
 	if ( is_wp_error( $current_path ) || $current_path !== $resolved_path ) {
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the exact local download handle.
 		return new WP_Error( 'download_identity_changed', __( 'The export file changed before the download and was not served.', 'enginescript-site-exporter' ) );
 	}
 
-	$current_identity  = sse_get_export_file_native_identity( $current_path );
+	$current_identity  = esse_get_export_file_native_identity( $current_path );
 	$expected_identity = [
 		'filesize' => $file_data['filesize'],
 		'device'   => $file_data['device'],
@@ -238,8 +238,8 @@ function sse_open_validated_export_download( array $file_data ): array|WP_Error 
 	if (
 		null === $handle_identity
 		|| is_wp_error( $current_identity )
-		|| ! sse_download_file_identity_matches( $expected_identity, $handle_identity )
-		|| ! sse_download_file_identity_matches( $expected_identity, $current_identity )
+		|| ! esse_download_file_identity_matches( $expected_identity, $handle_identity )
+		|| ! esse_download_file_identity_matches( $expected_identity, $current_identity )
 	) {
 		fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the exact local download handle.
 		return new WP_Error( 'download_identity_changed', __( 'The export file changed before the download and was not served.', 'enginescript-site-exporter' ) );
@@ -258,7 +258,7 @@ function sse_open_validated_export_download( array $file_data ): array|WP_Error 
  * @since 2.1.1
  * @return true|WP_Error True when output is ready for direct streaming.
  */
-function sse_prepare_download_output(): true|WP_Error {
+function esse_prepare_download_output(): true|WP_Error {
 	while ( ob_get_level() > 0 ) {
 		$status = ob_get_status();
 		if ( ! isset( $status['flags'] ) || ! is_int( $status['flags'] ) || 0 === ( $status['flags'] & PHP_OUTPUT_HANDLER_REMOVABLE ) ) {
@@ -287,15 +287,16 @@ function sse_prepare_download_output(): true|WP_Error {
  * @param int      $expected_size Expected streamed byte count.
  * @return never
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
+ * @SuppressWarnings("PHPMD.ExitExpression") The request ends when the file has been sent.
  */
-function sse_output_file_content( $handle, string $filename, int $expected_size ): never {
+function esse_output_file_content( $handle, string $filename, int $expected_size ): never {
 	$streamed_bytes = @fpassthru( $handle ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Stream failure must not inject warning text into an attachment response.
 	fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Closing the exact local download handle.
 
 	if ( $streamed_bytes !== $expected_size ) {
-		sse_log( 'Secure file download stream ended before the expected byte count: ' . $filename, 'error' );
+		esse_log( 'Secure file download stream ended before the expected byte count: ' . $filename, 'error' );
 	} else {
-		sse_log( 'Secure file download served from an identity-checked handle: ' . $filename, 'info' );
+		esse_log( 'Secure file download served from an identity-checked handle: ' . $filename, 'info' );
 	}
 
 	exit;
@@ -308,22 +309,22 @@ function sse_output_file_content( $handle, string $filename, int $expected_size 
  * @param array{filename:string,filepath:string,filesize:int,device:int,inode:int} $file_data Validated file information.
  * @return never
  */
-function sse_serve_file_download( array $file_data ): never {
-	$opened_file = sse_open_validated_export_download( $file_data );
+function esse_serve_file_download( array $file_data ): never {
+	$opened_file = esse_open_validated_export_download( $file_data );
 	if ( is_wp_error( $opened_file ) ) {
-		sse_record_activity( 'Export download refused: ' . $opened_file->get_error_message() );
-		sse_wp_die( $opened_file->get_error_message(), 403 );
+		esse_record_activity( 'Export download refused: ' . $opened_file->get_error_message() );
+		esse_wp_die( $opened_file->get_error_message(), 403 );
 	}
 
-	$output_ready = sse_prepare_download_output();
+	$output_ready = esse_prepare_download_output();
 	if ( is_wp_error( $output_ready ) ) {
 		fclose( $opened_file['handle'] ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close before a pre-header failure response.
-		sse_wp_die( $output_ready->get_error_message() );
+		esse_wp_die( $output_ready->get_error_message() );
 	}
 
 	// Record and start the rate limit before any output: nothing can be stored once the file is streaming.
-	sse_start_download_rate_limit();
-	sse_record_activity( 'Export downloaded: ' . $opened_file['filename'] );
-	sse_set_download_headers( $opened_file['filename'], $opened_file['filesize'] );
-	sse_output_file_content( $opened_file['handle'], $opened_file['filename'], $opened_file['filesize'] );
+	esse_start_download_rate_limit();
+	esse_record_activity( 'Export downloaded: ' . $opened_file['filename'] );
+	esse_set_download_headers( $opened_file['filename'], $opened_file['filesize'] );
+	esse_output_file_content( $opened_file['handle'], $opened_file['filename'], $opened_file['filesize'] );
 }

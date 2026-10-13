@@ -15,13 +15,15 @@
 		const confirmMessage = event.currentTarget?.dataset?.sseConfirmMessage;
 
 		if ( ! confirmMessage ) {
+			// eslint-disable-next-line no-console -- Tells a developer why the form refuses to submit.
 			console.warn(
-				'Site Exporter delete confirmation form is missing data-sse-confirm-message.'
+				'Site Exporter delete confirmation form is missing data-sse-confirm-message.',
 			);
 			event.preventDefault();
 			return;
 		}
 
+		// eslint-disable-next-line no-alert -- Deleting an export cannot be undone, so the browser asks first.
 		if ( ! globalThis.confirm( confirmMessage ) ) {
 			event.preventDefault();
 		}
