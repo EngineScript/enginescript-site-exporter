@@ -22,7 +22,7 @@
     "dealerdirect/phpcodesniffer-composer-installer": "^1.2",
     "friendsofphp/php-cs-fixer": "^3.95",
     "phpmd/phpmd": "^3.0",
-    "vimeo/psalm": "^6.20",
+    "vimeo/psalm": "^6.16",
     "php-stubs/wordpress-stubs": "^7.1.2",
     "szepeviktor/phpstan-wordpress": "^2.0",
     "phpstan/phpstan": "^2.3.1",
