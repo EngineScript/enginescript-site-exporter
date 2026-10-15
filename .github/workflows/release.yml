@@ -89,7 +89,7 @@ jobs:
              "Admin Script Tests (Node 24)",
              "Lint (Node 24)", "Unit Test Coverage (PHP 8.4)",
              ( ["8.2", "8.3", "8.4", "8.5"][] as $php |
-               ["6.8", "latest", "nightly"][] as $wp |
+               ["7.0", "latest", "nightly"][] as $wp |
                "Test WordPress \($wp) with PHP \($php) (highest deps)" ),
              "Test WordPress latest with PHP 8.2 (lowest deps)"] as $expected
             | [.[].jobs[]] as $jobs

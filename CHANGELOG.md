@@ -6,6 +6,10 @@ see the current README and Security Policy for supported behavior and guidance.
 
 ## 2.1.3 - Unreleased
 
+### Compatibility
+
+- **Minimum WordPress 7.0**: Raise the minimum WordPress version to 7.0, the version Jetpack requires. PHP 8.2 stays the minimum.
+
 ### Architecture
 
 - **Longer Code Prefix**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, because WordPress asks for a prefix of at least four characters. `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`. Code that calls a plugin function directly, or defines one of the plugin's `SSE_` constants in `wp-config.php`, has to use the new name. The names that sites and other code already depend on are unchanged: the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions.

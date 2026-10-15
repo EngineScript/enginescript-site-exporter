@@ -33,7 +33,7 @@ jobs:
             Thanks for contributing to EngineScript Site Exporter!
 
             **Before we review:**
-            - [ ] Have you tested your changes with WordPress 6.8+?
+            - [ ] Have you tested your changes with WordPress 7.0+?
             - [ ] Are your changes compatible with PHP 8.2+?
             - [ ] Have you followed WordPress coding standards?
             - [ ] Did you update the CHANGELOG.md if needed?

@@ -1,7 +1,7 @@
 === EngineScript Site Exporter ===
 Contributors: enginescript
 Tags: backup, export, migration, site export, database export
-Requires at least: 6.8
+Requires at least: 7.0
 Tested up to: 7.1
 Stable tag: 2.1.2
 Requires PHP: 8.2
@@ -120,6 +120,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
 = 2.1.3 - Unreleased =
+* **Compatibility**: Raise the minimum WordPress version to 7.0, the version Jetpack requires. PHP 8.2 stays the minimum.
 * **Architecture**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, and `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`; the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions keep their names
 * **Architecture**: Cleanup no longer looks in the fixed-name export directory used before 2.1.1; if `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand
 

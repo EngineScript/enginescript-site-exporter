@@ -2,7 +2,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/94ac1b08e70a48cc895d8522dffcf472)](https://app.codacy.com/gh/EngineScript/enginescript-site-exporter/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 [![License](https://img.shields.io/badge/License-GPL%20v3-green.svg?logo=gnu)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![WordPress Compatible](https://img.shields.io/badge/WordPress-6.8%2B-blue.svg?logo=wordpress)](https://wordpress.org/)
+[![WordPress Compatible](https://img.shields.io/badge/WordPress-7.0%2B-blue.svg?logo=wordpress)](https://wordpress.org/)
 [![PHP Compatible](https://img.shields.io/badge/PHP-8.2%2B-purple.svg?logo=php)](https://www.php.net/)
 
 ## Current Version
@@ -73,7 +73,7 @@ The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 
 ## Requirements
 
-- WordPress 6.8 or higher
+- WordPress 7.0 or higher
 - 64-bit PHP 8.2 or higher with ZipArchive and gzip (zlib) support
 - Direct local filesystem access through the WordPress Filesystem API
 - Write access to a private WordPress temporary directory. If your host's temp directory is inside a web-served directory (the WordPress directory, the content or uploads directory, or the document root), define `WP_TEMP_DIR` as a private writable path outside the web root. The plugin does not fall back to the uploads directory.
