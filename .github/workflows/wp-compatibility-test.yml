@@ -256,6 +256,32 @@ jobs:
         run: |
           vendor/bin/phpcs --standard=phpcs.xml
 
+          # Static scanner controls; never execute these incompatible PHP fixtures.
+          CONTROL_DIR="$RUNNER_TEMP/sse-compat-controls"
+          mkdir -p "$CONTROL_DIR" "$RUNNER_TEMP/sse-diagnostics"
+          printf '<?php strlen("control");\n' > "$CONTROL_DIR/compatible.php"
+          printf '<?php each(array());\n' > "$CONTROL_DIR/legacy-incompatible.php"
+          printf '<?php json_validate("{}");\n' > "$CONTROL_DIR/modern-incompatible.php"
+          vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 8.2 "$CONTROL_DIR/compatible.php"
+          if vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 8.2 --report=json "$CONTROL_DIR/legacy-incompatible.php" > "$CONTROL_DIR/legacy.json"; then
+            echo '::error::The known legacy-incompatible fixture was missed.'
+            exit 1
+          else
+            status=$?
+            [[ $status == 1 || $status == 2 ]]
+          fi
+          php -r '$report = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR); foreach ($report["files"] ?? [] as $file) { foreach ($file["messages"] as $message) { if (str_starts_with($message["source"], "PHPCompatibility.") && str_contains($message["message"], "each")) { exit(0); } } } exit(1);' "$CONTROL_DIR/legacy.json"
+          if vendor/bin/phpcs --standard=PHPCompatibilityWP --runtime-set testVersion 8.2 --report=json "$CONTROL_DIR/modern-incompatible.php" > "$CONTROL_DIR/modern.json"; then
+            echo '::warning::CR-TOOL-001: current stable rules miss PHP 8.3 json_validate at the PHP 8.2 floor. Modern-rule acceptance remains pending.'
+            echo 'modern_rule_coverage=known_gap' > "$RUNNER_TEMP/sse-diagnostics/compatibility-controls.txt"
+          else
+            status=$?
+            [[ $status == 1 || $status == 2 ]]
+            php -r '$report = json_decode(file_get_contents($argv[1]), true, 512, JSON_THROW_ON_ERROR); foreach ($report["files"] ?? [] as $file) { foreach ($file["messages"] as $message) { if (str_starts_with($message["source"], "PHPCompatibility.") && str_contains($message["message"], "json_validate")) { exit(0); } } } exit(1);' "$CONTROL_DIR/modern.json"
+            echo 'modern_rule_coverage=fixture_detected' > "$RUNNER_TEMP/sse-diagnostics/compatibility-controls.txt"
+          fi
+          echo 'compatible=passed;legacy_incompatible=rejected' >> "$RUNNER_TEMP/sse-diagnostics/compatibility-controls.txt"
+
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
         if: ${{ always() }}
