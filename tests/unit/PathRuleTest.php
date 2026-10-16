@@ -207,6 +207,7 @@ final class PathRuleTest extends SseTestCase {
 		}
 
 		// Both paths are temporary directories that this test created.
+		// nosemgrep: php.lang.security.exec-use.exec-use, php_exec_rule-exec-use
 		exec( 'mklink /J ' . escapeshellarg( $link ) . ' ' . escapeshellarg( $target ) . ' 2>NUL', $output, $status );
 
 		return 0 === $status && is_dir( $link );

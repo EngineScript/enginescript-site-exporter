@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-10-16T00:12:07+00:00\n"
+"POT-Creation-Date: 2026-10-16T07:27:45+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: enginescript-site-exporter\n"
@@ -411,19 +411,19 @@ msgstr ""
 msgid "Access denied: invalid file type."
 msgstr ""
 
-#: includes/download.php:186
+#: includes/download.php:188
 msgid "Access denied."
 msgstr ""
 
-#: includes/download.php:222
-#: includes/download.php:265
-#: includes/download.php:270
-#: includes/download.php:275
+#: includes/download.php:224
+#: includes/download.php:267
+#: includes/download.php:272
+#: includes/download.php:277
 msgid "Could not serve the file download."
 msgstr ""
 
-#: includes/download.php:229
-#: includes/download.php:245
+#: includes/download.php:231
+#: includes/download.php:247
 msgid "The export file changed before the download and was not served."
 msgstr ""
 

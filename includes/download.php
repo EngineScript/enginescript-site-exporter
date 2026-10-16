@@ -181,6 +181,8 @@ function esse_validate_file_output_security( string $filepath ): string|WP_Error
 	}
 
 	$real_file_path = esse_normalize_realpath( $filepath );
+	// This is the containment check. Both names passed their anchored patterns, and realpath() resolved the path.
+	/* nosemgrep: php.lang.security.injection.tainted-filename.tainted-filename */
 	if ( is_link( $filepath ) || false === $real_file_path || ! esse_is_path_within_directory( $real_file_path, $export_dir ) ) {
 		esse_log( 'Security: File not within controlled export directory: ' . $filepath, 'security' );
 		return new WP_Error( 'invalid_download_path', __( 'Access denied.', 'enginescript-site-exporter' ) );
