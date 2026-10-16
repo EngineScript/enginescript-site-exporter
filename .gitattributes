@@ -17,6 +17,7 @@
 /eslint.config.mjs export-ignore
 /composer.lock export-ignore
 /CHANGELOG.md export-ignore
+/CONTRIBUTING.md export-ignore
 /GEMINI.md export-ignore
 /package.json export-ignore
 /package-lock.json export-ignore
