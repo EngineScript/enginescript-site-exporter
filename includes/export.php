@@ -46,7 +46,6 @@ function esse_get_export_file_size_options(): array {
  *
  * @since 2.1.1
  * @param int $selected_max_file_size Per-file size limit selected on the form, in bytes; zero means no limit.
- * @return void
  */
 function esse_initialize_export_resource_budget( int $selected_max_file_size = 0 ): void {
 	$selected_max_file_size = max( 0, $selected_max_file_size );
@@ -119,7 +118,6 @@ function esse_normalize_skipped_export_entry_counts( mixed $skipped ): ?array {
  * @since 2.1.1
  * @param string $reason Counter to raise.
  * @psalm-param 'unreadable'|'links'|'special'|'large'|'changed' $reason
- * @return void
  */
 function esse_count_skipped_export_entry( string $reason ): void {
 	$budget = esse_get_export_resource_budget();
@@ -159,7 +157,6 @@ function esse_get_export_max_file_size(): int {
  * Clears request-local aggregate resource accounting.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_clear_export_resource_budget(): void {
 	unset( $GLOBALS['esse_export_resource_budget'] );
@@ -239,7 +236,6 @@ function esse_get_export_resource_budget(): ?array {
  * @since 2.1.1
  * @param array $budget Canonical export resource budget.
  * @psalm-param array{started_at:float,entries:int,source_bytes:int,generated_paths:array<string,true>,max_file_size:int,skipped:array{unreadable:int,links:int,special:int,large:int,changed:int}} $budget
- * @return void
  */
 function esse_set_export_resource_budget( array $budget ): void {
 	$GLOBALS['esse_export_resource_budget'] = $budget;
@@ -267,7 +263,6 @@ function esse_get_export_resource_limit( string $filter_name, int $default_value
  * limit and the owner-bound recovery event handles an interrupted request.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_raise_export_execution_time_limit(): void {
 	if ( ! function_exists( 'set_time_limit' ) ) {
@@ -449,7 +444,6 @@ function esse_record_generated_export_file( string $file_path ): true|WP_Error {
  * Handles the site export process when the form is submitted.
  *
  * @since 1.0.0
- * @return void
  */
 function esse_handle_export(): void {
 	$selected_max_file_size = esse_validate_export_request();
@@ -890,7 +884,6 @@ function esse_create_private_export_directory( string $export_base_dir ): string
  *
  * @since 2.0.0
  * @param string $export_dir The export directory path.
- * @return void
  */
 function esse_create_index_file( string $export_dir ): void {
 	$filesystem = esse_get_filesystem();

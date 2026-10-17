@@ -221,7 +221,7 @@ class AutomationTests(unittest.TestCase):
                 == 0
             )
 
-        self.assertEqual(23, len(jobs))
+        self.assertEqual(24, len(jobs))
         self.assertTrue(accepts_jobs(jobs))
         for index in range(len(jobs)):
             self.assertFalse(accepts_jobs(jobs[:index] + jobs[index + 1 :]))

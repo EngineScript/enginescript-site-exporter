@@ -15,7 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 2.1.1
  * @param string|false $hook_suffix Registered page hook, or false on failure.
- * @return void
  */
 function esse_set_exporter_page_hook_suffix( string|false $hook_suffix ): void {
 	if ( false === $hook_suffix || '' === $hook_suffix ) {
@@ -40,7 +39,6 @@ function esse_get_exporter_page_hook_suffix(): string {
  * Adds the Site Exporter page beneath Tools on a single-site installation.
  *
  * @since 1.0.0
- * @return void
  */
 function esse_admin_menu(): void {
 	if ( is_multisite() ) {
@@ -61,7 +59,6 @@ function esse_admin_menu(): void {
  * Adds one network-level Site Exporter page beneath Network Settings.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_network_admin_menu(): void {
 	if ( ! is_multisite() ) {
@@ -84,7 +81,6 @@ function esse_network_admin_menu(): void {
  *
  * @since 2.0.0
  * @param string $hook_suffix The current admin page hook suffix.
- * @return void
  */
 function esse_enqueue_admin_assets( string $hook_suffix ): void {
 	$exporter_page_hook = esse_get_exporter_page_hook_suffix();
@@ -126,7 +122,6 @@ function esse_get_exporter_notice_key(): string {
  *
  * @since 2.0.0
  * @param array<string, mixed> $notice Notice data.
- * @return void
  */
 function esse_set_exporter_notice( array $notice ): void {
 	set_transient( esse_get_exporter_notice_key(), $notice, 10 * MINUTE_IN_SECONDS );
@@ -136,7 +131,6 @@ function esse_set_exporter_notice( array $notice ): void {
  * Renders any pending exporter notice.
  *
  * @since 2.0.0
- * @return void
  */
 function esse_render_exporter_notices(): void {
 	$notice = esse_normalize_array_value( get_transient( esse_get_exporter_notice_key() ) );
@@ -170,7 +164,6 @@ function esse_render_exporter_notices(): void {
  *
  * @since 2.0.0
  * @param array<array-key,mixed> $notice Stored notice data.
- * @return void
  */
 function esse_render_export_success_notice( array $notice ): void {
 	$zip_result = esse_normalize_array_value( $notice['zip_result'] ?? [] );
@@ -256,7 +249,7 @@ function esse_get_listable_export_archives(): array {
 	foreach ( esse_get_export_files_for_bulk_cleanup( $export_dir ) as $file_path ) {
 		$filename        = wp_basename( $file_path );
 		$export_dir_name = wp_basename( dirname( $file_path ) );
-		$validation      = esse_validate_basic_export_file( $filename, $export_dir_name );
+		$validation      = esse_validate_export_file_path( $filename, $export_dir_name );
 		if ( is_wp_error( $validation ) || wp_normalize_path( $validation['filepath'] ) !== wp_normalize_path( $file_path ) ) {
 			continue;
 		}
@@ -274,9 +267,7 @@ function esse_get_listable_export_archives(): array {
 
 	usort(
 		$archives,
-		static function ( array $first, array $second ): int {
-			return $second['modified'] <=> $first['modified'];
-		}
+		static fn( array $first, array $second ): int => $second['modified'] <=> $first['modified']
 	);
 
 	return array_slice( $archives, 0, 20 );
@@ -288,7 +279,6 @@ function esse_get_listable_export_archives(): array {
  * @since 2.1.1
  * @param string $filename        Validated archive file name.
  * @param string $export_dir_name Validated private directory name.
- * @return void
  */
 function esse_render_export_archive_actions( string $filename, string $export_dir_name ): void {
 	$download_url = wp_nonce_url(
@@ -334,7 +324,6 @@ function esse_render_export_archive_actions( string $filename, string $export_di
  * Renders the list of export archives that exist now.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_render_export_archive_list(): void {
 	$archives    = esse_get_listable_export_archives();
@@ -358,7 +347,7 @@ function esse_render_export_archive_list(): void {
 				<?php foreach ( $archives as $archive ) : ?>
 					<tr>
 						<th scope="row"><code><?php echo esc_html( $archive['filename'] ); ?></code></th>
-						<td><?php echo esc_html( esse_normalize_string_value( size_format( $archive['size'] ), (string) $archive['size'] . ' B' ) ); ?></td>
+						<td><?php echo esc_html( esse_normalize_string_value( size_format( $archive['size'] ), $archive['size'] . ' B' ) ); ?></td>
 						<td><?php echo esc_html( esse_normalize_string_value( wp_date( $date_format, $archive['modified'] ) ) ); ?></td>
 						<td><?php esse_render_export_archive_actions( $archive['filename'], $archive['export_dir_name'] ); ?></td>
 					</tr>
@@ -411,7 +400,6 @@ function esse_get_activity_record_type_label( string $level ): string {
  * Renders the stored records: exports, downloads, deletions, errors, and security events.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_render_activity_records(): void {
 	$records     = array_reverse( esse_get_retained_stored_logs( get_option( 'sse_error_logs', [] ), time() - ( 7 * DAY_IN_SECONDS ) ) );
@@ -451,17 +439,19 @@ function esse_render_activity_records(): void {
  * Renders a warning when the page is not served over HTTPS.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_render_transport_warning(): void {
 	if ( is_ssl() ) {
 		return;
 	}
-	?>
-	<div class="notice notice-warning inline">
-		<p><?php esc_html_e( 'This page is not served over HTTPS. A downloaded export travels unencrypted, and it contains the whole database and wp-config.php.', 'enginescript-site-exporter' ); ?></p>
-	</div>
-	<?php
+
+	wp_admin_notice(
+		esc_html__( 'This page is not served over HTTPS. A downloaded export travels unencrypted, and it contains the whole database and wp-config.php.', 'enginescript-site-exporter' ),
+		[
+			'type'               => 'warning',
+			'additional_classes' => [ 'inline' ],
+		]
+	);
 }
 
 /**
@@ -471,28 +461,30 @@ function esse_render_transport_warning(): void {
  * both when deciding to export and next to the finished archive.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_render_import_requirement_warnings(): void {
 	$warnings = esse_get_import_requirement_warnings();
 	if ( [] === $warnings ) {
 		return;
 	}
-	?>
-	<div class="notice notice-warning inline">
-		<?php foreach ( $warnings as $warning ) : ?>
-			<p><?php echo esc_html( $warning ); ?></p>
-		<?php endforeach; ?>
-		<p><?php esc_html_e( 'You can still create the export, and it remains a complete backup. Importing it with EngineScript will stop until this is corrected.', 'enginescript-site-exporter' ); ?></p>
-	</div>
-	<?php
+
+	$warnings[] = __( 'You can still create the export, and it remains a complete backup. Importing it with EngineScript will stop until this is corrected.', 'enginescript-site-exporter' );
+	$paragraphs = array_map( static fn( string $warning ): string => '<p>' . esc_html( $warning ) . '</p>', $warnings );
+
+	wp_admin_notice(
+		implode( '', $paragraphs ),
+		[
+			'type'               => 'warning',
+			'additional_classes' => [ 'inline' ],
+			'paragraph_wrap'     => false,
+		]
+	);
 }
 
 /**
  * Renders the exporter page HTML interface.
  *
  * @since 1.0.0
- * @return void
  */
 function esse_exporter_page_html(): void {
 	if ( ! esse_current_user_can_export_site() ) {
@@ -581,7 +573,6 @@ function esse_exporter_page_html(): void {
  *
  * @since 1.0.0
  * @param string $message The error message to display.
- * @return void
  */
 function esse_show_error_notice( string $message ): void {
 	esse_set_exporter_notice(
@@ -598,7 +589,6 @@ function esse_show_error_notice( string $message ): void {
  *
  * @since 1.0.0
  * @param array{filename: string, filepath: string} $zip_result The ZIP file information.
- * @return void
  */
 function esse_show_success_notice( array $zip_result ): void {
 	$skipped = esse_get_skipped_export_entry_counts();

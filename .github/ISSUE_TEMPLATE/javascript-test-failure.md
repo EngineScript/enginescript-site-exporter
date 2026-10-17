@@ -1,14 +1,14 @@
 ---
-name: "Admin Script Test Failure"
-about: "Automated issue created when the admin script tests fail"
-title: "Admin Script Test Failure - {{ env.FAILURE_STAGE }}"
+name: "JavaScript Test Failure"
+about: "Automated issue created when the JavaScript tests fail"
+title: "JavaScript Test Failure - {{ env.FAILURE_STAGE }}"
 labels: ["bug", "testing", "javascript", "automated"]
 assignees: []
 ---
 
-## Admin Script Test Failure
+## JavaScript Test Failure
 
-The admin script test job failed. A setup or installation failure does not mean the script is broken.
+The JavaScript test job failed. A setup or installation failure does not mean the script is broken.
 
 **Failure stage:** `{{ env.FAILURE_STAGE }}`
 

@@ -89,7 +89,7 @@ function esse_tar_build_header( string $name, int $size, int $mode, int $mtime, 
  * @return array<int,int> Byte values.
  */
 function esse_tar_get_byte_values( string $bytes ): array {
-	return array_map( 'ord', str_split( $bytes ) );
+	return array_map( ord( ... ), str_split( $bytes ) );
 }
 
 /**

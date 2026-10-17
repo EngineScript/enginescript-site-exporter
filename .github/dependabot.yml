@@ -80,6 +80,11 @@ updates:
       - dependency-name: "eslint"
         update-types:
           - "version-update:semver-major"
+      # eslint-plugin-unicorn 66 and later need ESLint 10.4 or newer, so it stays on 65
+      # while ESLint stays on 9. Remove this entry together with the one above.
+      - dependency-name: "eslint-plugin-unicorn"
+        update-types:
+          - "version-update:semver-major"
 
   # Updates for the Python linters that the lint job installs
   - package-ecosystem: "pip"

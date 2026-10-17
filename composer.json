@@ -28,7 +28,8 @@
     "phpstan/phpstan": "^2.3.1",
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "automattic/vipwpcs": "^3.0.1",
-    "z4kn4fein/php-semver": "^3.0"
+    "z4kn4fein/php-semver": "^3.0",
+    "rector/rector": "^2.6"
   },
   "scripts": {
     "phpcs": "phpcs --standard=phpcs.xml",
@@ -37,6 +38,7 @@
     "psalm": "psalm --config=psalm.xml --show-info=true",
     "psalm:taint": "psalm --config=psalm.xml --taint-analysis",
     "phpstan": "phpstan analyze --memory-limit=1G",
+    "rector": "rector process --dry-run --no-progress-bar",
     "test": "phpunit --configuration phpunit.xml --testsuite unit --fail-on-empty-test-suite",
     "make-pot": [
       "wp i18n make-pot . languages/enginescript-site-exporter.pot --slug=enginescript-site-exporter --domain=enginescript-site-exporter --include=enginescript-site-exporter.php,includes,js --headers={\\\"Report-Msgid-Bugs-To\\\":\\\"https://github.com/EngineScript/enginescript-site-exporter/issues\\\"}",
@@ -48,6 +50,7 @@
       "@psalm",
       "@psalm:taint",
       "@phpstan",
+      "@rector",
       "@test"
     ]
   },

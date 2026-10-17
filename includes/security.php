@@ -21,32 +21,8 @@ function esse_check_path_traversal( string $normalized_file_path ): bool {
 	$has_parent_traversal  = str_contains( $normalized_file_path, '..' );
 	$has_current_directory = str_contains( $normalized_file_path, '/./' );
 	$has_windows_separator = str_contains( $normalized_file_path, '\\' );
-
 	// Block obvious directory traversal attempts.
-	if ( $has_parent_traversal || $has_current_directory || $has_windows_separator ) {
-		return false;
-	}
-
-	return true;
-}
-
-/**
- * Resolves the real path of an existing file with an allowed extension.
- *
- * A file that does not exist does not resolve. Every caller checks that the
- * file exists first, so nothing is ever validated before it is created.
- *
- * @since 2.0.0
- * @param string $normalized_file_path The normalized file path.
- * @return string|false Real file path on success, false on failure.
- */
-function esse_resolve_file_path( string $normalized_file_path ): string|false {
-	// Security: Only allow files with safe extensions.
-	if ( ! esse_validate_file_extension( $normalized_file_path ) ) {
-		return false;
-	}
-
-	return realpath( $normalized_file_path );
+	return ! ( $has_parent_traversal || $has_current_directory || $has_windows_separator );
 }
 
 /**
@@ -74,16 +50,12 @@ function esse_normalize_realpath( string $path ): string|false {
  * @return bool True if path resolves inside directory, false otherwise.
  */
 function esse_is_path_within_directory( string $path, string $directory ): bool {
-	$real_path      = esse_normalize_realpath( $path );
 	$real_directory = esse_normalize_realpath( $directory );
-
-	if ( false === $real_path || false === $real_directory ) {
+	if ( false === $real_directory ) {
 		return false;
 	}
 
-	$real_directory = trailingslashit( $real_directory );
-
-	return str_starts_with( trailingslashit( $real_path ), $real_directory );
+	return esse_check_path_within_base( esse_normalize_realpath( $path ), $real_directory );
 }
 
 /**
@@ -105,7 +77,10 @@ function esse_validate_file_extension( string $file_path ): bool {
 }
 
 /**
- * Checks if a file path is within the allowed base directory.
+ * Checks whether one resolved path lies inside another, by path text alone.
+ *
+ * This is the one containment comparison: both separators are read alike,
+ * and a trailing slash keeps a sibling whose name starts alike outside.
  *
  * @since 2.0.0
  * @param string|false $real_file_path The real file path or false if resolution failed.
@@ -113,26 +88,18 @@ function esse_validate_file_extension( string $file_path ): bool {
  * @return bool True if the file is within the base directory, false otherwise.
  */
 function esse_check_path_within_base( string|false $real_file_path, string $real_base_dir ): bool {
-	// Ensure both paths are available for comparison.
 	if ( false === $real_file_path ) {
 		return false;
 	}
 
-	// Ensure the file path starts with the base directory (with trailing slash).
-	$real_base_dir  = trailingslashit( wp_normalize_path( $real_base_dir ) );
-	$real_file_path = trailingslashit( wp_normalize_path( $real_file_path ) );
-
-	$is_within_base = str_starts_with( $real_file_path, $real_base_dir );
-
-	if ( ! $is_within_base ) {
-		esse_log( 'Path validation failed - path outside base directory. File: ' . $real_file_path . ', Base: ' . $real_base_dir, 'warning' );
-	}
-
-	return $is_within_base;
+	return str_starts_with( trailingslashit( wp_normalize_path( $real_file_path ) ), trailingslashit( wp_normalize_path( $real_base_dir ) ) );
 }
 
 /**
- * Validates that a file path is within the allowed directory.
+ * Validates that an existing file with an allowed extension is within the allowed directory.
+ *
+ * A file that does not exist does not resolve. Every caller checks that the
+ * file exists first, so nothing is ever validated before it is created.
  *
  * @since 1.0.0
  * @param string $file_path The file path to validate.
@@ -140,27 +107,30 @@ function esse_check_path_within_base( string|false $real_file_path, string $real
  * @return bool True if the file path is safe, false otherwise.
  */
 function esse_validate_filepath( string $file_path, string $base_dir ): bool {
-	// Sanitize and normalize paths to handle different separators and resolve . and ..
 	$normalized_file_path = wp_normalize_path( $file_path );
-	$normalized_base_dir  = wp_normalize_path( $base_dir );
 
-	// Check for directory traversal attempts.
-	if ( ! esse_check_path_traversal( $normalized_file_path ) ) {
+	if ( ! esse_check_path_traversal( $normalized_file_path ) || ! esse_validate_file_extension( $normalized_file_path ) ) {
 		return false;
 	}
-
-	// Resolve real paths to prevent directory traversal.
-	$real_file_path = esse_resolve_file_path( $normalized_file_path );
-	$real_base_dir  = realpath( $normalized_base_dir );
 
 	// Base directory must be resolvable for security.
+	$real_base_dir = esse_normalize_realpath( $base_dir );
 	if ( false === $real_base_dir ) {
-		esse_log( 'Could not resolve base directory: ' . $normalized_base_dir, 'security' );
+		esse_log( 'Could not resolve base directory: ' . wp_normalize_path( $base_dir ), 'security' );
 		return false;
 	}
 
-	// Validate path is within base directory.
-	return esse_check_path_within_base( $real_file_path, $real_base_dir );
+	$real_file_path = esse_normalize_realpath( $normalized_file_path );
+	if ( false === $real_file_path ) {
+		return false;
+	}
+
+	if ( ! esse_check_path_within_base( $real_file_path, $real_base_dir ) ) {
+		esse_log( 'Path validation failed - path outside base directory. File: ' . $real_file_path . ', Base: ' . $real_base_dir, 'warning' );
+		return false;
+	}
+
+	return true;
 }
 
 /**
@@ -172,7 +142,7 @@ function esse_validate_filepath( string $file_path, string $base_dir ): bool {
  * @return array{filepath:string,filename:string,filesize:int,device:int,inode:int}|WP_Error Result array with file data or WP_Error on failure.
  */
 function esse_validate_export_file_for_download( string $filename, string $export_dir_name ): array|WP_Error {
-	$basic_validation = esse_validate_basic_export_file( $filename, $export_dir_name );
+	$basic_validation = esse_validate_export_file_path( $filename, $export_dir_name );
 	if ( is_wp_error( $basic_validation ) ) {
 		return $basic_validation;
 	}
@@ -255,23 +225,6 @@ function esse_get_export_file_native_identity( string $file_path ): array|WP_Err
 }
 
 /**
- * Performs basic validation common to both download and deletion operations.
- *
- * @since 2.0.0
- * @param string $filename        The filename to validate.
- * @param string $export_dir_name Private export directory basename.
- * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
- */
-function esse_validate_basic_export_file( string $filename, string $export_dir_name ): array|WP_Error {
-	$basic_checks = esse_validate_filename_format( $filename );
-	if ( is_wp_error( $basic_checks ) ) {
-		return $basic_checks;
-	}
-
-	return esse_validate_export_file_path( $filename, $export_dir_name );
-}
-
-/**
  * Validates filename format and basic security checks.
  *
  * @since 2.0.0
@@ -304,14 +257,7 @@ function esse_validate_filename_format( string $filename ): true|WP_Error {
  * @return true|WP_Error True on success, WP_Error on failure.
  */
 function esse_validate_export_directory_name_format( string $export_dir_name ): true|WP_Error {
-	if ( '' === $export_dir_name ) {
-		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
-	}
-
-	if ( str_contains( $export_dir_name, '/' ) || str_contains( $export_dir_name, '\\' ) ) {
-		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
-	}
-
+	// The anchored pattern admits no empty name and no separator.
 	if ( ! esse_is_export_private_directory_name( $export_dir_name ) ) {
 		return new WP_Error( 'invalid_export_directory', __( 'Invalid export directory.', 'enginescript-site-exporter' ) );
 	}
@@ -328,6 +274,11 @@ function esse_validate_export_directory_name_format( string $export_dir_name ): 
  * @return array{filepath: string, filename: string}|WP_Error Result array with file data or WP_Error on failure.
  */
 function esse_validate_export_file_path( string $filename, string $export_dir_name ): array|WP_Error {
+	$format_validation = esse_validate_filename_format( $filename );
+	if ( is_wp_error( $format_validation ) ) {
+		return $format_validation;
+	}
+
 	// Get the full path to the file.
 	$export_dir = esse_get_export_directory_path();
 	if ( is_wp_error( $export_dir ) ) {
@@ -337,11 +288,6 @@ function esse_validate_export_file_path( string $filename, string $export_dir_na
 	$dir_validation = esse_validate_export_directory_name_format( $export_dir_name );
 	if ( is_wp_error( $dir_validation ) ) {
 		return $dir_validation;
-	}
-
-	$format_validation = esse_validate_filename_format( $filename );
-	if ( is_wp_error( $format_validation ) ) {
-		return $format_validation;
 	}
 
 	$filesystem = esse_get_filesystem();

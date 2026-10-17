@@ -382,6 +382,30 @@ function esc_attr_e( $text ) {
 }
 
 /**
+ * Print an admin notice, with the markup of core's wp_get_admin_notice().
+ *
+ * Core also passes the result through wp_kses_post(); the plugin's messages
+ * are already escaped, so that step changes nothing here.
+ *
+ * @param string               $message Escaped message.
+ * @param array<string, mixed> $args    Notice arguments.
+ * @return void
+ */
+function wp_admin_notice( $message, $args = array() ) {
+	$args    = array_merge(
+		array(
+			'type'               => '',
+			'additional_classes' => array(),
+			'paragraph_wrap'     => true,
+		),
+		$args
+	);
+	$classes = array_merge( array( 'notice' ), '' === $args['type'] ? array() : array( 'notice-' . $args['type'] ), $args['additional_classes'] );
+
+	echo '<div class="' . esc_attr( implode( ' ', $classes ) ) . '">' . ( $args['paragraph_wrap'] ? '<p>' . $message . '</p>' : $message ) . '</div>';
+}
+
+/**
  * Reduce a value to a lower-case key.
  *
  * @param mixed $key Key.

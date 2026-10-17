@@ -15,7 +15,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  * @param string[] $files Array of file paths to delete.
- * @return void
  */
 function esse_cleanup_files( array $files ): void {
 	foreach ( $files as $file ) {
@@ -30,7 +29,6 @@ function esse_cleanup_files( array $files ): void {
  *
  * @since 1.0.0
  * @param string $zip_filepath The ZIP file path to schedule for deletion.
- * @return void
  */
 function esse_schedule_export_cleanup( string $zip_filepath ): void {
 	// Check if already scheduled.
@@ -57,7 +55,6 @@ function esse_schedule_export_cleanup( string $zip_filepath ): void {
  *
  * @since 2.1.1
  * @param string $zip_filepath The ZIP file path the deletion was scheduled for.
- * @return void
  */
 function esse_unschedule_export_cleanup( string $zip_filepath ): void {
 	wp_clear_scheduled_hook( 'sse_delete_export_file', [ $zip_filepath ] );
@@ -68,7 +65,6 @@ function esse_unschedule_export_cleanup( string $zip_filepath ): void {
  * This runs as a safety net to catch any files that individual cleanup missed.
  *
  * @since 2.0.0
- * @return void
  */
 function esse_schedule_bulk_cleanup(): void {
 	if ( false !== wp_next_scheduled( 'sse_bulk_cleanup_exports' ) ) {
@@ -113,7 +109,6 @@ function esse_schedule_export_recovery( array $lease ): true|WP_Error {
  * event that an earlier version scheduled there.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_schedule_export_housekeeping(): void {
 	$next_run = wp_next_scheduled( 'sse_export_housekeeping' );
@@ -235,7 +230,6 @@ function esse_delete_all_export_directories( string $export_dir ): int {
  * at its next lease check, and cleans up after itself.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_remove_plugin_runtime_state(): void {
 	foreach ( esse_get_scheduled_hook_names() as $hook ) {
@@ -261,7 +255,6 @@ function esse_remove_plugin_runtime_state(): void {
  * that Network Admin works in.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_register_uninstall_callback(): void {
 	if ( is_multisite() && ! is_main_site() ) {
@@ -275,7 +268,6 @@ function esse_register_uninstall_callback(): void {
  * Removes everything the plugin created, when the plugin is deleted.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_uninstall_plugin(): void {
 	esse_remove_plugin_runtime_state();
@@ -326,7 +318,6 @@ function esse_uninstall_plugin(): void {
  * Runs recurring stale-artifact and stored-log housekeeping.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_export_housekeeping_handler(): void {
 	esse_prune_expired_stored_logs();
@@ -370,7 +361,6 @@ function esse_cleanup_expired_lease_directory( array $lease ): bool {
  *
  * @since 2.1.1
  * @param mixed $expected_owner UUID bound to the scheduled event. The value comes from the stored cron array, so its type is checked here.
- * @return void
  */
 function esse_recover_expired_export_handler( mixed $expected_owner ): void {
 	esse_prune_expired_stored_logs();
@@ -531,7 +521,6 @@ function esse_is_stale_export_directory_entry( array $entry, string $directory_n
  * This is a safety net to catch any files missed by individual cleanup.
  *
  * @since 2.0.0
- * @return void
  */
 function esse_bulk_cleanup_exports_handler(): void {
 	esse_log( 'Bulk export cleanup handler triggered.', 'info' );
@@ -654,7 +643,7 @@ function esse_get_export_files_from_private_directory( string $directory ): arra
  * @return bool True when the entry is a ZIP file.
  */
 function esse_is_export_zip_entry( string $filename, string $type ): bool {
-	return 'f' === $type && '.zip' === substr( $filename, -4 );
+	return 'f' === $type && str_ends_with( $filename, '.zip' );
 }
 
 /**
@@ -683,7 +672,7 @@ function esse_cleanup_expired_export_file( string $file_path, int $cutoff_time )
 		return false;
 	}
 
-	$validation = esse_validate_basic_export_file( $filename, $export_dir_name );
+	$validation = esse_validate_export_file_path( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
 		esse_log( 'Bulk cleanup skipped invalid file: ' . $file_path . ' - ' . $validation->get_error_message(), 'warning' );
@@ -704,7 +693,6 @@ function esse_cleanup_expired_export_file( string $file_path, int $cutoff_time )
  *
  * @since 1.0.0
  * @param mixed $file File path to delete. The value comes from the stored cron array, so its type is checked here.
- * @return void
  */
 function esse_delete_export_file_handler( mixed $file ): void {
 	if ( ! is_string( $file ) ) {
@@ -786,7 +774,6 @@ function esse_safely_delete_file( string $filepath ): bool {
  * @since 2.1.1
  * @param string $directory  Candidate private export directory path.
  * @param string $export_dir Export base directory path.
- * @return void
  */
 function esse_delete_empty_private_export_directory( string $directory, string $export_dir ): void {
 	$filesystem = esse_get_filesystem();

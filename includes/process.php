@@ -477,7 +477,6 @@ function esse_monitor_wp_cli_process( $process, int $process_group_id, array $pi
  *
  * @since 2.1.1
  * @param resource[] $pipes Process pipes.
- * @return void
  */
 function esse_close_wp_cli_process_pipes( array $pipes ): void {
 	foreach ( $pipes as $pipe ) {

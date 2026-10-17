@@ -72,6 +72,18 @@ final class NamePatternTest extends SseTestCase {
 	}
 
 	/**
+	 * The archive pattern itself refuses a trailing line break, not only the exact rebuild.
+	 *
+	 * @return void
+	 */
+	public function test_archive_pattern_refuses_a_trailing_line_break(): void {
+		$name = esse_get_engine_script_archive_filename( 'example.com', '20260101_120000' );
+
+		$this->assertSame( 1, preg_match( esse_get_engine_script_archive_filename_pattern(), $name ) );
+		$this->assertSame( 0, preg_match( esse_get_engine_script_archive_filename_pattern(), $name . "\n" ) );
+	}
+
+	/**
 	 * Refused archive names.
 	 *
 	 * @return array<string,array{string}>

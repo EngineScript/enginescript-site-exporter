@@ -110,7 +110,6 @@ function esse_get_export_lease_repository(): array|WP_Error {
  * @since 2.1.1
  * @param array $repository Lease repository data.
  * @psalm-param array{cache_group:string,cache_key:string,...} $repository
- * @return void
  */
 function esse_invalidate_export_lease_cache( array $repository ): void {
 	wp_cache_delete( $repository['cache_key'], $repository['cache_group'] );
@@ -275,7 +274,6 @@ function esse_acquire_export_lease_repository_lock(): string|WP_Error {
  *
  * @since 2.1.1
  * @param string $lock_name Acquired lock name.
- * @return void
  */
 function esse_release_export_lease_repository_lock( string $lock_name ): void {
 	if ( '' === $lock_name ) {
@@ -565,7 +563,6 @@ function esse_insert_export_lease_under_lock( array $lease, int $now ): array|WP
  * @since 2.1.1
  * @param array $lease Canonical lease.
  * @psalm-param array{owner:string,started_at:int,heartbeat_at:int,expires_at:int,export_dir_name:string} $lease
- * @return void
  */
 function esse_set_current_export_lease( array $lease ): void {
 	$GLOBALS['esse_current_export_lease'] = $lease;
@@ -585,7 +582,6 @@ function esse_get_current_export_lease(): ?array {
  * Clears the current request's lease value.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_clear_current_export_lease(): void {
 	unset( $GLOBALS['esse_current_export_lease'] );

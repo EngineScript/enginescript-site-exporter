@@ -62,6 +62,7 @@ testing:
       - any-glob-to-any-file: phpmd.xml
       - any-glob-to-any-file: phpstan.neon
       - any-glob-to-any-file: psalm.xml
+      - any-glob-to-any-file: rector.php
       - any-glob-to-any-file: .markdownlint.json
       - any-glob-to-any-file: .markdownlint-cli2.jsonc
       - any-glob-to-any-file: .mypy.ini

@@ -69,7 +69,6 @@ function esse_normalize_filesystem_scalar( mixed $value ): int|string|false {
  * @since 1.0.0
  * @param string $message The log message.
  * @param string $level   The log level.
- * @return void
  */
 function esse_store_log_in_database( string $message, string $level ): void {
 	$logs   = esse_get_retained_stored_logs( get_option( 'sse_error_logs', [] ), time() - ( 7 * DAY_IN_SECONDS ) );
@@ -111,7 +110,6 @@ function esse_store_log_in_database( string $message, string $level ): void {
  *
  * @since 2.1.1
  * @param string $message What happened, and to which archive.
- * @return void
  */
 function esse_record_activity( string $message ): void {
 	esse_store_log_in_database( $message, 'activity' );
@@ -203,7 +201,6 @@ function esse_sanitize_stored_log_message( string $message ): string {
  *
  * @since 1.0.0
  * @param string $formatted_message The formatted log message.
- * @return void
  */
 function esse_output_log_message( string $formatted_message ): void {
 	error_log( $formatted_message ); // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- WordPress has no universally available arbitrary debug-log wrapper; esse_log() already checks WP_DEBUG_LOG.
@@ -240,7 +237,6 @@ function esse_prepare_log_message( string $message ): string {
  * @since 1.0.0
  * @param string $message The message to log.
  * @param string $level   The log level (error, warning, info, or security).
- * @return void
  */
 function esse_log( string $message, string $level = 'info' ): void {
 	$message = esse_prepare_log_message( $message );
@@ -319,7 +315,8 @@ function esse_get_engine_script_archive_filename( string $site_identifier, strin
  * @return non-empty-string Regex pattern with site_identifier and timestamp capture groups.
  */
 function esse_get_engine_script_archive_filename_pattern(): string {
-	return '/^(?P<site_identifier>[a-zA-Z0-9._-]+)_' . preg_quote( ESSE_EXPORT_ARCHIVE_MARKER, '/' ) . '_(?P<timestamp>\d{8}_\d{6})\.zip$/';
+	// The pattern ends in \z, not $: a dollar sign also matches before a final line break.
+	return '/^(?P<site_identifier>[a-zA-Z0-9._-]+)_' . preg_quote( ESSE_EXPORT_ARCHIVE_MARKER, '/' ) . '_(?P<timestamp>\d{8}_\d{6})\.zip\z/';
 }
 
 /**
@@ -568,7 +565,6 @@ function esse_get_exporter_admin_page_url(): string {
  * Redirects back to the exporter admin page.
  *
  * @since 2.0.0
- * @return never
  * @SuppressWarnings("PHPMD.ExitExpression") A redirect must end the request.
  */
 function esse_redirect_to_exporter_page(): never {
@@ -582,7 +578,6 @@ function esse_redirect_to_exporter_page(): never {
  * @since 2.0.0
  * @param string $message  Error message.
  * @param int    $response HTTP response code.
- * @return never
  *
  * @psalm-suppress InvalidReturnType WordPress exits from wp_die() at runtime.
  */

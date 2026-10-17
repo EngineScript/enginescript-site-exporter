@@ -524,7 +524,7 @@ function esse_get_engine_script_manifest_site_lines( bool $has_wp_config ): stri
 	$values   = [
 		'home_url'             => home_url(),
 		'site_url'             => site_url(),
-		'table_prefix'         => null === $database ? '' : $database->prefix,
+		'table_prefix'         => $database->prefix ?? '',
 		'wp_config_in_archive' => $has_wp_config ? 'yes' : 'no',
 	];
 
@@ -712,7 +712,6 @@ function esse_create_combined_engine_script_zip( array $bundle_paths ): true|WP_
  * @since 2.1.1
  * @param ZipArchive $zip      Open ZIP archive.
  * @param string     $zip_path Partial ZIP path.
- * @return void
  */
 function esse_discard_combined_zip( ZipArchive $zip, string $zip_path ): void {
 	$zip->unchangeAll();
@@ -819,9 +818,7 @@ function esse_write_wordpress_files_to_tar( $archive_handle, string $archive_pat
 		// cannot be opened after all is passed over instead of ending the walk.
 		$filter = new RecursiveCallbackFilterIterator(
 			new RecursiveDirectoryIterator( $source_path, FilesystemIterator::SKIP_DOTS | FilesystemIterator::UNIX_PATHS ),
-			static function ( mixed $file_info ) use ( $source_path ): bool {
-				return $file_info instanceof SplFileInfo && esse_should_walk_export_source_entry( $file_info, $source_path );
-			}
+			static fn( mixed $file_info ): bool => $file_info instanceof SplFileInfo && esse_should_walk_export_source_entry( $file_info, $source_path )
 		);
 		$files  = new RecursiveIteratorIterator( $filter, RecursiveIteratorIterator::SELF_FIRST, RecursiveIteratorIterator::CATCH_GET_CHILD );
 
@@ -923,8 +920,8 @@ function esse_is_over_export_file_size_limit( int $file_size, string $relative_p
 		return false;
 	}
 
-	$file_size_label  = esse_normalize_string_value( size_format( $file_size ), (string) $file_size . ' B' );
-	$limit_size_label = esse_normalize_string_value( size_format( $max_file_size ), (string) $max_file_size . ' B' );
+	$file_size_label  = esse_normalize_string_value( size_format( $file_size ), $file_size . ' B' );
+	$limit_size_label = esse_normalize_string_value( size_format( $max_file_size ), $max_file_size . ' B' );
 
 	esse_count_skipped_export_entry( 'large' );
 	esse_log( 'Excluding large file: ' . $relative_path . ' (Size: ' . $file_size_label . ', Limit: ' . $limit_size_label . ')', 'info' );

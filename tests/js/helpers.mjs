@@ -84,7 +84,7 @@ export async function loadPage( { archives = 0, confirmResult = true, html = nul
 		exportForm,
 		exportButton: exportForm?.querySelector( '[type="submit"]' ) ?? null,
 		status: exportForm?.querySelector( '.sse-export-status' ) ?? null,
-		deleteForms: Array.from( document.querySelectorAll( '.sse-confirm-delete' ) ),
+		deleteForms: [ ...document.querySelectorAll( '.sse-confirm-delete' ) ],
 		close: () => window.close(),
 	};
 }

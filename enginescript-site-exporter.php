@@ -136,7 +136,6 @@ require_once __DIR__ . '/includes/download.php';
  * This prevents load order issues and conflicts with other plugins.
  *
  * @since 1.8.5
- * @return void
  */
 function esse_init_plugin(): void {
 	// Hook single-site and multisite Network Admin menu creation.
@@ -175,7 +174,6 @@ function esse_init_plugin(): void {
  *
  * @since 2.1.1
  * @param bool $_network_wide Whether the plugin is being deactivated network-wide.
- * @return void
  * @SuppressWarnings("PHPMD.BooleanArgumentFlag") WordPress passes this flag to a deactivation callback.
  */
 function esse_deactivate_plugin( bool $_network_wide = false ): void {
@@ -191,7 +189,6 @@ function esse_deactivate_plugin( bool $_network_wide = false ): void {
  *
  * @since 2.1.1
  * @param bool $_network_wide Whether the plugin is being activated network-wide.
- * @return void
  * @SuppressWarnings("PHPMD.BooleanArgumentFlag") WordPress passes this flag to an activation callback.
  */
 function esse_activate_plugin( bool $_network_wide = false ): void {

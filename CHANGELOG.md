@@ -14,11 +14,19 @@ see the current README and Security Policy for supported behavior and guidance.
 
 - **Longer Code Prefix**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, because WordPress asks for a prefix of at least four characters. `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`. Code that calls a plugin function directly, or defines one of the plugin's `SSE_` constants in `wp-config.php`, has to use the new name. The names that sites and other code already depend on are unchanged: the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions.
 - **Earlier Export Directory**: Cleanup no longer looks in the fixed-name export directory that versions before 2.1.1 used, and works only in this installation's own export directory. The plugin no longer removes anything from the earlier directory. If `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand.
+- **Simpler File Validation**: A download, a deletion, and the archive list now check each file name once instead of twice, and every containment check uses one path comparison. The checks that guard against a file being replaced during a download are unchanged, and so is what is accepted or refused. The archive file name pattern now ends in `\z`, like the directory pattern; the exact rebuild of the name already refused a trailing line break.
+- **Core Admin Notices**: The HTTPS warning and the importer warnings are printed with WordPress's `wp_admin_notice()`. The markup is unchanged.
+- **Modern PHP**: Code that PHP 8 offers a shorter form for uses it: `match`, `str_ends_with()`, arrow functions, and a first-class callable. Return tags that only repeated a native return type were removed.
 
 ### Tooling
 
 - **Translation Template**: The template is now generated locally with `composer make-pot` and committed with each change, and the Update Translation File workflow was removed. The template names the GitHub issue tracker as its bug report address, in place of a WordPress.org support forum the plugin does not have, and its source references were refreshed.
 - **Contributing Guide**: Added `CONTRIBUTING.md`, matching the other EngineScript plugins: setup, checks, test layers, file layout, release files, and the translation template.
+- **Rector**: A new Rector job runs `rector process --dry-run` with `rector.php` and fails when PHP 8.2 or Rector's dead-code, code-quality, type-declaration, or early-return rules would change the code. `rector.php` skips the rules that conflict with WordPress, each with its reason; `composer rector` runs the same check, and `composer check-all` includes it.
+- **Modern JavaScript and Browser Support**: ESLint also applies `eslint-plugin-unicorn` rules for modern built-ins and patterns, and `eslint-plugin-compat` fails on a browser API that WordPress's supported browsers lack. Stylelint does the same for CSS with `stylelint-no-unsupported-browser-features`. Both read the browser list from `@wordpress/browserslist-config`.
+- **Arrays**: PHPCS now requires the short array syntax, the form all EngineScript plugins use.
+- **npm Advisories**: `package.json` overrides `smol-toml` and `katex` with releases that fix their advisories. One advisory remains in `braces`, which the Markdown and CSS linters use, until a fixed release exists; the linters run only on this repository's own files.
+- **Workflow Names**: The JavaScript test job is now "JavaScript Tests (Node 24)", the name it has in the other EngineScript plugins. Three issue templates that no workflow used were removed.
 
 ## 2.1.2 - October 7, 2026
 

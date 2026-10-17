@@ -14,7 +14,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Handles secure download requests for export files.
  *
  * @since 2.0.0
- * @return void
  */
 function esse_handle_secure_download(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
@@ -52,7 +51,6 @@ function esse_handle_secure_download(): void {
  * Handles manual deletion of export files.
  *
  * @since 2.0.0
- * @return void
  */
 function esse_handle_export_deletion(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
@@ -71,7 +69,7 @@ function esse_handle_export_deletion(): void {
 		esse_wp_die( __( 'You do not have permission to delete export files.', 'enginescript-site-exporter' ), 403 );
 	}
 
-	$validation = esse_validate_basic_export_file( $filename, $export_dir_name );
+	$validation = esse_validate_export_file_path( $filename, $export_dir_name );
 
 	if ( is_wp_error( $validation ) ) {
 		esse_record_activity( 'Export deletion refused: ' . $validation->get_error_message() );
@@ -120,7 +118,6 @@ function esse_check_download_rate_limit(): bool {
  * does not block a retry.
  *
  * @since 2.1.1
- * @return void
  */
 function esse_start_download_rate_limit(): void {
 	set_transient( 'sse_download_rate_limit_' . get_current_user_id(), time(), 60 );
@@ -132,20 +129,15 @@ function esse_start_download_rate_limit(): void {
  * @since 2.0.0
  * @param string $filename  The filename for download.
  * @param int    $filesize  The file size in bytes.
- * @return void
  */
 function esse_set_download_headers( string $filename, int $filesize ): void {
 	// Security: Set safe Content-Type based on file extension to prevent XSS.
 	$file_extension = strtolower( pathinfo( $filename, PATHINFO_EXTENSION ) );
-	switch ( $file_extension ) {
-		case 'zip':
-			$content_type = 'application/zip';
-			break;
-		default:
-			// Security: Default to octet-stream for unknown types to prevent execution.
-			$content_type = 'application/octet-stream';
-			break;
-	}
+	$content_type   = match ( $file_extension ) {
+		'zip' => 'application/zip',
+		// Security: Default to octet-stream for unknown types to prevent execution.
+		default => 'application/octet-stream',
+	};
 
 	// Security: Set headers to prevent XSS and ensure proper download behavior.
 	header( 'Content-Type: ' . $content_type );
@@ -287,7 +279,6 @@ function esse_prepare_download_output(): true|WP_Error {
  * @param resource $handle        Validated open file handle.
  * @param string   $filename      Filename for logging.
  * @param int      $expected_size Expected streamed byte count.
- * @return never
  * @SuppressWarnings("PHPMD.ErrorControlOperator")
  * @SuppressWarnings("PHPMD.ExitExpression") The request ends when the file has been sent.
  */
@@ -309,7 +300,6 @@ function esse_output_file_content( $handle, string $filename, int $expected_size
  *
  * @since 2.0.0
  * @param array{filename:string,filepath:string,filesize:int,device:int,inode:int} $file_data Validated file information.
- * @return never
  */
 function esse_serve_file_download( array $file_data ): never {
 	$opened_file = esse_open_validated_export_download( $file_data );

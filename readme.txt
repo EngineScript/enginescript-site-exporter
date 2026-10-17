@@ -123,6 +123,8 @@ Released entries describe their historical versions, including earlier tool resu
 * **Compatibility**: Raise the minimum WordPress version to 7.0, the version Jetpack requires. PHP 8.2 stays the minimum.
 * **Architecture**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, and `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`; the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions keep their names
 * **Architecture**: Cleanup no longer looks in the fixed-name export directory used before 2.1.1; if `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand
+* **Architecture**: Downloads, deletions, and the archive list check each file name once, and every containment check uses one path comparison; what is accepted or refused is unchanged, and the checks against a file replaced during a download stay
+* **Architecture**: The HTTPS and importer warnings use WordPress's `wp_admin_notice()`, with unchanged markup; PHP 8 forms (`match`, `str_ends_with()`, arrow functions) replace older code
 
 = 2.1.2 =
 * **Architecture**: Request values and three WordPress return values are narrowed to their expected type before they are used; behavior is unchanged
