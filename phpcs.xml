@@ -233,7 +233,7 @@
 
     <!-- Set minimum WordPress version for deprecated function checks -->
     <config name="minimum_wp_version" value="7.0"/>
-    <config name="testVersion" value="8.2-"/>
+    <config name="testVersion" value="8.3-"/>
 
     <!-- Report every message, including those that a standard rates below the default severity of 5. -->
     <arg name="severity" value="1"/>

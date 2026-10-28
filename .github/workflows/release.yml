@@ -89,10 +89,10 @@ jobs:
              "Rector (PHP 8.3)",
              "JavaScript Tests (Node 24)",
              "Lint (Node 24)", "Unit Test Coverage (PHP 8.4)",
-             ( ["8.2", "8.3", "8.4", "8.5"][] as $php |
+             ( ["8.3", "8.4", "8.5"][] as $php |
                ["7.0", "latest", "nightly"][] as $wp |
                "Test WordPress \($wp) with PHP \($php) (highest deps)" ),
-             "Test WordPress latest with PHP 8.2 (lowest deps)"] as $expected
+             "Test WordPress latest with PHP 8.3 (lowest deps)"] as $expected
             | [.[].jobs[]] as $jobs
             | all($expected[]; . as $name |
                 ([$jobs[] | select(.name == $name)] | length) == 1 and

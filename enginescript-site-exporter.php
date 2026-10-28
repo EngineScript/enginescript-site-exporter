@@ -6,7 +6,7 @@
  * Author: EngineScript
  * Requires at least: 7.0
  * Tested up to: 7.1
- * Requires PHP: 8.2
+ * Requires PHP: 8.3
  * Network: true
  * License: GPL-3.0-or-later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html

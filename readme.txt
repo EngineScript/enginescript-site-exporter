@@ -4,7 +4,7 @@ Tags: backup, export, migration, site export, database export
 Requires at least: 7.0
 Tested up to: 7.1
 Stable tag: 2.1.2
-Requires PHP: 8.2
+Requires PHP: 8.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -45,7 +45,7 @@ The downloaded ZIP is named `<site>_enginescript_site_export_<timestamp>.zip`.
 3. On a single-site installation, navigate to Tools → Site Exporter. On multisite, use Settings → Site Exporter in Network Admin.
 4. Click the "Export Site" button to create a site archive.
 
-Exports require 64-bit PHP 8.2 or higher with ZipArchive and gzip (zlib) support, plus direct local filesystem access through the WordPress Filesystem API and a private writable temporary directory outside every web-served directory (the WordPress directory, the content and uploads directories, and the document root).
+Exports require 64-bit PHP 8.3 or higher with ZipArchive and gzip (zlib) support, plus direct local filesystem access through the WordPress Filesystem API and a private writable temporary directory outside every web-served directory (the WordPress directory, the content and uploads directories, and the document root).
 
 Database exports require a POSIX host with PHP's POSIX functions, a trusted `/usr/bin/setsid` or `/bin/setsid` executable, and WP-CLI at a trusted configured path. These prerequisites let the exporter stop the complete WP-CLI/database-client process group on failure or timeout; unsupported hosts fail closed before process launch.
 
@@ -120,7 +120,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
 = 2.1.3 - Unreleased =
-* **Compatibility**: Raise the minimum WordPress version to 7.0, the version Jetpack requires. PHP 8.2 stays the minimum.
+* **Compatibility**: Raise the minimum WordPress version to 7.0, the version Jetpack requires, and the minimum PHP version to 8.3 (PHP 8.2 reaches end of life on December 31, 2026)
 * **Architecture**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, and `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`; the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions keep their names
 * **Architecture**: Cleanup no longer looks in the fixed-name export directory used before 2.1.1; if `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand
 * **Architecture**: Downloads, deletions, and the archive list check each file name once, and every containment check uses one path comparison; what is accepted or refused is unchanged, and the checks against a file replaced during a download stay

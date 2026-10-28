@@ -10,7 +10,7 @@ This project follows the [WordPress Community Code of Conduct](https://make.word
 
 ### Requirements
 
-- **PHP**: 8.2 or higher, 64-bit, with ZipArchive and gzip (zlib) support
+- **PHP**: 8.3 or higher, 64-bit, with ZipArchive and gzip (zlib) support
 - **WordPress**: 7.0 or higher
 - **WP-CLI**: Required for database exports when testing on a WordPress site
 - **Composer**: For dependency management and quality tools
@@ -163,7 +163,7 @@ function esse_example_function( string $input ): string {
 1. **Manual testing**:
 
    - Test with WordPress 7.0 or higher.
-   - Test with PHP 8.2 or higher.
+   - Test with PHP 8.3 or higher.
    - Verify the export screen at **Tools > Site Exporter**, and at **Settings > Site Exporter** in Network Admin on multisite.
    - Verify creating, downloading, and deleting an export, including the database export through WP-CLI.
    - Verify that scheduled cleanup removes an export, and that deactivation removes every export archive and scheduled event.

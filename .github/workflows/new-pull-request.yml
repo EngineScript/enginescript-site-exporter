@@ -34,7 +34,7 @@ jobs:
 
             **Before we review:**
             - [ ] Have you tested your changes with WordPress 7.0+?
-            - [ ] Are your changes compatible with PHP 8.2+?
+            - [ ] Are your changes compatible with PHP 8.3+?
             - [ ] Have you followed WordPress coding standards?
             - [ ] Did you update the CHANGELOG.md if needed?
 

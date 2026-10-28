@@ -9,7 +9,7 @@
  */
 
 use Rector\CodeQuality\Rector\Empty_\SimplifyEmptyCheckOnEmptyArrayRector;
-use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
+use Rector\CodeQuality\Rector\If_\ExplicitNullableObjectInstanceRector;
 use Rector\Config\RectorConfig;
 use Rector\DeadCode\Rector\Property\RemoveUselessVarTagRector;
 use Rector\Instanceof_\Rector\Ternary\FlipNegatedTernaryInstanceofRector;
@@ -24,7 +24,7 @@ return RectorConfig::configure()
 		]
 	)
 	->withBootstrapFiles( [ __DIR__ . '/vendor/php-stubs/wordpress-stubs/wordpress-stubs.php' ] )
-	->withPhpSets( php82: true )
+	->withPhpSets( php83: true )
 	->withPreparedSets(
 		deadCode: true,
 		codeQuality: true,
@@ -42,7 +42,7 @@ return RectorConfig::configure()
 			// Writes `$x === []`, which is not a Yoda condition.
 			SimplifyEmptyCheckOnEmptyArrayRector::class,
 			// A plain null check reads better than a negated instanceof.
-			FlipTypeControlToUseExclusiveTypeRector::class,
+			ExplicitNullableObjectInstanceRector::class,
 			FlipNegatedTernaryInstanceofRector::class,
 		]
 	);

@@ -18,7 +18,7 @@ The Rector job failed. Inspect the failure stage before attributing the failure 
 
 ### What the job runs
 
-`composer rector` runs `rector process --dry-run` with `rector.php`. It changes nothing, and it fails when any configured rule would change the plugin's PHP: the PHP 8.2 sets, and the dead-code, code-quality, type-declaration, and early-return sets, without the rules that `rector.php` skips for WordPress.
+`composer rector` runs `rector process --dry-run` with `rector.php`. It changes nothing, and it fails when any configured rule would change the plugin's PHP: the PHP 8.3 sets, and the dead-code, code-quality, type-declaration, and early-return sets, without the rules that `rector.php` skips for WordPress.
 
 ### Next Steps
 

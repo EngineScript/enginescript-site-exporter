@@ -44,9 +44,6 @@ tmp/
 
 # Dependencies, tests, and build artifacts
 build/
-# Dev-tool locks resolved on the maintainer's machine; CI resolves dependencies itself.
-composer.lock
-package-lock.json
 coverage/
 dist/
 node_modules/
