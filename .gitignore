@@ -20,6 +20,7 @@ Thumbs.db
 .cache/
 .cspellcache
 .eslintcache
+.mypy_cache/
 .php-cs-fixer.cache
 .phpcs-cache
 .phpstan.cache
