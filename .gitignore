@@ -26,6 +26,7 @@ Thumbs.db
 .phpunit.cache
 .phpunit.result.cache
 .psalm/cache
+.ruff_cache/
 .stylelintcache
 __pycache__/
 
