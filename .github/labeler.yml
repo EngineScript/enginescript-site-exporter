@@ -50,7 +50,6 @@ dependencies:
       - any-glob-to-any-file: .github/dependabot.yml
       - any-glob-to-any-file: composer.json
       - any-glob-to-any-file: package.json
-      - any-glob-to-any-file: renovate.json
 
 # Tests and quality
 testing:
