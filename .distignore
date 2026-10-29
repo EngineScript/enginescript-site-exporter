@@ -72,7 +72,6 @@
 /phpunit.xml
 /psalm.xml
 /rector.php
-/renovate.json
 /tslint.json
 /bin
 /stubs
