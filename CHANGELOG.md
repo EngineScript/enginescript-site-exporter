@@ -26,7 +26,7 @@ see the current README and Security Policy for supported behavior and guidance.
 - **Rector**: A new Rector job runs `rector process --dry-run` with `rector.php` and fails when PHP 8.3 or Rector's dead-code, code-quality, type-declaration, or early-return rules would change the code. `rector.php` skips the rules that conflict with WordPress, each with its reason; `composer rector` runs the same check, and `composer check-all` includes it.
 - **Modern JavaScript and Browser Support**: ESLint also applies `eslint-plugin-unicorn` rules for modern built-ins and patterns, and `eslint-plugin-compat` fails on a browser API that WordPress's supported browsers lack. Stylelint does the same for CSS with `stylelint-no-unsupported-browser-features`. Both read the browser list from `@wordpress/browserslist-config`.
 - **Arrays**: PHPCS now requires the short array syntax, the form all EngineScript plugins use.
-- **npm Advisories**: `package.json` overrides `smol-toml` and `katex` with releases that fix their advisories. One advisory remains in `braces`, which the Markdown and CSS linters use, until a fixed release exists; the linters run only on this repository's own files.
+- **npm Advisories**: `package.json` overrides `smol-toml`, `katex`, and `re2js` (used by the Markdown linter) with releases that fix their advisories.
 - **Workflow Names**: The JavaScript test job is now "JavaScript Tests (Node 24)", the name it has in the other EngineScript plugins. Three issue templates that no workflow used were removed.
 
 ## 2.1.2 - October 7, 2026
