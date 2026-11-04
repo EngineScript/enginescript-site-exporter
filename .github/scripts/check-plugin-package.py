@@ -66,10 +66,8 @@ def tracked_files(root: Path, *options: str) -> set[str]:
 
 
 def check_distignore(root: Path, tracked: set[str], names: set[str]) -> None:
-    """Require .distignore to keep exactly the tracked files that the allowlist ships.
-
-    Git matches the patterns, so they mean what they mean to `wp dist-archive`.
-    """
+    """Require .distignore to keep exactly the tracked files that the allowlist ships."""
+    # Git matches the patterns, so they mean what they mean to `wp dist-archive`.
     distignore = root / ".distignore"
     if distignore.is_symlink() or not distignore.is_file():
         raise ValueError("The .distignore file is missing.")

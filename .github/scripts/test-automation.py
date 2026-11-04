@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Standard-library regression fixtures, executed by GitHub's package-check job.
+"""Standard-library regression fixtures, executed by GitHub's package-check job."""
 
-These fixtures do not bootstrap WordPress or replace workflow-generated PHP tests.
-All mutation is confined to a temporary fixture repository on the runner.
-"""
+# These fixtures do not bootstrap WordPress or replace workflow-generated PHP tests.
+# All mutation is confined to a temporary fixture repository on the runner.
 
 from __future__ import annotations
 
