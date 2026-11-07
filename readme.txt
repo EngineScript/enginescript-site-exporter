@@ -88,7 +88,9 @@ Database records older than seven days are removed when housekeeping, recovery, 
 
 = What does the EngineScript importer need from an export? =
 
-EngineScript's `vhost-import.sh` finds the site through a `wp-config.php` inside the files archive and reads the site address from `WP_HOME` or `WP_SITEURL` in that file. An export from a site that keeps `wp-config.php` above the WordPress directory, or that defines neither constant, is still a complete backup, but the importer stops on it. The exporter page warns when either is the case. For reference, `manifest.txt` also records `home_url`, `site_url`, `table_prefix`, and `wp_config_in_archive`.
+EngineScript's `vhost-import.sh` finds the site through a `wp-config.php` inside the files archive. An export from a site that keeps `wp-config.php` above the WordPress directory is still a complete backup, but the importer stops on it, and the exporter page warns about it. `manifest.txt` also records `home_url`, `site_url`, `table_prefix`, and `wp_config_in_archive`. `home_url` and `site_url` are the addresses stored in the `home` and `siteurl` options (`WP_HOME` and `WP_SITEURL` when `wp-config.php` defines them), and the importer reads the site address and table prefix from the manifest, so neither constant is needed.
+
+EngineScript only hosts sites at the root of their domain, such as `https://example.com`. A site with a path in its Site Address or WordPress Address, such as a site in `/blog` or WordPress in its own `/wp` folder, cannot be exported: the exporter page shows an error in place of the export form. A site at `www.example.com` can be exported, and EngineScript's importer offers to move it to `example.com` or to keep `www`.
 
 = Can I use this plugin with non-EngineScript servers? =
 
@@ -120,6 +122,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
 = 2.1.3 - Unreleased =
+* **Fix**: `manifest.txt` records the site's stored addresses (the `home` and `siteurl` options) as `home_url` and `site_url`, in place of `home_url()` and `site_url()`, which take the scheme of the admin page and pass through plugin filters; the warning that neither `WP_HOME` nor `WP_SITEURL` is defined was removed, because EngineScript's importer reads the address from the manifest
+* **Fix**: A site whose Site Address or WordPress Address has a path (a site in `/blog`, or WordPress in its own `/wp` folder) is no longer exported, because EngineScript only hosts sites at the root of their domain; the exporter page shows an error in place of the export form
 * **Compatibility**: Raise the minimum WordPress version to 7.0, the version Jetpack requires, and the minimum PHP version to 8.3 (PHP 8.2 reaches end of life on December 31, 2026)
 * **Architecture**: The plugin's PHP functions, constants and global variables now start with `esse_` or `ESSE_` in place of `sse_` or `SSE_`, and `ES_SITE_EXPORTER_VERSION` is now `ESSE_VERSION`; the `sse_` filters, the `SSE_WP_CLI_PATH` constant, the stored option, the scheduled events, and the admin actions keep their names
 * **Architecture**: Cleanup no longer looks in the fixed-name export directory used before 2.1.1; if `enginescript-site-exporter-exports` still exists in the temporary directory after an update from 2.1.0 or earlier, delete it by hand

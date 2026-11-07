@@ -451,6 +451,12 @@ function esse_handle_export(): void {
 		esse_redirect_to_exporter_page();
 	}
 
+	$layout_error = esse_get_site_layout_error();
+	if ( null !== $layout_error ) {
+		esse_show_error_notice( $layout_error );
+		esse_redirect_to_exporter_page();
+	}
+
 	$lease = esse_acquire_export_lease();
 	if ( is_wp_error( $lease ) ) {
 		esse_show_error_notice( $lease->get_error_message() );
@@ -675,12 +681,42 @@ function esse_validate_export_request(): int|false {
 }
 
 /**
+ * Gets the reason this site cannot be exported, when it is not at the root of its domain.
+ *
+ * EngineScript serves each site, and WordPress, at the root of its domain. A site
+ * in a subfolder (example.com/blog), or with WordPress in its own folder
+ * (WordPress Address example.com/wp), cannot be imported, so it is not exported.
+ * The stored options are read, as for the manifest.
+ *
+ * @since 2.1.3
+ * @return string|null Error message, or null when the site can be exported.
+ */
+function esse_get_site_layout_error(): ?string {
+	$home    = esse_normalize_string_value( get_option( 'home' ) );
+	$siteurl = esse_normalize_string_value( get_option( 'siteurl' ) );
+
+	foreach ( [ $home, $siteurl ] as $address ) {
+		$path = wp_parse_url( $address, PHP_URL_PATH );
+		if ( is_string( $path ) && '' !== trim( $path, '/' ) ) {
+			return sprintf(
+				// translators: 1: Site Address (URL) setting, 2: WordPress Address (URL) setting.
+				__( 'This site cannot be exported. EngineScript only hosts sites at the root of their domain, such as https://example.com. It does not support sites in a subfolder (such as /blog), or WordPress in its own folder (such as /wp). Site Address: %1$s. WordPress Address: %2$s.', 'enginescript-site-exporter' ),
+				$home,
+				$siteurl
+			);
+		}
+	}
+
+	return null;
+}
+
+/**
  * Gets warnings about conditions that EngineScript's importer does not accept.
  *
- * The importer finds the site through a wp-config.php inside the files archive
- * and reads the site address from WP_HOME or WP_SITEURL in that file. An
- * export from a site that does not meet this is still a complete backup, so
- * these are warnings and never stop the export.
+ * The importer finds the site through a wp-config.php inside the files archive.
+ * It reads the site address from manifest.txt, so WP_HOME and WP_SITEURL are not
+ * needed. An export from a site that does not meet this is still a complete
+ * backup, so these are warnings and never stop the export.
  *
  * @since 2.1.1
  * @return string[] Warning messages; empty when the archive can be imported.
@@ -690,10 +726,6 @@ function esse_get_import_requirement_warnings(): array {
 	$filesystem = esse_get_filesystem();
 	if ( ! is_wp_error( $filesystem ) && ! $filesystem->exists( ABSPATH . 'wp-config.php' ) ) {
 		$warnings[] = __( 'This site keeps wp-config.php outside the WordPress directory, so the file is not part of the export. The EngineScript importer needs wp-config.php in the export.', 'enginescript-site-exporter' );
-	}
-
-	if ( ! defined( 'WP_HOME' ) && ! defined( 'WP_SITEURL' ) ) {
-		$warnings[] = __( 'Neither WP_HOME nor WP_SITEURL is defined in wp-config.php. The EngineScript importer reads the site address from one of them.', 'enginescript-site-exporter' );
 	}
 
 	return $warnings;
