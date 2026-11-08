@@ -134,7 +134,9 @@ Database records older than seven days are removed when housekeeping, recovery, 
 
 ### What does the EngineScript importer need from an export?
 
-EngineScript's `vhost-import.sh` finds the site through a `wp-config.php` inside the files archive and reads the site address from `WP_HOME` or `WP_SITEURL` in that file. An export from a site that keeps `wp-config.php` above the WordPress directory, or that defines neither constant, is still a complete backup, but the importer stops on it. The exporter page warns when either is the case. For reference, `manifest.txt` also records `home_url`, `site_url`, `table_prefix`, and `wp_config_in_archive`.
+EngineScript's `vhost-import.sh` finds the site through a `wp-config.php` inside the files archive. An export from a site that keeps `wp-config.php` above the WordPress directory is still a complete backup, but the importer stops on it, and the exporter page warns about it. `manifest.txt` also records `home_url`, `site_url`, `table_prefix`, and `wp_config_in_archive`. `home_url` and `site_url` are the addresses stored in the `home` and `siteurl` options (`WP_HOME` and `WP_SITEURL` when `wp-config.php` defines them), and the importer reads the site address and table prefix from the manifest, so neither constant is needed.
+
+EngineScript only hosts sites at the root of their domain, such as `https://example.com`. A site with a path in its Site Address or WordPress Address, such as a site in `/blog` or WordPress in its own `/wp` folder, cannot be exported: the exporter page shows an error in place of the export form. A site at `www.example.com` can be exported, and EngineScript's importer offers to move it to `example.com` or to keep `www`.
 
 ### Can I use this plugin with non-EngineScript servers?
 

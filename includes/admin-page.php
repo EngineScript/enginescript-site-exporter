@@ -482,6 +482,22 @@ function esse_render_import_requirement_warnings(): void {
 }
 
 /**
+ * Renders why this site cannot be exported, in place of the export form.
+ *
+ * @since 2.1.3
+ * @param string $message Error message from esse_get_site_layout_error().
+ */
+function esse_render_site_layout_error( string $message ): void {
+	wp_admin_notice(
+		esc_html( $message ),
+		[
+			'type'               => 'error',
+			'additional_classes' => [ 'inline' ],
+		]
+	);
+}
+
+/**
  * Renders the exporter page HTML interface.
  *
  * @since 1.0.0
@@ -507,6 +523,10 @@ function esse_exporter_page_html(): void {
 		<?php esse_render_import_requirement_warnings(); ?>
 		<?php esse_render_export_archive_list(); ?>
 		<h2><?php esc_html_e( 'Create an export', 'enginescript-site-exporter' ); ?></h2>
+		<?php $layout_error = esse_get_site_layout_error(); ?>
+		<?php if ( null !== $layout_error ) : ?>
+			<?php esse_render_site_layout_error( $layout_error ); ?>
+		<?php else : ?>
 		<p><?php esc_html_e( 'Click the button below to generate an EngineScript-compatible site archive containing your WordPress files and the database.', 'enginescript-site-exporter' ); ?></p>
 		<p><strong><?php esc_html_e( 'Warning:', 'enginescript-site-exporter' ); ?></strong> <?php esc_html_e( 'This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time.', 'enginescript-site-exporter' ); ?></p>
 		<p class="sse-section-spacing">
@@ -551,6 +571,7 @@ function esse_exporter_page_html(): void {
 			<?php submit_button( __( 'Export Site', 'enginescript-site-exporter' ) ); ?>
 			<p class="sse-export-status" role="status"></p>
 		</form>
+		<?php endif; ?>
 		<?php esse_render_activity_records(); ?>
 		<hr>
 		<p>

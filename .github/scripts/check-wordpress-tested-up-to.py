@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 
 WORDPRESS_LATEST_VERSION = os.environ.get("WORDPRESS_LATEST_VERSION")
 WORDPRESS_VERSION_CHECK_FILE = Path("wordpress-version-check.json")
-METADATA_PATHS = {Path("enginescript-site-exporter.php"), Path("readme.txt")}
+# Only readme.txt: Plugin Check (2.2 and later) refuses "Tested up to" in the plugin header
+METADATA_PATHS = {Path("readme.txt")}
 DEFAULT_EXCLUDED_DIRS = {
     ".git",
     "build",

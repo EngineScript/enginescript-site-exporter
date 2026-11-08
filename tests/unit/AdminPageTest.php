@@ -234,13 +234,31 @@ final class AdminPageTest extends SseTestCase {
 	 */
 	public function test_import_requirement_warnings(): void {
 		$warnings = esse_get_import_requirement_warnings();
-		$this->assertCount( 2, $warnings, 'This suite has no wp-config.php and defines neither address constant.' );
+		$this->assertCount( 1, $warnings, 'This suite has no wp-config.php; the address constants are no longer needed.' );
 
 		$shown = $this->texts( $this->page(), '//div[contains(@class, "notice-warning")]/p' );
 		foreach ( $warnings as $warning ) {
 			$this->assertContains( $warning, $shown );
 		}
 		$this->assertContains( 'You can still create the export, and it remains a complete backup. Importing it with EngineScript will stop until this is corrected.', $shown );
+	}
+
+	/**
+	 * A site in a subfolder gets an error in place of the export form.
+	 *
+	 * @return void
+	 */
+	public function test_subfolder_site_gets_an_error_instead_of_the_form(): void {
+		update_option( 'home', 'https://example.com' );
+		update_option( 'siteurl', 'https://example.com' );
+		$this->assertCount( 1, $this->page()->query( '//form[contains(@class, "sse-export-form")]' ) );
+
+		update_option( 'home', 'https://example.com/blog' );
+		update_option( 'siteurl', 'https://example.com/blog' );
+		$page = $this->page();
+
+		$this->assertCount( 0, $page->query( '//form[contains(@class, "sse-export-form")]' ) );
+		$this->assertContains( esse_get_site_layout_error(), $this->texts( $page, '//div[contains(@class, "notice-error")]/p' ) );
 	}
 
 	/**

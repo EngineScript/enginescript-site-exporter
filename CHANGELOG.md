@@ -6,9 +6,16 @@ see the current README and Security Policy for supported behavior and guidance.
 
 ## 2.1.3 - Unreleased
 
+### Fixes
+
+- **Stored Site Addresses in the Manifest**: `manifest.txt` now records the addresses stored in the `home` and `siteurl` options (`WP_HOME` and `WP_SITEURL` when `wp-config.php` defines them) as `home_url` and `site_url`, as EngineScript's own exports do. Before, it recorded `home_url()` and `site_url()`, which take the scheme of the admin page (`https` on an HTTPS admin page even when the stored address is `http`, and `http` when WordPress does not detect HTTPS) and pass through plugin filters such as those of multilingual plugins. EngineScript's importer now reads the site address and table prefix from these lines and moves the database's URLs from the stored address.
+- **Address Constant Warning Removed**: The exporter page no longer warns when neither `WP_HOME` nor `WP_SITEURL` is defined, because EngineScript's importer reads the site address from `manifest.txt`. The warning about `wp-config.php` outside the WordPress directory stays.
+- **Subfolder Sites Not Exported**: A site whose Site Address or WordPress Address has a path, such as a site in `/blog` or WordPress in its own `/wp` folder, is no longer exported. EngineScript only hosts sites at the root of their domain and its importer stops on such archives, so the exporter page shows an error, with both addresses, in place of the export form, and an export request is refused with the same error.
+
 ### Compatibility
 
 - **Minimum WordPress 7.0**: Raise the minimum WordPress version to 7.0, the version Jetpack requires.
+- **Tested Up To in the Readme Only**: The plugin header no longer declares "Tested up to"; `readme.txt` does. Plugin Check 2.2 refuses the field in the plugin header, because two copies can drift apart.
 - **Minimum PHP 8.3**: Raise the minimum PHP version from 8.2 to 8.3. PHP 8.2 reaches end of life on December 31, 2026, and EngineScript servers no longer support it. A site on PHP 8.2 keeps its current version of the plugin until it moves to PHP 8.3 or newer. The tests cover PHP 8.3 to 8.5.
 
 ### Architecture

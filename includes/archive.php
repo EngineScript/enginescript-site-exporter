@@ -521,9 +521,12 @@ function esse_write_engine_script_manifest( array $bundle_paths, string $site_id
  */
 function esse_get_engine_script_manifest_site_lines( bool $has_wp_config ): string {
 	$database = esse_get_wordpress_database();
-	$values   = [
-		'home_url'             => home_url(),
-		'site_url'             => site_url(),
+	// The stored addresses (WP_HOME and WP_SITEURL when wp-config.php defines them): the importer
+	// moves the URLs in the database from these. home_url() and site_url() can differ from them,
+	// because they take the scheme of the current request and pass through plugin filters.
+	$values = [
+		'home_url'             => esse_normalize_string_value( get_option( 'home' ) ),
+		'site_url'             => esse_normalize_string_value( get_option( 'siteurl' ) ),
 		'table_prefix'         => $database->prefix ?? '',
 		'wp_config_in_archive' => $has_wp_config ? 'yes' : 'no',
 	];

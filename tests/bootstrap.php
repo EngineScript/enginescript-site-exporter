@@ -472,6 +472,17 @@ function trailingslashit( $value ) {
 }
 
 /**
+ * Parse a URL, or one of its parts.
+ *
+ * @param string $url       URL.
+ * @param int    $component PHP_URL_* constant, or -1 for every part.
+ * @return mixed
+ */
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( (string) $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- the stand-in for wp_parse_url().
+}
+
+/**
  * Normalize a path the way WordPress does: forward slashes, no doubled
  * slashes, and an upper-case drive letter.
  *
