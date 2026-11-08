@@ -15,6 +15,7 @@ see the current README and Security Policy for supported behavior and guidance.
 ### Compatibility
 
 - **Minimum WordPress 7.0**: Raise the minimum WordPress version to 7.0, the version Jetpack requires.
+- **Tested Up To in the Readme Only**: The plugin header no longer declares "Tested up to"; `readme.txt` does. Plugin Check 2.2 refuses the field in the plugin header, because two copies can drift apart.
 - **Minimum PHP 8.3**: Raise the minimum PHP version from 8.2 to 8.3. PHP 8.2 reaches end of life on December 31, 2026, and EngineScript servers no longer support it. A site on PHP 8.2 keeps its current version of the plugin until it moves to PHP 8.3 or newer. The tests cover PHP 8.3 to 8.5.
 
 ### Architecture

@@ -5,7 +5,6 @@
  * Version: 2.1.2
  * Author: EngineScript
  * Requires at least: 7.0
- * Tested up to: 7.1
  * Requires PHP: 8.3
  * Network: true
  * License: GPL-3.0-or-later
