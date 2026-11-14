@@ -9,6 +9,12 @@
  */
 
 // Prevent direct execution of this component.
+/**
+ * Psalm 7.5 reads this guard as already decided by the main plugin file's own check;
+ * it still stops a direct request to this file.
+ *
+ * @psalm-suppress RedundantCondition, ParadoxicalCondition
+ */
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
