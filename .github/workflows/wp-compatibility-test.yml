@@ -1660,6 +1660,9 @@ jobs:
           # The WordPress test library still calls PHPUnit APIs removed in PHPUnit 10+.
           # Keep this generated integration-test job on PHPUnit 9.6 while the rest
           # of the project can continue using newer Composer-resolved QA tooling.
+          # This job does not run Psalm, and Psalm 7.4+ requires psalm/plugin-phpunit, whose
+          # 1.x releases conflict with PHPUnit below 11: remove Psalm first.
+          composer remove --dev vimeo/psalm --no-interaction --no-progress
           if [ "${{ matrix.dependency-versions }}" = "lowest" ]; then
             composer require --dev phpunit/phpunit:"^9.6" yoast/phpunit-polyfills:"^4.0" --with-all-dependencies --prefer-lowest --no-progress
           else

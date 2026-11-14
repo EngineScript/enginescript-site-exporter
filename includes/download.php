@@ -6,6 +6,12 @@
  */
 
 // Prevent direct execution of this component.
+/**
+ * Psalm 7.5 reads this guard as already decided by the main plugin file's own check;
+ * it still stops a direct request to this file.
+ *
+ * @psalm-suppress RedundantCondition, ParadoxicalCondition
+ */
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -17,8 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 function esse_handle_secure_download(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
-	$filename        = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_text_field( (string) wp_unslash( $_GET['file'] ) ) : '';
-	$export_dir_name = isset( $_GET['export_dir'] ) && is_string( $_GET['export_dir'] ) ? sanitize_text_field( (string) wp_unslash( $_GET['export_dir'] ) ) : '';
+	$filename        = isset( $_GET['file'] ) && is_string( $_GET['file'] ) ? sanitize_text_field( wp_unslash( $_GET['file'] ) ) : '';
+	$export_dir_name = isset( $_GET['export_dir'] ) && is_string( $_GET['export_dir'] ) ? sanitize_text_field( wp_unslash( $_GET['export_dir'] ) ) : '';
 	if ( '' === $filename || '' === $export_dir_name ) {
 		esse_wp_die( __( 'Invalid download request.', 'enginescript-site-exporter' ), 400 );
 	}
@@ -54,8 +60,8 @@ function esse_handle_secure_download(): void {
  */
 function esse_handle_export_deletion(): void {
 	// The values are only unslashed and cleaned here. The anchored name patterns and the resolved-path check below are the control.
-	$filename        = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['file'] ) ) : '';
-	$export_dir_name = isset( $_POST['export_dir'] ) && is_string( $_POST['export_dir'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['export_dir'] ) ) : '';
+	$filename        = isset( $_POST['file'] ) && is_string( $_POST['file'] ) ? sanitize_text_field( wp_unslash( $_POST['file'] ) ) : '';
+	$export_dir_name = isset( $_POST['export_dir'] ) && is_string( $_POST['export_dir'] ) ? sanitize_text_field( wp_unslash( $_POST['export_dir'] ) ) : '';
 	if ( '' === $filename || '' === $export_dir_name ) {
 		esse_wp_die( __( 'Invalid deletion request.', 'enginescript-site-exporter' ), 400 );
 	}

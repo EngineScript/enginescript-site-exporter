@@ -6,6 +6,12 @@
  */
 
 // Prevent direct execution of this component.
+/**
+ * Psalm 7.5 reads this guard as already decided by the main plugin file's own check;
+ * it still stops a direct request to this file.
+ *
+ * @psalm-suppress RedundantCondition, ParadoxicalCondition
+ */
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -658,7 +664,7 @@ function esse_validate_exported_database_file( array $database_file ): true|WP_E
  * @return int|false Selected per-file size limit in bytes when the request is valid, false otherwise.
  */
 function esse_validate_export_request(): int|false {
-	$post_action = isset( $_POST['action'] ) && is_string( $_POST['action'] ) ? sanitize_key( (string) wp_unslash( $_POST['action'] ) ) : '';
+	$post_action = isset( $_POST['action'] ) && is_string( $_POST['action'] ) ? sanitize_key( wp_unslash( $_POST['action'] ) ) : '';
 	if ( 'sse_export_site' !== $post_action ) {
 		return false;
 	}
@@ -670,7 +676,7 @@ function esse_validate_export_request(): int|false {
 	}
 
 	// Accept only a size that the form offers; anything else means no limit.
-	$requested_size = isset( $_POST['sse_max_file_size'] ) && is_string( $_POST['sse_max_file_size'] ) ? sanitize_text_field( (string) wp_unslash( $_POST['sse_max_file_size'] ) ) : '';
+	$requested_size = isset( $_POST['sse_max_file_size'] ) && is_string( $_POST['sse_max_file_size'] ) ? sanitize_text_field( wp_unslash( $_POST['sse_max_file_size'] ) ) : '';
 	foreach ( array_keys( esse_get_export_file_size_options() ) as $offered_size ) {
 		if ( (string) $offered_size === $requested_size ) {
 			return $offered_size;

@@ -16,4 +16,15 @@
         <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
         <file name="stubs/psalm-wordpress-constants.php" />
     </stubs>
+
+    <issueHandlers>
+        <!-- Psalm 7 rejects some docblocks in the WordPress stubs (php-stubs/wordpress-stubs).
+             That file only describes WordPress to the analysers; this plugin's own code is
+             still checked for every docblock. -->
+        <InvalidDocblock>
+            <errorLevel type="suppress">
+                <file name="vendor/php-stubs/wordpress-stubs/wordpress-stubs.php" />
+            </errorLevel>
+        </InvalidDocblock>
+    </issueHandlers>
 </psalm>

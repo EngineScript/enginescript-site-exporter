@@ -9,15 +9,15 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-11-07T01:11:27+00:00\n"
+"POT-Creation-Date: 2026-11-14T08:40:53+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: enginescript-site-exporter\n"
 
 #. Plugin Name of the plugin
 #: enginescript-site-exporter.php
-#: includes/admin-page.php:49
-#: includes/admin-page.php:70
+#: includes/admin-page.php:55
+#: includes/admin-page.php:76
 msgid "EngineScript Site Exporter"
 msgstr ""
 
@@ -31,21 +31,21 @@ msgstr ""
 msgid "EngineScript"
 msgstr ""
 
-#: includes/admin-page.php:50
-#: includes/admin-page.php:71
+#: includes/admin-page.php:56
+#: includes/admin-page.php:77
 msgid "Site Exporter"
 msgstr ""
 
-#: includes/admin-page.php:175
+#: includes/admin-page.php:181
 msgid "Site export successfully created!"
 msgstr ""
 
-#: includes/admin-page.php:179
+#: includes/admin-page.php:185
 msgid "Download it from the list of available exports on this page."
 msgstr ""
 
 #. translators: %s: number of files or directories
-#: includes/admin-page.php:204
+#: includes/admin-page.php:210
 #, php-format
 msgid "%s unreadable file or directory"
 msgid_plural "%s unreadable files or directories"
@@ -53,7 +53,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of symbolic links
-#: includes/admin-page.php:208
+#: includes/admin-page.php:214
 #, php-format
 msgid "%s symbolic link"
 msgid_plural "%s symbolic links"
@@ -61,7 +61,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of special files
-#: includes/admin-page.php:212
+#: includes/admin-page.php:218
 #, php-format
 msgid "%s special file such as a socket or named pipe"
 msgid_plural "%s special files such as sockets or named pipes"
@@ -69,7 +69,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: number of files
-#: includes/admin-page.php:216
+#: includes/admin-page.php:222
 #, php-format
 msgid "%s file over the size limit"
 msgid_plural "%s files over the size limit"
@@ -77,12 +77,12 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %l: list of counted entries, for example "2 symbolic links and 1 file over the size limit"
-#: includes/admin-page.php:222
+#: includes/admin-page.php:228
 msgid "Left out of the export: %l."
 msgstr ""
 
 #. translators: %s: number of files
-#: includes/admin-page.php:226
+#: includes/admin-page.php:232
 #, php-format
 msgid "%s file changed while it was read and may be incomplete in the export."
 msgid_plural "%s files changed while they were read and may be incomplete in the export."
@@ -90,578 +90,578 @@ msgstr[0] ""
 msgstr[1] ""
 
 #. translators: %s: archive file name
-#: includes/admin-page.php:297
+#: includes/admin-page.php:303
 #, php-format
 msgid "Download %s"
 msgstr ""
 
 #. translators: %s: archive file name
-#: includes/admin-page.php:299
+#: includes/admin-page.php:305
 #, php-format
 msgid "Delete %s"
 msgstr ""
 
-#: includes/admin-page.php:303
+#: includes/admin-page.php:309
 msgid "Download Export File"
 msgstr ""
 
-#: includes/admin-page.php:309
+#: includes/admin-page.php:315
 msgid "Are you sure you want to delete this export file?"
 msgstr ""
 
-#: includes/admin-page.php:316
+#: includes/admin-page.php:322
 msgid "Delete Export File"
 msgstr ""
 
-#: includes/admin-page.php:332
+#: includes/admin-page.php:338
 msgid "Available exports"
 msgstr ""
 
-#: includes/admin-page.php:334
+#: includes/admin-page.php:340
 msgid "No exports are available. A finished export is listed here until it is deleted."
 msgstr ""
 
-#: includes/admin-page.php:337
+#: includes/admin-page.php:343
 msgid "Exports that can be downloaded or deleted"
 msgstr ""
 
-#: includes/admin-page.php:340
+#: includes/admin-page.php:346
 msgid "File"
 msgstr ""
 
-#: includes/admin-page.php:341
+#: includes/admin-page.php:347
 msgid "Size"
 msgstr ""
 
-#: includes/admin-page.php:342
+#: includes/admin-page.php:348
 msgid "Created"
 msgstr ""
 
-#: includes/admin-page.php:343
+#: includes/admin-page.php:349
 msgid "Actions"
 msgstr ""
 
-#: includes/admin-page.php:370
+#: includes/admin-page.php:376
 msgid "System"
 msgstr ""
 
 #. translators: %d: user ID
-#: includes/admin-page.php:379
+#: includes/admin-page.php:385
 #, php-format
 msgid "User %d (no longer exists)"
 msgstr ""
 
-#: includes/admin-page.php:391
+#: includes/admin-page.php:397
 msgid "Activity"
 msgstr ""
 
-#: includes/admin-page.php:392
+#: includes/admin-page.php:398
 msgid "Error"
 msgstr ""
 
-#: includes/admin-page.php:393
+#: includes/admin-page.php:399
 msgid "Security"
 msgstr ""
 
-#: includes/admin-page.php:408
+#: includes/admin-page.php:414
 msgid "Recent activity"
 msgstr ""
 
-#: includes/admin-page.php:409
+#: includes/admin-page.php:415
 msgid "Up to 20 exports, downloads, deletions, errors, and security events from the last seven days, newest first."
 msgstr ""
 
-#: includes/admin-page.php:411
+#: includes/admin-page.php:417
 msgid "No activity has been recorded."
 msgstr ""
 
-#: includes/admin-page.php:414
+#: includes/admin-page.php:420
 msgid "Recent exporter activity"
 msgstr ""
 
-#: includes/admin-page.php:417
+#: includes/admin-page.php:423
 msgid "Time"
 msgstr ""
 
-#: includes/admin-page.php:418
+#: includes/admin-page.php:424
 msgid "User"
 msgstr ""
 
-#: includes/admin-page.php:419
+#: includes/admin-page.php:425
 msgid "Type"
 msgstr ""
 
-#: includes/admin-page.php:420
+#: includes/admin-page.php:426
 msgid "Details"
 msgstr ""
 
-#: includes/admin-page.php:449
+#: includes/admin-page.php:455
 msgid "This page is not served over HTTPS. A downloaded export travels unencrypted, and it contains the whole database and wp-config.php."
 msgstr ""
 
-#: includes/admin-page.php:471
+#: includes/admin-page.php:477
 msgid "You can still create the export, and it remains a complete backup. Importing it with EngineScript will stop until this is corrected."
 msgstr ""
 
-#: includes/admin-page.php:507
+#: includes/admin-page.php:513
 msgid "You do not have permission to view this page."
 msgstr ""
 
-#: includes/admin-page.php:525
+#: includes/admin-page.php:531
 msgid "Create an export"
 msgstr ""
 
-#: includes/admin-page.php:530
+#: includes/admin-page.php:536
 msgid "Click the button below to generate an EngineScript-compatible site archive containing your WordPress files and the database."
 msgstr ""
 
-#: includes/admin-page.php:531
+#: includes/admin-page.php:537
 msgid "Warning:"
 msgstr ""
 
-#: includes/admin-page.php:531
+#: includes/admin-page.php:537
 msgid "This can take a long time and consume significant server resources, especially on large sites. Ensure your server has sufficient disk space and execution time."
 msgstr ""
 
 #. translators: %s: directory path.
-#: includes/admin-page.php:537
+#: includes/admin-page.php:543
 #, php-format
 msgid "Exports are stored in this private server directory: %s"
 msgstr ""
 
-#: includes/admin-page.php:546
+#: includes/admin-page.php:552
 msgid "The export is running. This can take several minutes. Keep this page open; it reloads when the export has finished."
 msgstr ""
 
-#: includes/admin-page.php:555
+#: includes/admin-page.php:561
 msgid "Maximum File Size"
 msgstr ""
 
-#: includes/admin-page.php:564
+#: includes/admin-page.php:570
 msgid "Files larger than this size are excluded. \"No per-file limit\" removes this size filter, but other exclusions and overall export limits still apply."
 msgstr ""
 
-#: includes/admin-page.php:571
+#: includes/admin-page.php:577
 msgid "Export Site"
 msgstr ""
 
-#: includes/admin-page.php:578
+#: includes/admin-page.php:584
 msgid "This plugin is part of the EngineScript project."
 msgstr ""
 
-#: includes/admin-page.php:580
+#: includes/admin-page.php:586
 msgid "Visit the EngineScript GitHub page"
 msgstr ""
 
-#: includes/admin-page.php:581
+#: includes/admin-page.php:587
 msgid "(opens in a new tab)"
 msgstr ""
 
-#: includes/admin-page.php:585
+#: includes/admin-page.php:591
 msgid "Security Notice:"
 msgstr ""
 
-#: includes/admin-page.php:586
+#: includes/admin-page.php:592
 msgid "An export contains the whole site: its files and its database, including password hashes and wp-config.php. Only administrators who can open this page can create or download one. Each export is scheduled for deletion 5 minutes after it is created. Deletion can be delayed if WordPress cron does not run, so download the export promptly and delete it when you are finished."
 msgstr ""
 
-#: includes/archive.php:116
+#: includes/archive.php:122
 msgid "Your server does not provide ZipArchive. Enable the PHP ZIP extension to create an export."
 msgstr ""
 
-#: includes/archive.php:120
+#: includes/archive.php:126
 msgid "Your server does not provide gzip support. Enable the PHP zlib extension to create an export."
 msgstr ""
 
-#: includes/archive.php:125
+#: includes/archive.php:131
 msgid "Your server has disabled the PHP disk_free_space() function. Enable it to create an export."
 msgstr ""
 
-#: includes/archive.php:140
+#: includes/archive.php:146
 msgid "Exports require a 64-bit PHP runtime."
 msgstr ""
 
-#: includes/archive.php:247
+#: includes/archive.php:253
 msgid "Could not create the staging directories for the export."
 msgstr ""
 
-#: includes/archive.php:262
+#: includes/archive.php:268
 msgid "Could not verify the size of the generated export."
 msgstr ""
 
-#: includes/archive.php:278
-#: includes/archive.php:300
-#: includes/archive.php:326
-#: includes/export.php:321
-#: includes/export.php:386
+#: includes/archive.php:284
+#: includes/archive.php:306
+#: includes/archive.php:332
+#: includes/export.php:327
+#: includes/export.php:392
 msgid "The generated export exceeds the configured aggregate size limit."
 msgstr ""
 
-#: includes/archive.php:350
+#: includes/archive.php:356
 msgid "Could not compress the database dump."
 msgstr ""
 
-#: includes/archive.php:379
+#: includes/archive.php:385
 msgid "Could not open the database dump for compression."
 msgstr ""
 
-#: includes/archive.php:386
+#: includes/archive.php:392
 msgid "Could not create the compressed database file."
 msgstr ""
 
-#: includes/archive.php:399
+#: includes/archive.php:405
 msgid "The compressed database file was not created."
 msgstr ""
 
-#: includes/archive.php:404
+#: includes/archive.php:410
 msgid "Could not secure the permissions of the compressed database file."
 msgstr ""
 
-#: includes/archive.php:437
-#: includes/archive.php:452
-#: includes/archive.php:850
+#: includes/archive.php:443
+#: includes/archive.php:458
+#: includes/archive.php:856
 msgid "The WordPress files archive was not created."
 msgstr ""
 
-#: includes/archive.php:443
-#: includes/archive.php:457
+#: includes/archive.php:449
+#: includes/archive.php:463
 msgid "Could not secure the permissions of the files archive."
 msgstr ""
 
-#: includes/archive.php:500
+#: includes/archive.php:506
 msgid "Could not write the EngineScript export manifest."
 msgstr ""
 
-#: includes/archive.php:504
+#: includes/archive.php:510
 msgid "Could not secure the permissions of the EngineScript export manifest."
 msgstr ""
 
-#: includes/archive.php:583
-#: includes/archive.php:586
+#: includes/archive.php:589
+#: includes/archive.php:592
 msgid "Could not add the EngineScript directories to the ZIP archive."
 msgstr ""
 
-#: includes/archive.php:596
+#: includes/archive.php:602
 msgid "Could not add an EngineScript payload file to the ZIP archive."
 msgstr ""
 
-#: includes/archive.php:600
+#: includes/archive.php:606
 msgid "Could not store an EngineScript payload file in the ZIP archive without recompression."
 msgstr ""
 
-#: includes/archive.php:647
+#: includes/archive.php:653
 msgid "Could not finalize or save the ZIP archive."
 msgstr ""
 
-#: includes/archive.php:652
+#: includes/archive.php:658
 msgid "Could not secure the permissions of the ZIP archive."
 msgstr ""
 
 #. translators: %s: ZIP file name.
-#: includes/archive.php:691
+#: includes/archive.php:697
 #, php-format
 msgid "Could not create the ZIP file %s."
 msgstr ""
 
 #. translators: %s: error message
-#: includes/archive.php:843
+#: includes/archive.php:849
 #, php-format
 msgid "The files archive could not be completed: %s"
 msgstr ""
 
 #. translators: %s: file path
-#: includes/archive.php:1195
+#: includes/archive.php:1201
 #, php-format
 msgid "Could not add a file to the archive: %s"
 msgstr ""
 
-#: includes/cleanup.php:99
+#: includes/cleanup.php:105
 msgid "The recovery of an interrupted export could not be scheduled, so the export was not started."
 msgstr ""
 
-#: includes/download.php:23
+#: includes/download.php:29
 msgid "Invalid download request."
 msgstr ""
 
-#: includes/download.php:32
+#: includes/download.php:38
 msgid "You do not have permission to download export files."
 msgstr ""
 
-#: includes/download.php:44
+#: includes/download.php:50
 msgid "You can download one export per minute. Please wait before trying again."
 msgstr ""
 
-#: includes/download.php:60
+#: includes/download.php:66
 msgid "Invalid deletion request."
 msgstr ""
 
-#: includes/download.php:69
+#: includes/download.php:75
 msgid "You do not have permission to delete export files."
 msgstr ""
 
-#: includes/download.php:85
+#: includes/download.php:91
 msgid "Export file successfully deleted."
 msgstr ""
 
-#: includes/download.php:95
+#: includes/download.php:101
 msgid "Could not delete the export file."
 msgstr ""
 
-#: includes/download.php:166
+#: includes/download.php:172
 msgid "Access denied: invalid file type."
 msgstr ""
 
-#: includes/download.php:180
+#: includes/download.php:186
 msgid "Access denied."
 msgstr ""
 
-#: includes/download.php:216
-#: includes/download.php:259
-#: includes/download.php:264
-#: includes/download.php:269
+#: includes/download.php:222
+#: includes/download.php:265
+#: includes/download.php:270
+#: includes/download.php:275
 msgid "Could not serve the file download."
 msgstr ""
 
-#: includes/download.php:223
-#: includes/download.php:239
+#: includes/download.php:229
+#: includes/download.php:245
 msgid "The export file changed before the download and was not served."
 msgstr ""
 
-#: includes/export.php:34
+#: includes/export.php:40
 msgid "No per-file limit"
 msgstr ""
 
-#: includes/export.php:35
+#: includes/export.php:41
 msgid "100 MiB"
 msgstr ""
 
-#: includes/export.php:36
+#: includes/export.php:42
 msgid "500 MiB"
 msgstr ""
 
-#: includes/export.php:37
+#: includes/export.php:43
 msgid "1 GiB"
 msgstr ""
 
-#: includes/export.php:290
-#: includes/export.php:375
-#: includes/export.php:403
-#: includes/export.php:434
+#: includes/export.php:296
+#: includes/export.php:381
+#: includes/export.php:409
+#: includes/export.php:440
 msgid "The resource accounting of the export was not initialized."
 msgstr ""
 
-#: includes/export.php:296
+#: includes/export.php:302
 msgid "The export exceeded its configured processing time limit."
 msgstr ""
 
-#: includes/export.php:352
+#: includes/export.php:358
 msgid "The export stopped because its working directory was removed."
 msgstr ""
 
-#: includes/export.php:358
+#: includes/export.php:364
 msgid "The export stopped because the filesystem does not have enough free space."
 msgstr ""
 
-#: includes/export.php:409
+#: includes/export.php:415
 msgid "The export contains more files and directories than the configured limit allows."
 msgstr ""
 
-#: includes/export.php:414
+#: includes/export.php:420
 msgid "The export source exceeds the configured aggregate size limit."
 msgstr ""
 
-#: includes/export.php:549
-#: includes/lease.php:308
-#: includes/lease.php:342
+#: includes/export.php:555
+#: includes/lease.php:314
 #: includes/lease.php:348
-#: includes/lease.php:601
-#: includes/lease.php:619
-#: includes/lease.php:628
-#: includes/lease.php:651
+#: includes/lease.php:354
+#: includes/lease.php:607
+#: includes/lease.php:625
+#: includes/lease.php:634
+#: includes/lease.php:657
 msgid "The export lost its lock, so it was stopped."
 msgstr ""
 
-#: includes/export.php:669
+#: includes/export.php:675
 msgid "You do not have permission to perform this action."
 msgstr ""
 
 #. translators: 1: Site Address (URL) setting, 2: WordPress Address (URL) setting.
-#: includes/export.php:703
+#: includes/export.php:709
 #, php-format
 msgid "This site cannot be exported. EngineScript only hosts sites at the root of their domain, such as https://example.com. It does not support sites in a subfolder (such as /blog), or WordPress in its own folder (such as /wp). Site Address: %1$s. WordPress Address: %2$s."
 msgstr ""
 
-#: includes/export.php:728
+#: includes/export.php:734
 msgid "This site keeps wp-config.php outside the WordPress directory, so the file is not part of the export. The EngineScript importer needs wp-config.php in the export."
 msgstr ""
 
-#: includes/export.php:783
+#: includes/export.php:789
 msgid "The temporary directory is inside a web-served directory, so an export cannot be stored there safely. Define WP_TEMP_DIR in wp-config.php as a private, writable directory outside the web root, then try again."
 msgstr ""
 
-#: includes/export.php:793
+#: includes/export.php:799
 msgid "The export directory is inside a web-served directory. Define WP_TEMP_DIR in wp-config.php as a private, writable directory outside the web root, then try again."
 msgstr ""
 
-#: includes/export.php:810
+#: includes/export.php:816
 msgid "The export directory is not writable. Please adjust filesystem permissions."
 msgstr ""
 
-#: includes/export.php:836
+#: includes/export.php:842
 msgid "The export directory is a symbolic link and cannot be used safely."
 msgstr ""
 
-#: includes/export.php:842
+#: includes/export.php:848
 msgid "Could not create the export directory. Please verify filesystem permissions."
 msgstr ""
 
-#: includes/export.php:850
+#: includes/export.php:856
 msgid "The export directory exists but is not a safe private directory."
 msgstr ""
 
-#: includes/export.php:855
+#: includes/export.php:861
 msgid "Could not secure the export directory permissions."
 msgstr ""
 
-#: includes/export.php:894
+#: includes/export.php:900
 msgid "Could not create a safe private export directory."
 msgstr ""
 
-#: includes/export.php:900
+#: includes/export.php:906
 msgid "Could not secure the private export directory permissions."
 msgstr ""
 
-#: includes/export.php:906
+#: includes/export.php:912
 msgid "Could not create a private export directory. Please verify filesystem permissions."
 msgstr ""
 
-#: includes/export.php:1009
+#: includes/export.php:1015
 msgid "WP-CLI could not create the database export."
 msgstr ""
 
-#: includes/export.php:1014
+#: includes/export.php:1020
 msgid "Could not secure the permissions of the database export file."
 msgstr ""
 
-#: includes/helpers.php:363
+#: includes/helpers.php:369
 msgid "Could not determine a private temporary directory for exports."
 msgstr ""
 
-#: includes/helpers.php:647
+#: includes/helpers.php:653
 msgid "Could not initialize the WordPress Filesystem API."
 msgstr ""
 
-#: includes/helpers.php:653
+#: includes/helpers.php:659
 msgid "This server does not provide the direct filesystem access required for secure exports."
 msgstr ""
 
-#: includes/lease.php:75
-#: includes/lease.php:93
-#: includes/lease.php:132
-#: includes/lease.php:160
-#: includes/lease.php:165
-#: includes/lease.php:260
-#: includes/lease.php:461
-#: includes/lease.php:554
+#: includes/lease.php:81
+#: includes/lease.php:99
+#: includes/lease.php:138
+#: includes/lease.php:166
+#: includes/lease.php:171
+#: includes/lease.php:266
+#: includes/lease.php:467
+#: includes/lease.php:560
 msgid "The export state could not be verified, so the export was not started."
 msgstr ""
 
-#: includes/lease.php:212
+#: includes/lease.php:218
 msgid "The export state is inconsistent, so the export was not started."
 msgstr ""
 
-#: includes/lease.php:217
+#: includes/lease.php:223
 msgid "The export state is invalid, so the export was not started."
 msgstr ""
 
-#: includes/lease.php:266
+#: includes/lease.php:272
 msgid "The export state is busy or unavailable. Please try again."
 msgstr ""
 
-#: includes/lease.php:548
+#: includes/lease.php:554
 msgid "An export process is already running. Please wait for it to complete before starting a new one."
 msgstr ""
 
-#: includes/lease.php:612
+#: includes/lease.php:618
 msgid "The lock of the export expired, so the export was stopped."
 msgstr ""
 
-#: includes/process.php:50
+#: includes/process.php:56
 msgid "The WP-CLI executable was not found in a trusted system location. Install WP-CLI at /usr/local/bin/wp or /usr/bin/wp, or explicitly configure a trusted executable with SSE_WP_CLI_PATH or the sse_wp_cli_path filter."
 msgstr ""
 
-#: includes/process.php:85
+#: includes/process.php:91
 msgid "The configured WP-CLI path must be absolute."
 msgstr ""
 
-#: includes/process.php:90
-#: includes/process.php:99
+#: includes/process.php:96
+#: includes/process.php:105
 msgid "The WP-CLI executable was not found or is not executable."
 msgstr ""
 
-#: includes/process.php:103
+#: includes/process.php:109
 msgid "The WP-CLI executable has unsafe writable permissions."
 msgstr ""
 
-#: includes/process.php:107
+#: includes/process.php:113
 msgid "The ownership of the WP-CLI executable is not trusted."
 msgstr ""
 
-#: includes/process.php:111
+#: includes/process.php:117
 msgid "The WP-CLI executable is located below an untrusted writable directory."
 msgstr ""
 
-#: includes/process.php:160
+#: includes/process.php:166
 msgid "Could not verify the WP-CLI executable identity."
 msgstr ""
 
-#: includes/process.php:197
-#: includes/process.php:510
+#: includes/process.php:203
+#: includes/process.php:516
 msgid "Secure process execution is disabled on this server."
 msgstr ""
 
-#: includes/process.php:323
-#: includes/process.php:399
+#: includes/process.php:329
+#: includes/process.php:405
 msgid "The WP-CLI database export could not be stopped safely."
 msgstr ""
 
-#: includes/process.php:382
+#: includes/process.php:388
 msgid "Could not start the WP-CLI database export."
 msgstr ""
 
-#: includes/process.php:515
+#: includes/process.php:521
 msgid "WP-CLI changed after validation, so the export was stopped."
 msgstr ""
 
-#: includes/security.php:159
+#: includes/security.php:165
 msgid "The export file is not readable."
 msgstr ""
 
-#: includes/security.php:215
 #: includes/security.php:221
+#: includes/security.php:227
 msgid "Could not verify the identity of the export file."
 msgstr ""
 
-#: includes/security.php:236
+#: includes/security.php:242
 msgid "No file specified."
 msgstr ""
 
-#: includes/security.php:241
+#: includes/security.php:247
 msgid "Invalid filename."
 msgstr ""
 
-#: includes/security.php:246
+#: includes/security.php:252
 msgid "Invalid export file format."
 msgstr ""
 
-#: includes/security.php:262
+#: includes/security.php:268
 msgid "Invalid export directory."
 msgstr ""
 
-#: includes/security.php:304
+#: includes/security.php:310
 msgid "This export has expired or was deleted. Create a new export."
 msgstr ""
 
-#: includes/security.php:309
+#: includes/security.php:315
 msgid "Invalid file path."
 msgstr ""

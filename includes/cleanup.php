@@ -6,6 +6,12 @@
  */
 
 // Prevent direct execution of this component.
+/**
+ * Psalm 7.5 reads this guard as already decided by the main plugin file's own check;
+ * it still stops a direct request to this file.
+ *
+ * @psalm-suppress RedundantCondition, ParadoxicalCondition
+ */
 if ( ! defined( 'ABSPATH' ) ) {
 	return;
 }
@@ -294,13 +300,10 @@ function esse_uninstall_plugin(): void {
 			)
 		);
 
-		foreach ( $site_ids as $site_id ) {
-			if ( ! is_numeric( $site_id ) ) {
-				continue;
-			}
-
+		// Only numeric IDs, as integers.
+		foreach ( array_map( intval( ... ), array_filter( $site_ids, is_numeric( ... ) ) ) as $site_id ) {
 			// phpcs:ignore WordPressVIPMinimum.Functions.RestrictedFunctions.switch_to_blog_switch_to_blog -- Only the site's options and cron entries are removed; no code of that site has to load.
-			switch_to_blog( (int) $site_id );
+			switch_to_blog( $site_id );
 			delete_option( 'sse_error_logs' );
 			foreach ( esse_get_scheduled_hook_names() as $hook ) {
 				wp_unschedule_hook( $hook );
