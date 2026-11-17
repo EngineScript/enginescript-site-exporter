@@ -131,6 +131,7 @@ Released entries describe their historical versions, including earlier tool resu
 * **Architecture**: Downloads, deletions, and the archive list check each file name once, and every containment check uses one path comparison; what is accepted or refused is unchanged, and the checks against a file replaced during a download stay
 * **Architecture**: The HTTPS and importer warnings use WordPress's `wp_admin_notice()`, with unchanged markup; PHP 8 forms (`match`, `str_ends_with()`, arrow functions) replace older code
 * **Architecture**: Static analysis runs on Psalm 7; six redundant `(string)` casts of request values are removed. Behavior is unchanged
+* **Architecture**: The admin stylesheet follows WordPress's CSS coding standards; it looks the same
 
 = 2.1.2 =
 * **Architecture**: Request values and three WordPress return values are narrowed to their expected type before they are used; behavior is unchanged
