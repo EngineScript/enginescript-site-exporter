@@ -19,8 +19,18 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
+    # Propose a new release only after it has been out for 7 days, so a compromised
+    # release is usually found and pulled first. Security updates are not delayed.
+    cooldown:
+      default-days: 7
     # Create a group of updates for all actions
     groups:
+      # Security fixes arrive in a pull request of their own, apart from the weekly
+      # version updates. Needs Dependabot security updates on in the repository settings.
+      security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       actions:
         patterns:
           - "*"
@@ -40,8 +50,18 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
+    # Propose a new release only after it has been out for 7 days, so a compromised
+    # release is usually found and pulled first. Security updates are not delayed.
+    cooldown:
+      default-days: 7
     # Group updates by dependency type
     groups:
+      # Security fixes arrive in a pull request of their own, apart from the weekly
+      # version updates. Needs Dependabot security updates on in the repository settings.
+      security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       # Group all dev dependencies together
       dev-dependencies:
         dependency-type: "development"
@@ -68,8 +88,18 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
+    # Propose a new release only after it has been out for 7 days, so a compromised
+    # release is usually found and pulled first. Security updates are not delayed.
+    cooldown:
+      default-days: 7
     # Group all of the development tooling together
     groups:
+      # Security fixes arrive in a pull request of their own, apart from the weekly
+      # version updates. Needs Dependabot security updates on in the repository settings.
+      security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       dev-dependencies:
         dependency-type: "development"
     # Allow updates to all dependency types
@@ -88,6 +118,12 @@ updates:
       - dependency-name: "eslint-plugin-unicorn"
         update-types:
           - "version-update:semver-major"
+      # @wordpress/stylelint-config accepts Stylelint 17 at most. With Stylelint 18, "npm ls"
+      # reports an invalid tree and the lint job fails. Remove this entry when a release of
+      # the WordPress config supports Stylelint 18.
+      - dependency-name: "stylelint"
+        update-types:
+          - "version-update:semver-major"
 
   # Updates for the Python linters that the lint job installs
   - package-ecosystem: "pip"
@@ -104,8 +140,18 @@ updates:
       - "maintenance"
     # Limit the number of open PRs
     open-pull-requests-limit: 10
+    # Propose a new release only after it has been out for 7 days, so a compromised
+    # release is usually found and pulled first. Security updates are not delayed.
+    cooldown:
+      default-days: 7
     # Group all of the linters together
     groups:
+      # Security fixes arrive in a pull request of their own, apart from the weekly
+      # version updates. Needs Dependabot security updates on in the repository settings.
+      security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
       lint-tools:
         patterns:
           - "*"
