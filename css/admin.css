@@ -20,10 +20,11 @@
 /* Warning and security notice text. */
 .sse-warning-text {
 	color: #b32d2e;
-	font-weight: bold;
+	font-weight: 700;
 }
 
 @media (forced-colors: active) {
+
 	.sse-warning-text {
 		color: CanvasText;
 		forced-color-adjust: auto;

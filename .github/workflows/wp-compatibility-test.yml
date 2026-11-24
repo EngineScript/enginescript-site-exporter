@@ -1300,7 +1300,7 @@ jobs:
         id: install_npm_dependencies
         run: |
           npm ci --no-audit --no-fund
-          npm ls @wordpress/eslint-plugin eslint markdownlint-cli2 stylelint stylelint-config-standard
+          npm ls @wordpress/eslint-plugin @wordpress/stylelint-config eslint markdownlint-cli2 stylelint
 
       - name: Install Python linters
         id: install_python_linters

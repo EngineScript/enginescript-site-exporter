@@ -1,5 +1,5 @@
 {
-  "extends": "stylelint-config-standard",
+  "extends": "@wordpress/stylelint-config",
   "plugins": ["stylelint-no-unsupported-browser-features"],
   "rules": {
     "plugin/no-unsupported-browser-features": [true, { "severity": "error" }]
