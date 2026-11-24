@@ -30,6 +30,10 @@ coverage" fails when the suite covers less than 15% of the production lines. The
 2. If the stage is `run_unit_tests_with_coverage`, a unit test failed; fix the code or the test.
 3. If the stage is `check_line_coverage`, add unit tests for the new or changed code. The coverage report is in
    the job log and in the `wp-compat-unit-coverage` artifact.
-4. Re-run the workflow.
+4. If the stage is `upload_coverage`, Codacy did not receive the coverage report. Check that the
+   `CODACY_PROJECT_TOKEN` secret holds a current repository API token from Codacy (the repository's
+   Settings > API tokens; Codacy shows a new token once, and each one expires within a year), and
+   read the step's log for the reporter's error. The tests and the minimum coverage passed.
+5. Re-run the workflow.
 
 This issue was automatically created by the CI/CD pipeline.
