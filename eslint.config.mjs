@@ -1,15 +1,12 @@
 /**
  * ESLint configuration, without the WordPress JavaScript coding standards:
- * rules that keep the admin script and its tests on modern JavaScript, and a
- * check that the admin script uses only browser features that WordPress
- * supports.
+ * rules that keep the admin script and its tests on modern JavaScript.
  *
  * Codacy reads this file, but it does not install the WordPress ESLint plugin
- * (`@wordpress/eslint-plugin`).
- * eslint.wordpress.config.mjs adds the WordPress standards to these settings;
- * npm run lint:js, and so CI, runs that file.
+ * (`@wordpress/eslint-plugin`) or the WordPress browser list that the
+ * browser-support check reads from package.json. eslint.wordpress.config.mjs
+ * adds both to these settings; npm run lint:js, and so CI, runs that file.
  */
-import compat from 'eslint-plugin-compat';
 import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
 
@@ -101,11 +98,6 @@ export const projectConfigs = [
 			'prefer-spread': 'error',
 			'prefer-template': 'error',
 		},
-	},
-	{
-		// The browsers come from the "browserslist" entry in package.json.
-		...compat.configs[ 'flat/recommended' ],
-		files: [ 'js/**/*.js' ],
 	},
 	{
 		files: [ 'tests/js/**' ],

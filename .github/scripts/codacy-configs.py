@@ -24,10 +24,10 @@ import sys
 import tempfile
 from pathlib import Path
 from typing import Any
-from xml.sax.saxutils import escape, quoteattr  # nosec B406
+from xml.sax.saxutils import escape, quoteattr  # nosec B406  # nosemgrep
 
-# Bandit: every subprocess call in this file runs a fixed argument list without a shell, and
-# xml.sax.saxutils only escapes the text this file writes; nothing here parses XML.
+# Bandit and Opengrep: every subprocess call in this file runs a fixed argument list without a
+# shell, and xml.sax.saxutils only escapes the text this file writes; nothing here parses XML.
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = Path(__file__).resolve().parent
@@ -43,7 +43,7 @@ MESSAGE_CODE_DOTS = 3
 
 def run(command: list[str]) -> str:
     """Run a command from the repository root and return its standard output."""
-    result = subprocess.run(  # nosec B603
+    result = subprocess.run(  # nosec B603  # nosemgrep
         command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", check=False
     )
     if not result.stdout.strip():
