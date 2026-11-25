@@ -101,8 +101,10 @@
     <rule ref="Generic.Commenting.DocComment.TagsNotGrouped">
         <severity>0</severity>
     </rule>
+    <rule ref="Generic.Commenting.Todo"/>
     <rule ref="Generic.ControlStructures.InlineControlStructure"/>
     <rule ref="Generic.Files.ByteOrderMark"/>
+    <rule ref="Generic.Files.ExecutableFile"/>
     <rule ref="Generic.Files.LineEndings">
         <properties>
             <property name="eolChar" value="\n"/>
@@ -130,6 +132,7 @@
     <rule ref="Generic.PHP.BacktickOperator"/>
     <rule ref="Generic.PHP.DeprecatedFunctions"/>
     <rule ref="Generic.PHP.DisallowAlternativePHPTags"/>
+    <rule ref="Generic.PHP.DisallowRequestSuperglobal"/>
     <rule ref="Generic.PHP.DisallowShortOpenTag"/>
     <rule ref="Generic.PHP.DisallowShortOpenTag.EchoFound">
         <severity>5</severity>
@@ -142,6 +145,7 @@
     <rule ref="Generic.PHP.LowerCaseConstant"/>
     <rule ref="Generic.PHP.LowerCaseKeyword"/>
     <rule ref="Generic.PHP.LowerCaseType"/>
+    <rule ref="Generic.PHP.SAPIUsage"/>
     <rule ref="Generic.PHP.Syntax"/>
     <rule ref="Generic.Strings.UnnecessaryHeredoc"/>
     <rule ref="Generic.Strings.UnnecessaryStringConcat">
@@ -173,6 +177,7 @@
         </properties>
     </rule>
     <rule ref="Generic.WhiteSpace.SpreadOperatorSpacingAfter"/>
+    <rule ref="PEAR.ControlStructures.ControlSignature"/>
     <rule ref="PEAR.Files.IncludingFile">
         <severity>0</severity>
     </rule>
@@ -187,6 +192,7 @@
         <severity>5</severity>
         <type>warning</type>
     </rule>
+    <rule ref="PEAR.Formatting.MultiLineAssignment"/>
     <rule ref="PEAR.Functions.FunctionCallSignature">
         <properties>
             <property name="requiredSpacesAfterOpen" value="1"/>
@@ -194,8 +200,14 @@
             <property name="allowMultipleArguments" value="false"/>
         </properties>
     </rule>
+    <rule ref="PEAR.Functions.ValidDefaultValue"/>
     <rule ref="PEAR.NamingConventions.ValidClassName"/>
+    <rule ref="PEAR.WhiteSpace.ObjectOperatorIndent"/>
+    <rule ref="PSR12.Classes.AnonClassDeclaration"/>
     <rule ref="PSR12.Classes.ClassInstantiation"/>
+    <rule ref="PSR12.Classes.ClosingBrace"/>
+    <rule ref="PSR12.ControlStructures.BooleanOperatorPlacement"/>
+    <rule ref="PSR12.Files.DeclareStatement"/>
     <rule ref="PSR12.Files.FileHeader">
         <severity>0</severity>
     </rule>
@@ -205,6 +217,8 @@
     <rule ref="PSR12.Files.FileHeader.IncorrectOrder">
         <severity>5</severity>
     </rule>
+    <rule ref="PSR12.Files.ImportStatement"/>
+    <rule ref="PSR12.Files.OpenTag"/>
     <rule ref="PSR12.Functions.NullableTypeDeclaration"/>
     <rule ref="PSR12.Functions.ReturnTypeDeclaration"/>
     <rule ref="PSR12.Keywords.ShortFormTypeKeywords"/>
@@ -251,6 +265,18 @@
         <severity>5</severity>
     </rule>
     <rule ref="PSR2.Namespaces.NamespaceDeclaration"/>
+    <rule ref="SlevomatCodingStandard.Functions.StaticClosure"/>
+    <rule ref="SlevomatCodingStandard.Functions.UnusedParameter"/>
+    <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
+        <properties>
+            <property name="psr12Compatible" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses"/>
+    <rule ref="SlevomatCodingStandard.Operators.DisallowEqualOperators"/>
+    <rule ref="SlevomatCodingStandard.PHP.OptimizedFunctionsWithoutUnpacking"/>
+    <rule ref="SlevomatCodingStandard.Variables.UnusedVariable"/>
+    <rule ref="SlevomatCodingStandard.Variables.UselessVariable"/>
     <rule ref="Squiz.Classes.SelfMemberReference"/>
     <rule ref="Squiz.Classes.SelfMemberReference.NotUsed">
         <severity>5</severity>
@@ -428,6 +454,7 @@
         <severity>5</severity>
     </rule>
     <rule ref="Squiz.WhiteSpace.CastSpacing"/>
+    <rule ref="Squiz.WhiteSpace.MemberVarSpacing"/>
     <rule ref="Squiz.WhiteSpace.ScopeKeywordSpacing"/>
     <rule ref="Squiz.WhiteSpace.SemicolonSpacing"/>
     <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace"/>
@@ -449,6 +476,7 @@
     <rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable">
         <severity>5</severity>
     </rule>
+    <rule ref="Zend.Files.ClosingTag"/>
     <!-- END GENERATED RULES -->
 
     <!-- Report every message, including those that a standard rates below the default severity of 5. -->

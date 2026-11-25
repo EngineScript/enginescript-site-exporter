@@ -31,7 +31,8 @@
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "automattic/vipwpcs": "^3.0.1",
     "z4kn4fein/php-semver": "^3.0",
-    "rector/rector": "^2.6"
+    "rector/rector": "^2.6",
+    "slevomat/coding-standard": "^8.22.1"
   },
   "suggest": {
     "ext-posix": "Database exports need it to stop the WP-CLI process group; without it they are refused. Not a require because Windows PHP has no POSIX extension"

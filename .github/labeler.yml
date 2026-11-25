@@ -58,6 +58,9 @@ testing:
       - any-glob-to-any-file: stubs/**/*
       - any-glob-to-any-file: phpunit.xml
       - any-glob-to-any-file: phpcs.xml
+      - any-glob-to-any-file: bandit.yml
+      - any-glob-to-any-file: .pylintrc
+      - any-glob-to-any-file: biome.json
       - any-glob-to-any-file: phpcs-wordpress.xml
       - any-glob-to-any-file: phpmd.xml
       - any-glob-to-any-file: phpmd-extra.xml

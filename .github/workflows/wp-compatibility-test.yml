@@ -1347,6 +1347,17 @@ jobs:
         # .mypy.ini names the files and sets the strict mode.
         run: mypy
 
+      - name: Run Pylint
+        id: run_pylint
+        # .pylintrc turns on the checks Codacy's Pylint runs; Codacy reads the same file.
+        run: pylint --rcfile=.pylintrc .github/scripts/*.py
+
+      - name: Run Bandit
+        id: run_bandit
+        # bandit.yml runs every test; Codacy reads the same file. Bandit's default exclusions also
+        # match .github, so -x replaces them.
+        run: bandit --configfile bandit.yml -x node_modules .github/scripts/*.py
+
       - name: Run markdownlint
         id: run_markdownlint
         run: |
@@ -1371,6 +1382,11 @@ jobs:
           npm run --silent lint:css
           python3 .github/scripts/codacy-configs.py stylelint --check
 
+      - name: Run Biome
+        id: run_biome
+        # biome.json turns on the lint rules Codacy's Biome runs; Codacy reads the same file.
+        run: npm run --silent lint:biome
+
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
         if: ${{ always() }}
@@ -1386,9 +1402,12 @@ jobs:
             run_zizmor=${{ steps.run_zizmor.outcome }}
             run_ruff=${{ steps.run_ruff.outcome }}
             run_mypy=${{ steps.run_mypy.outcome }}
+            run_pylint=${{ steps.run_pylint.outcome }}
+            run_bandit=${{ steps.run_bandit.outcome }}
             run_markdownlint=${{ steps.run_markdownlint.outcome }}
             run_eslint=${{ steps.run_eslint.outcome }}
             run_stylelint=${{ steps.run_stylelint.outcome }}
+            run_biome=${{ steps.run_biome.outcome }}
         run: |
           mkdir -p "$RUNNER_TEMP/sse-diagnostics"
           printf '%s\n' "$STEP_RESULTS" > "$RUNNER_TEMP/sse-diagnostics/steps.txt"
@@ -1429,7 +1448,7 @@ jobs:
         uses: JasonEtco/create-an-issue@1b14a70e4d8dc185e5cc76d3bec9eab20257b2c5  # v2.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_node.outcome == 'failure' && 'setup_node' || steps.install_npm_dependencies.outcome == 'failure' && 'install_npm_dependencies' || steps.install_python_linters.outcome == 'failure' && 'install_python_linters' || steps.run_yamllint.outcome == 'failure' && 'run_yamllint' || steps.run_actionlint.outcome == 'failure' && 'run_actionlint' || steps.run_zizmor.outcome == 'failure' && 'run_zizmor' || steps.run_ruff.outcome == 'failure' && 'run_ruff' || steps.run_mypy.outcome == 'failure' && 'run_mypy' || steps.run_markdownlint.outcome == 'failure' && 'run_markdownlint' || steps.run_eslint.outcome == 'failure' && 'run_eslint' || steps.run_stylelint.outcome == 'failure' && 'run_stylelint' || 'unknown_or_canceled' }}
+          FAILURE_STAGE: ${{ steps.checkout_code.outcome == 'failure' && 'checkout_code' || steps.setup_node.outcome == 'failure' && 'setup_node' || steps.install_npm_dependencies.outcome == 'failure' && 'install_npm_dependencies' || steps.install_python_linters.outcome == 'failure' && 'install_python_linters' || steps.run_yamllint.outcome == 'failure' && 'run_yamllint' || steps.run_actionlint.outcome == 'failure' && 'run_actionlint' || steps.run_zizmor.outcome == 'failure' && 'run_zizmor' || steps.run_ruff.outcome == 'failure' && 'run_ruff' || steps.run_mypy.outcome == 'failure' && 'run_mypy' || steps.run_pylint.outcome == 'failure' && 'run_pylint' || steps.run_bandit.outcome == 'failure' && 'run_bandit' || steps.run_markdownlint.outcome == 'failure' && 'run_markdownlint' || steps.run_eslint.outcome == 'failure' && 'run_eslint' || steps.run_stylelint.outcome == 'failure' && 'run_stylelint' || steps.run_biome.outcome == 'failure' && 'run_biome' || 'unknown_or_canceled' }}
           NODE_VERSION: '24'
           RUN_ID: ${{ github.run_id }}
           WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}

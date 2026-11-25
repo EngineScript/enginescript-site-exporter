@@ -34,7 +34,17 @@ SCRIPTS = Path(__file__).resolve().parent
 
 # PHPCS standards that Codacy installs. PHPCompatibilityWP is referenced as a whole standard in
 # phpcs.xml's hand-written part, so its sniffs are not listed one by one.
-CODACY_PHPCS_STANDARDS = ("Generic", "PEAR", "PSR1", "PSR2", "PSR12", "Squiz", "Zend", "VariableAnalysis")
+CODACY_PHPCS_STANDARDS = (
+    "Generic",
+    "PEAR",
+    "PSR1",
+    "PSR2",
+    "PSR12",
+    "Squiz",
+    "Zend",
+    "SlevomatCodingStandard",
+    "VariableAnalysis",
+)
 BEGIN = "    <!-- BEGIN GENERATED RULES: python .github/scripts/codacy-configs.py phpcs -->"
 END = "    <!-- END GENERATED RULES -->"
 # A message code (Standard.Category.Sniff.Code) has three dots; a sniff code has two.

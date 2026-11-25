@@ -8,11 +8,13 @@
   },
   "scripts": {
     "lint:css": "stylelint --config stylelint-wordpress.json \"css/**/*.css\"",
+    "lint:biome": "biome lint .",
     "lint:js": "eslint --config eslint.wordpress.config.mjs --max-warnings 0 .",
     "lint:md": "markdownlint-cli2",
     "test": "node --test \"tests/js/**/*.test.mjs\""
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.14",
     "@wordpress/browserslist-config": "7.2.0",
     "@wordpress/eslint-plugin": "28.2.0",
     "@wordpress/stylelint-config": "27.1.0",

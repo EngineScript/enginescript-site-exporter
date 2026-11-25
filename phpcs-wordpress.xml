@@ -231,6 +231,71 @@
     <!-- Every EngineScript plugin writes arrays one way: the short syntax. -->
     <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
 
+    <!--
+        Checks that Codacy's "WordPress" coding standard also runs, so composer and CI report them first.
+        Each passes on the plugin's code and fits the WordPress style.
+    -->
+    <!-- Leftover TODO comments, executable PHP files, $_REQUEST (it mixes query, form, and cookie
+         values), and php_sapi_name() where the PHP_SAPI constant does. -->
+    <rule ref="Generic.Commenting.Todo"/>
+    <rule ref="Generic.Files.ExecutableFile"/>
+    <rule ref="Generic.PHP.DisallowRequestSuperglobal"/>
+    <rule ref="Generic.PHP.SAPIUsage"/>
+    <!-- Layout that the WordPress standards leave open: control structure signatures, multi-line
+         assignments and chained calls, default values in function signatures, anonymous classes,
+         class closing braces, boolean operators at the start of continued lines, declare
+         statements, use statements, the opening tag, member variable spacing, and no closing tag
+         at the end of a file. -->
+    <rule ref="PEAR.ControlStructures.ControlSignature"/>
+    <rule ref="PEAR.Formatting.MultiLineAssignment"/>
+    <rule ref="PEAR.Functions.ValidDefaultValue"/>
+    <rule ref="PEAR.WhiteSpace.ObjectOperatorIndent"/>
+    <rule ref="PSR12.Classes.AnonClassDeclaration"/>
+    <rule ref="PSR12.Classes.ClosingBrace"/>
+    <rule ref="PSR12.ControlStructures.BooleanOperatorPlacement"/>
+    <rule ref="PSR12.Files.DeclareStatement"/>
+    <rule ref="PSR12.Files.ImportStatement"/>
+    <rule ref="PSR12.Files.OpenTag"/>
+    <rule ref="Squiz.WhiteSpace.MemberVarSpacing"/>
+    <rule ref="Zend.Files.ClosingTag"/>
+    <!-- Slevomat: closures that could be static, unused parameters, variables, and imports, sorted
+         imports, loose == and != comparisons, a variable assigned only to be returned, and
+         unpacking that stops PHP from optimizing a call. -->
+    <rule ref="SlevomatCodingStandard.Functions.StaticClosure"/>
+    <rule ref="SlevomatCodingStandard.Functions.UnusedParameter"/>
+    <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
+        <properties>
+            <property name="psr12Compatible" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses"/>
+    <rule ref="SlevomatCodingStandard.Operators.DisallowEqualOperators"/>
+    <rule ref="SlevomatCodingStandard.PHP.OptimizedFunctionsWithoutUnpacking"/>
+    <rule ref="SlevomatCodingStandard.Variables.UnusedVariable"/>
+    <rule ref="SlevomatCodingStandard.Variables.UselessVariable"/>
+    <!--
+        Codacy's "WordPress" standard also turns on these checks, which this file leaves out because
+        they contradict the WordPress coding standards or do not apply to WordPress code:
+        - Generic.ControlStructures.DisallowYodaConditions: WordPress requires Yoda conditions.
+        - Generic.WhiteSpace.DisallowTabIndent: WordPress indents with tabs.
+        - PEAR.Classes.ClassDeclaration, PEAR.WhiteSpace.ScopeClosingBrace, and
+          PSR12.Classes.OpeningBraceSpace: brace placement; WordPress-Core sets its own.
+        - PEAR.Commenting.FunctionComment: WordPress-Docs has its own function comment rules.
+        - PEAR.ControlStructures.MultiLineCondition, PEAR.Functions.FunctionDeclaration,
+          PSR12.ControlStructures.ControlStructureSpacing, Squiz.WhiteSpace.ControlStructureSpacing,
+          and Squiz.Arrays.ArrayBracketSpacing: WordPress puts spaces inside parentheses and brackets.
+        - Squiz.Arrays.ArrayDeclaration: WordPress.Arrays sets the array layout.
+        - Squiz.Commenting.LongConditionClosingComment and Squiz.Commenting.PostStatementComment:
+          not part of the WordPress style.
+        - Squiz.ControlStructures.ElseIfDeclaration: asks for "else if"; WordPress uses elseif.
+        - Squiz.Formatting.OperatorBracket, Squiz.Operators.ComparisonOperatorUsage, and
+          Squiz.PHP.DisallowInlineIf: not part of the WordPress style, which allows ternaries.
+        - Squiz.WhiteSpace.FunctionClosingBraceSpace and Squiz.WhiteSpace.FunctionSpacing: blank
+          line rules WordPress does not follow.
+        - Squiz.WhiteSpace.OperatorSpacing: WordPress.WhiteSpace.OperatorSpacing applies instead.
+        - Drupal.Semantics.PregSecurity and Drupal.Semantics.RemoteAddress: Drupal rules.
+    -->
+
     <!-- Set minimum WordPress version for deprecated function checks -->
     <config name="minimum_wp_version" value="7.0"/>
     <config name="testVersion" value="8.3-"/>

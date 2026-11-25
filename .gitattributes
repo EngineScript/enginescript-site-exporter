@@ -23,6 +23,9 @@
 /package.json export-ignore
 /package-lock.json export-ignore
 /phpcs.xml export-ignore
+/bandit.yml export-ignore
+/.pylintrc export-ignore
+/biome.json export-ignore
 /phpcs-wordpress.xml export-ignore
 /phpmd.xml export-ignore
 /phpmd-extra.xml export-ignore

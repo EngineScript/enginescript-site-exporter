@@ -66,6 +66,8 @@
 /eslint.config.mjs
 /eslint.wordpress.config.mjs
 /phpcs.xml
+/bandit.yml
+/biome.json
 /phpcs-wordpress.xml
 /phpmd.xml
 /phpmd-extra.xml
