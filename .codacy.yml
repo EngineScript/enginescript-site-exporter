@@ -1,5 +1,11 @@
 ---
 # Codacy configuration
+#
+# With each tool's "Configuration file" setting on, Codacy reads phpcs.xml, phpmd.xml,
+# eslint.config.mjs, .stylelintrc.json, and .markdownlint.json. Codacy installs no WordPress
+# standards or packages, so those files hold only what it can run; CI runs the full
+# configurations (phpcs-wordpress.xml, phpmd.xml with phpmd-extra.xml,
+# eslint.wordpress.config.mjs, stylelint-wordpress.json). See CONTRIBUTING.md.
 
 engines:
   # Lizard reads the lock files as source code and reports their length.

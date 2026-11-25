@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="WordPress Plugin Coding Standards">
+    <description>WordPress coding standards</description>
+
+    <!-- Files to check -->
+    <file>.</file>
+
+    <!-- Exclude patterns -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/.private/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/tests/*</exclude-pattern>
+    <exclude-pattern>*/.git/*</exclude-pattern>
+    <exclude-pattern>*/.github/*</exclude-pattern>
+    <exclude-pattern>*/build/*</exclude-pattern>
+    <exclude-pattern>*/dist/*</exclude-pattern>
+    <exclude-pattern>*/stubs/*</exclude-pattern>
+    <exclude-pattern>*.css</exclude-pattern>
+    <exclude-pattern>*.js</exclude-pattern>
+
+    <!-- Use WordPress-Extra coding standards (includes WordPress-Core) -->
+    <rule ref="WordPress-Extra">
+        <!-- Allow short array syntax [] instead of array() -->
+        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+        
+        <!-- Allow longer lines for readability -->
+        <exclude name="Generic.Files.LineLength"/>
+    </rule>
+
+    <!-- WordPress VIP Go coding standards. -->
+    <rule ref="WordPress-VIP-Go">
+        <!-- VIPCS 3 registers JS sniffs that PHPCS 3.13 marks deprecated. -->
+        <exclude name="WordPressVIPMinimum.JS.DangerouslySetInnerHTML"/>
+        <exclude name="WordPressVIPMinimum.JS.HTMLExecutingFunctions"/>
+        <exclude name="WordPressVIPMinimum.JS.InnerHTML"/>
+        <exclude name="WordPressVIPMinimum.JS.StringConcat"/>
+        <exclude name="WordPressVIPMinimum.JS.StrippingTags"/>
+        <exclude name="WordPressVIPMinimum.JS.Window"/>
+        <!--
+            WordPress.PHP.NoSilencedErrors (from WordPress-Extra) already checks the @ operator, and
+            allows it only on functions whose failure the calling code handles. This sniff forbids it
+            on every function, including those.
+        -->
+        <exclude name="Generic.PHP.NoSilencedErrors"/>
+    </rule>
+
+    <!--
+        WordPress-VIP-Go switches the checks below off, because they do not matter on the VIP
+        platform. This plugin runs on other hosts as well, so each one gets its default severity back.
+    -->
+    <rule ref="Generic.PHP.DisallowShortOpenTag.EchoFound">
+        <severity>5</severity>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EmptyLines">
+        <severity>5</severity>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EndLine">
+        <severity>5</severity>
+    </rule>
+    <rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_key">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput.MissingUnslash">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chgrp">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chmod">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chown">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fclose">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fputs">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fwrite">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_is_writable">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_is_writeable">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_mkdir">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_readfile">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_rmdir">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_touch">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.rename_rename">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.strip_tags_strip_tags">
+        <severity>5</severity>
+    </rule>
+    <rule ref="WordPress.WP.AlternativeFunctions.unlink_unlink">
+        <severity>5</severity>
+    </rule>
+
+    <!-- WordPress documentation standards -->
+    <rule ref="WordPress-Docs"/>
+
+    <!-- COMMENTED OUT: These rules enforce spaces instead of tabs, which conflicts with WordPress standards -->
+    <!-- WordPress standards actually require TABS for indentation, not spaces -->
+    <!-- 
+    <rule ref="Generic.WhiteSpace.DisallowTabIndent">
+    </rule>
+    <rule ref="Generic.WhiteSpace.ScopeIndent">
+        <properties>
+            <property name="indent" value="4"/>
+            <property name="tabIndent" value="false"/>
+        </properties>
+    </rule>
+    -->
+
+    <!-- COMMENTED OUT: Disallow Rule Flagging Space Indents - not needed with tab indentation -->
+    <!--
+    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent">
+        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
+    </rule>
+
+    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed">
+        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed"/>
+    </rule>
+    -->
+
+    <!-- COMMENTED OUT: Disallow inline tabs - WordPress allows tabs for indentation -->
+    <!--
+    <rule ref="Universal.WhiteSpace.DisallowInlineTabs">
+    </rule>
+    -->
+
+    <!-- Additional WordPress-specific spacing rules -->
+    <rule ref="WordPress.WhiteSpace.ControlStructureSpacing"/>
+    <rule ref="WordPress.WhiteSpace.OperatorSpacing"/>
+
+    <!-- Enforce WordPress indentation standards -->
+    <rule ref="WordPress.Arrays.ArrayIndentation"/>
+    <rule ref="WordPress.Arrays.MultipleStatementAlignment"/>
+
+    <!-- WordPress function call formatting -->
+    <rule ref="PEAR.Functions.FunctionCallSignature">
+        <properties>
+            <property name="allowMultipleArguments" value="false"/>
+        </properties>
+    </rule>
+
+    <!-- WordPress class and method formatting -->
+    <rule ref="PSR2.Classes.ClassDeclaration"/>
+    <rule ref="PSR2.Methods.MethodDeclaration"/>
+
+    <!-- File formatting -->
+    <rule ref="Generic.Files.ByteOrderMark"/>
+    <rule ref="Generic.Files.LineEndings">
+        <properties>
+            <property name="eolChar" value="\n"/>
+        </properties>
+    </rule>
+
+    <!-- WordPress security and best practices -->
+    <rule ref="WordPress.Security"/>
+
+    <!-- WordPress internationalization configuration -->
+    <rule ref="WordPress.WP.I18n">
+        <properties>
+            <!-- Set the text domain for internationalization -->
+            <property name="text_domain" type="array">
+                <element value="enginescript-site-exporter"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- Every function, class, constant, global variable and hook that the plugin declares starts with its prefix. -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <properties>
+            <property name="prefixes" type="array">
+                <element value="esse"/>
+            </property>
+        </properties>
+    </rule>
+
+    <!-- WordPress naming conventions (snake_case) -->
+    <rule ref="WordPress.NamingConventions.ValidFunctionName"/>
+    <rule ref="WordPress.NamingConventions.ValidVariableName"/>
+    <rule ref="WordPress.NamingConventions.ValidHookName"/>
+
+    <!-- WordPress PHP compatibility -->
+    <rule ref="PHPCompatibilityWP">
+        <include-pattern>*\.php$</include-pattern>
+    </rule>
+
+    <!-- PHPCSExtra standards for additional code quality checks -->
+    <rule ref="Modernize"/>
+
+    <!-- Allow PHP short array syntax. -->
+    <rule ref="Universal.Arrays.DisallowShortArraySyntax">
+        <severity>0</severity>
+    </rule>
+
+    <rule ref="NormalizedArrays">
+        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
+    </rule>
+
+    <!-- Every EngineScript plugin writes arrays one way: the short syntax. -->
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+
+    <!-- Set minimum WordPress version for deprecated function checks -->
+    <config name="minimum_wp_version" value="7.0"/>
+    <config name="testVersion" value="8.3-"/>
+
+    <!-- Report every message, including those that a standard rates below the default severity of 5. -->
+    <arg name="severity" value="1"/>
+
+    <!-- Show progress -->
+    <arg value="p"/>
+    
+    <!-- Show sniff codes in all reports -->
+    <arg value="s"/>
+    
+    <!-- Use colors in output -->
+    <arg name="colors"/>
+
+</ruleset>

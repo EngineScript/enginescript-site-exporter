@@ -59,7 +59,9 @@
     
     <!-- Naming Rules. The camelCase rules are in the controversial ruleset. -->
     <rule ref="rulesets/naming.xml">
-        <!-- Added again below with a limit that fits prefixed WordPress names. -->
+        <!-- LongVariable is added again below, and LongMethodName in phpmd-extra.xml, with limits that
+             fit prefixed WordPress names. LongMethodName is a PHPMD 3 rule; Codacy reads this file
+             with PHPMD 2, which stops on a rule it does not know. -->
         <exclude name="LongVariable"/>
         <exclude name="LongMethodName"/>
     </rule>
@@ -71,12 +73,6 @@
         </properties>
     </rule>
 
-    <rule ref="rulesets/naming.xml/LongMethodName">
-        <properties>
-            <!-- Function names start with the plugin prefix; the longest has 47 characters. -->
-            <property name="maximum" value="50"/>
-        </properties>
-    </rule>
     
     <!-- EXPLICITLY EXCLUDED NAMING RULES FOR WORDPRESS COMPATIBILITY -->
     <!-- These rules are NOT included because they conflict with WordPress standards: -->

@@ -7,8 +7,8 @@
     "node": ">=22.22.2"
   },
   "scripts": {
-    "lint:css": "stylelint \"css/**/*.css\"",
-    "lint:js": "eslint --max-warnings 0 .",
+    "lint:css": "stylelint --config stylelint-wordpress.json \"css/**/*.css\"",
+    "lint:js": "eslint --config eslint.wordpress.config.mjs --max-warnings 0 .",
     "lint:md": "markdownlint-cli2",
     "test": "node --test \"tests/js/**/*.test.mjs\""
   },

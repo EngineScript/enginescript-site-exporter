@@ -28,8 +28,8 @@ The Python tools are installed from `.github/lint-requirements.txt`, which pins 
 - **Ruff** (`ruff check` and `ruff format --check`) on `.github/scripts`, with the rules in `.ruff.toml`.
 - **mypy** in strict mode on `.github/scripts`, configured in `.mypy.ini`.
 - **markdownlint** on every Markdown file that git does not ignore (`npm run lint:md`), with the rules in `.markdownlint.json`.
-- **ESLint** with the WordPress JavaScript coding standards (`npm run lint:js`), configured in `eslint.config.mjs`.
-- **Stylelint** on the plugin's CSS files (`npm run lint:css`), with the rules in `.stylelintrc.json`.
+- **ESLint** with the WordPress JavaScript coding standards (`npm run lint:js`), configured in `eslint.wordpress.config.mjs` (the WordPress standards plus `eslint.config.mjs`, which Codacy reads).
+- **Stylelint** on the plugin's CSS files (`npm run lint:css`), with the rules in `stylelint-wordpress.json` (`.stylelintrc.json`, which Codacy reads, is generated from it: `python .github/scripts/codacy-configs.py stylelint`).
 
 ### Next Steps
 

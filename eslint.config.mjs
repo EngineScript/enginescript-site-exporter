@@ -1,14 +1,14 @@
 /**
- * ESLint configuration: the WordPress JavaScript coding standards for
- * the admin script and its tests, plus rules that keep them on modern
- * JavaScript, and a check that the admin script uses only browser features
- * that WordPress supports.
+ * ESLint configuration, without the WordPress JavaScript coding standards:
+ * rules that keep the admin script and its tests on modern JavaScript, and a
+ * check that the admin script uses only browser features that WordPress
+ * supports.
  *
- * The "recommended-with-formatting" set checks formatting with ESLint's own
- * rules. The plain "recommended" set hands formatting to Prettier, whose
- * output does not match the WordPress style without the WordPress fork.
+ * Codacy reads this file, but it does not install the WordPress ESLint plugin
+ * (`@wordpress/eslint-plugin`).
+ * eslint.wordpress.config.mjs adds the WordPress standards to these settings;
+ * npm run lint:js, and so CI, runs that file.
  */
-import wordpress from '@wordpress/eslint-plugin';
 import compat from 'eslint-plugin-compat';
 import unicorn from 'eslint-plugin-unicorn';
 import globals from 'globals';
@@ -70,11 +70,12 @@ const modernizationRules = Object.fromEntries(
 	].map( ( rule ) => [ `unicorn/${ rule }`, 'error' ] ),
 );
 
-export default [
-	{
-		ignores: [ '.private/**', 'coverage/**', 'node_modules/**', 'vendor/**' ],
-	},
-	...wordpress.configs[ 'recommended-with-formatting' ],
+export const ignores = {
+	ignores: [ '.private/**', 'coverage/**', 'node_modules/**', 'vendor/**' ],
+};
+
+// The settings that follow the WordPress standards in eslint.wordpress.config.mjs.
+export const projectConfigs = [
 	{
 		languageOptions: {
 			globals: { ...globals.browser },
@@ -110,6 +111,21 @@ export default [
 		files: [ 'tests/js/**' ],
 		languageOptions: {
 			globals: { ...globals.node },
+		},
+	},
+];
+
+/*
+ * Without the WordPress rules, the code's disable comments for them (no-console,
+ * no-alert) would be reported as unused; the full configuration reports them.
+ */
+export default [
+	ignores,
+	...projectConfigs,
+	{
+		linterOptions: {
+			reportUnusedDisableDirectives: 'off',
+			reportUnusedInlineConfigs: 'off',
 		},
 	},
 ];

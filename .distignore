@@ -64,12 +64,16 @@
 /composer.json
 /composer.lock
 /eslint.config.mjs
+/eslint.wordpress.config.mjs
 /phpcs.xml
+/phpcs-wordpress.xml
 /phpmd.xml
+/phpmd-extra.xml
 /phpstan.neon
 /package.json
 /package-lock.json
 /phpunit.xml
+/stylelint-wordpress.json
 /psalm.xml
 /rector.php
 /tslint.json

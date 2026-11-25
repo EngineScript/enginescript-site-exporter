@@ -256,7 +256,10 @@ jobs:
       - name: Run PHPCS
         id: run_phpcs
         run: |
-          vendor/bin/phpcs --standard=phpcs.xml
+          # phpcs-wordpress.xml is the full standard. phpcs.xml, which Codacy reads, copies the rules
+          # Codacy can run from it; fail when that copy is out of date.
+          vendor/bin/phpcs --standard=phpcs-wordpress.xml
+          python3 .github/scripts/codacy-configs.py phpcs --check
 
           # Static scanner controls; never execute these incompatible PHP fixtures.
           CONTROL_DIR="$RUNNER_TEMP/sse-compat-controls"
@@ -427,7 +430,7 @@ jobs:
                   <!-- Exclude JS-related sniffs to avoid deprecation warnings -->
                   <exclude name="WordPressVIPMinimum.JS"/>
 
-                  <!-- WordPress.PHP.NoSilencedErrors, in phpcs.xml, checks the @ operator with a list of allowed functions -->
+                  <!-- WordPress.PHP.NoSilencedErrors, in phpcs-wordpress.xml, checks the @ operator with a list of allowed functions -->
                   <exclude name="Generic.PHP.NoSilencedErrors"/>
               </rule>
 
@@ -616,7 +619,7 @@ jobs:
           # Use WordPress-specific PHPMD configuration (WordPress snake_case compatible)
           echo "Using WordPress-specific PHPMD configuration (WordPress snake_case compatible)..."
           # PHPMD 3: the analyze command, and one --exclude per directory (a comma list is no longer split).
-          vendor/bin/phpmd analyze . --no-progress --format text --ruleset phpmd.xml --exclude vendor --exclude tests
+          vendor/bin/phpmd analyze . --no-progress --format text --ruleset phpmd.xml --ruleset phpmd-extra.xml --exclude vendor --exclude tests
 
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
@@ -1362,8 +1365,11 @@ jobs:
 
       - name: Run Stylelint
         id: run_stylelint
-        # Stylelint fails by itself when the pattern matches no file.
-        run: npm run --silent lint:css
+        # Stylelint fails by itself when the pattern matches no file. .stylelintrc.json, which Codacy
+        # reads, copies the plain Stylelint rules from stylelint-wordpress.json; fail when it is out of date.
+        run: |
+          npm run --silent lint:css
+          python3 .github/scripts/codacy-configs.py stylelint --check
 
       - name: Preserve diagnostic summary
         id: preserve_diagnostics
