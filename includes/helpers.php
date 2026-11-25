@@ -280,14 +280,9 @@ function esse_log( string $message, string $level = 'info' ): void {
  * @return int Current PHP execution time limit in seconds.
  */
 function esse_get_execution_time_limit(): int {
-	// Get the current execution time limit.
+	// Get the current execution time limit. PHP always defines max_execution_time, so ini_get()
+	// returns a string for it, never false.
 	$max_exec_time = ini_get( 'max_execution_time' );
-
-	// Handle all possible return types from ini_get().
-	if ( false === $max_exec_time ) {
-		// Ini_get failed.
-		return 30;
-	}
 
 	if ( '' === $max_exec_time ) {
 		// Empty string returned.
