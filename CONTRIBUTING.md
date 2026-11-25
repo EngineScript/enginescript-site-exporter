@@ -108,9 +108,18 @@ enginescript-site-exporter/
 |-- LICENSE                             # GPL license
 |-- composer.json                       # PHP dependencies and check scripts
 |-- package.json                        # JavaScript test and linter dependencies
-|-- phpcs.xml                           # PHPCS configuration
+|-- phpcs-wordpress.xml                 # PHPCS configuration (composer phpcs, CI)
+|-- phpcs.xml                           # The part Codacy can run, generated from phpcs-wordpress.xml
 |-- phpstan.neon                        # PHPStan configuration
-|-- phpmd.xml                           # PHPMD configuration
+|-- phpmd.xml                           # PHPMD configuration (Codacy reads it with PHPMD 2)
+|-- phpmd-extra.xml                     # PHPMD 3 rules (composer phpmd and CI pass both files)
+|-- biome.json                          # Biome lint rules (npm run lint:biome, CI, Codacy)
+|-- .pylintrc                           # Pylint checks for .github/scripts (CI, Codacy)
+|-- bandit.yml                          # Bandit settings for .github/scripts (CI, Codacy)
+|-- eslint.wordpress.config.mjs         # ESLint configuration (npm run lint:js, CI)
+|-- eslint.config.mjs                   # Its settings without the WordPress standards, for Codacy
+|-- stylelint-wordpress.json            # Stylelint configuration (npm run lint:css, CI)
+|-- .stylelintrc.json                   # Its plain Stylelint rules, generated for Codacy
 |-- psalm.xml                           # Psalm configuration
 |-- phpunit.xml                         # PHPUnit configuration
 |-- .distignore                         # Files left out of the release package
@@ -118,6 +127,8 @@ enginescript-site-exporter/
 ```
 
 The release package holds the main plugin file, `readme.txt`, `LICENSE`, `includes/`, `css/`, `js/`, and `languages/`. When you add a top-level file or directory, add it to `.distignore` and `.gitattributes` unless it must ship; `.github/scripts/check-plugin-package.py` fails when the package lists disagree.
+
+Codacy reads `phpcs.xml`, `phpmd.xml`, `eslint.config.mjs`, and `.stylelintrc.json`, but it installs no WordPress coding standards, no PHPCSExtra, no WordPress ESLint or Stylelint packages, and only PHPMD 2. Keep those files to what Codacy installs; the full configurations add the rest. After changing `phpcs-wordpress.xml` or `stylelint-wordpress.json`, or updating their packages, regenerate the Codacy copies with `python .github/scripts/codacy-configs.py phpcs` and `python .github/scripts/codacy-configs.py stylelint`. CI fails when they are out of date. Codacy also reads `biome.json`, `.pylintrc`, and `bandit.yml`, and CI runs Biome (`npm run lint:biome`), Pylint, and Bandit with the same files, so a pull request gets every check Codacy runs before Codacy does.
 
 ## Making Changes
 

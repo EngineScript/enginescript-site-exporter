@@ -31,15 +31,16 @@
     "phpcompatibility/phpcompatibility-wp": "^2.1",
     "automattic/vipwpcs": "^3.0.1",
     "z4kn4fein/php-semver": "^3.0",
-    "rector/rector": "^2.6"
+    "rector/rector": "^2.6",
+    "slevomat/coding-standard": "^8.22.1"
   },
   "suggest": {
     "ext-posix": "Database exports need it to stop the WP-CLI process group; without it they are refused. Not a require because Windows PHP has no POSIX extension"
   },
   "scripts": {
-    "phpcs": "phpcs --standard=phpcs.xml",
-    "phpcs:fix": "phpcbf --standard=phpcs.xml",
-    "phpmd": "phpmd analyze . --no-progress --format text --ruleset phpmd.xml --exclude vendor --exclude tests --exclude node_modules --exclude .private",
+    "phpcs": "phpcs --standard=phpcs-wordpress.xml",
+    "phpcs:fix": "phpcbf --standard=phpcs-wordpress.xml",
+    "phpmd": "phpmd analyze . --no-progress --format text --ruleset phpmd.xml --ruleset phpmd-extra.xml --exclude vendor --exclude tests --exclude node_modules --exclude .private",
     "psalm": "psalm --config=psalm.xml --show-info=true",
     "psalm:taint": "psalm --config=psalm.xml --taint-analysis",
     "phpstan": "phpstan analyze --memory-limit=1G",

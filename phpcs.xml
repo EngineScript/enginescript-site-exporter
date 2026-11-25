@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<ruleset name="WordPress Plugin Coding Standards">
-    <description>WordPress coding standards</description>
+<ruleset name="WordPress Plugin Coding Standards (Codacy subset)">
+    <description>The parts of phpcs-wordpress.xml that Codacy can run.</description>
+
+    <!--
+        Codacy reads this file (its PHP_CodeSniffer "Configuration file" setting), but it installs no
+        WordPress coding standards and no PHPCSExtra, so this file holds only the rules from PHPCS's
+        own standards and VariableAnalysis that phpcs-wordpress.xml runs, with the settings the
+        WordPress standards give them, plus PHPCompatibilityWP. Composer and CI run
+        phpcs-wordpress.xml, the full standard.
+
+        Do not edit the rules below by hand. After changing phpcs-wordpress.xml or updating the
+        WordPress standards, regenerate the rules: python .github/scripts/codacy-configs.py phpcs
+    -->
 
     <!-- Files to check -->
     <file>.</file>
@@ -18,232 +29,465 @@
     <exclude-pattern>*.css</exclude-pattern>
     <exclude-pattern>*.js</exclude-pattern>
 
-    <!-- Use WordPress-Extra coding standards (includes WordPress-Core) -->
-    <rule ref="WordPress-Extra">
-        <!-- Allow short array syntax [] instead of array() -->
-        <exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
-        
-        <!-- Allow longer lines for readability -->
-        <exclude name="Generic.Files.LineLength"/>
+    <!-- PHP version compatibility for WordPress plugins, from the plugin's minimum version up. -->
+    <rule ref="PHPCompatibilityWP">
+        <include-pattern>*\.php$</include-pattern>
     </rule>
+    <config name="testVersion" value="8.3-"/>
 
-    <!-- WordPress VIP Go coding standards. -->
-    <rule ref="WordPress-VIP-Go">
-        <!-- VIPCS 3 registers JS sniffs that PHPCS 3.13 marks deprecated. -->
-        <exclude name="WordPressVIPMinimum.JS.DangerouslySetInnerHTML"/>
-        <exclude name="WordPressVIPMinimum.JS.HTMLExecutingFunctions"/>
-        <exclude name="WordPressVIPMinimum.JS.InnerHTML"/>
-        <exclude name="WordPressVIPMinimum.JS.StringConcat"/>
-        <exclude name="WordPressVIPMinimum.JS.StrippingTags"/>
-        <exclude name="WordPressVIPMinimum.JS.Window"/>
-        <!--
-            WordPress.PHP.NoSilencedErrors (from WordPress-Extra) already checks the @ operator, and
-            allows it only on functions whose failure the calling code handles. This sniff forbids it
-            on every function, including those.
-        -->
-        <exclude name="Generic.PHP.NoSilencedErrors"/>
+    <!-- WordPress-Core counts a tab as four columns; the indentation rules below depend on it. -->
+    <arg name="tab-width" value="4"/>
+
+    <!-- BEGIN GENERATED RULES: python .github/scripts/codacy-configs.py phpcs -->
+    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
+    <rule ref="Generic.Classes.DuplicateClassName"/>
+    <rule ref="Generic.Classes.OpeningBraceSameLine"/>
+    <rule ref="Generic.CodeAnalysis.AssignmentInCondition">
+        <severity>1</severity>
     </rule>
-
-    <!--
-        WordPress-VIP-Go switches the checks below off, because they do not matter on the VIP
-        platform. This plugin runs on other hosts as well, so each one gets its default severity back.
-    -->
+    <rule ref="Generic.CodeAnalysis.EmptyPHPStatement"/>
+    <rule ref="Generic.CodeAnalysis.EmptyStatement"/>
+    <rule ref="Generic.CodeAnalysis.ForLoopShouldBeWhileLoop"/>
+    <rule ref="Generic.CodeAnalysis.ForLoopWithTestFunctionCall"/>
+    <rule ref="Generic.CodeAnalysis.JumbledIncrementer"/>
+    <rule ref="Generic.CodeAnalysis.RequireExplicitBooleanOperatorPrecedence"/>
+    <rule ref="Generic.CodeAnalysis.UnconditionalIfStatement"/>
+    <rule ref="Generic.CodeAnalysis.UnnecessaryFinalModifier"/>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter"/>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundBeforeLastUsed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundInExtendedClass">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundInExtendedClassAfterLastUsed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundInExtendedClassBeforeLastUsed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundInImplementedInterface">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundInImplementedInterfaceAfterLastUsed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UnusedFunctionParameter.FoundInImplementedInterfaceBeforeLastUsed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.CodeAnalysis.UselessOverridingMethod"/>
+    <rule ref="Generic.Commenting.DocComment"/>
+    <rule ref="Generic.Commenting.DocComment.ContentAfterOpen">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.ContentBeforeClose">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.NonParamGroup">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.ParamGroup">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.ParamNotFirst">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.SpacingBeforeShort">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.TagValueIndent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.DocComment.TagsNotGrouped">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.Commenting.Todo"/>
+    <rule ref="Generic.ControlStructures.InlineControlStructure"/>
+    <rule ref="Generic.Files.ByteOrderMark"/>
+    <rule ref="Generic.Files.ExecutableFile"/>
+    <rule ref="Generic.Files.LineEndings">
+        <properties>
+            <property name="eolChar" value="\n"/>
+        </properties>
+    </rule>
+    <rule ref="Generic.Files.OneObjectStructurePerFile"/>
+    <rule ref="Generic.Formatting.DisallowMultipleStatements"/>
+    <rule ref="Generic.Formatting.MultipleStatementAlignment">
+        <properties>
+            <property name="maxPadding" value="40"/>
+        </properties>
+    </rule>
+    <rule ref="Generic.Formatting.SpaceAfterCast"/>
+    <rule ref="Generic.Functions.FunctionCallArgumentSpacing"/>
+    <rule ref="Generic.Functions.OpeningFunctionBraceKernighanRitchie">
+        <properties>
+            <property name="checkClosures" value="false"/>
+        </properties>
+    </rule>
+    <rule ref="Generic.Functions.OpeningFunctionBraceKernighanRitchie.ContentAfterBrace">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Generic.NamingConventions.ConstructorName"/>
+    <rule ref="Generic.NamingConventions.UpperCaseConstantName"/>
+    <rule ref="Generic.PHP.BacktickOperator"/>
+    <rule ref="Generic.PHP.DeprecatedFunctions"/>
+    <rule ref="Generic.PHP.DisallowAlternativePHPTags"/>
+    <rule ref="Generic.PHP.DisallowRequestSuperglobal"/>
+    <rule ref="Generic.PHP.DisallowShortOpenTag"/>
     <rule ref="Generic.PHP.DisallowShortOpenTag.EchoFound">
         <severity>5</severity>
     </rule>
+    <rule ref="Generic.PHP.DiscourageGoto">
+        <type>error</type>
+        <message>The "goto" language construct should not be used.</message>
+    </rule>
+    <rule ref="Generic.PHP.ForbiddenFunctions"/>
+    <rule ref="Generic.PHP.LowerCaseConstant"/>
+    <rule ref="Generic.PHP.LowerCaseKeyword"/>
+    <rule ref="Generic.PHP.LowerCaseType"/>
+    <rule ref="Generic.PHP.SAPIUsage"/>
+    <rule ref="Generic.PHP.Syntax"/>
+    <rule ref="Generic.Strings.UnnecessaryHeredoc"/>
+    <rule ref="Generic.Strings.UnnecessaryStringConcat">
+        <properties>
+            <property name="allowMultiline" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="Generic.VersionControl.GitMergeConflict"/>
+    <rule ref="Generic.WhiteSpace.ArbitraryParenthesesSpacing">
+        <properties>
+            <property name="spacing" value="1"/>
+            <property name="ignoreNewlines" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent"/>
+    <rule ref="Generic.WhiteSpace.HereNowdocIdentifierSpacing"/>
+    <rule ref="Generic.WhiteSpace.IncrementDecrementSpacing"/>
+    <rule ref="Generic.WhiteSpace.LanguageConstructSpacing"/>
+    <rule ref="Generic.WhiteSpace.ScopeIndent">
+        <properties>
+            <property name="exact" value="false"/>
+            <property name="indent" value="4"/>
+            <property name="tabIndent" value="true"/>
+            <property name="ignoreIndentationTokens" type="array">
+                <element value="T_HEREDOC"/>
+                <element value="T_NOWDOC"/>
+                <element value="T_INLINE_HTML"/>
+            </property>
+        </properties>
+    </rule>
+    <rule ref="Generic.WhiteSpace.SpreadOperatorSpacingAfter"/>
+    <rule ref="PEAR.ControlStructures.ControlSignature"/>
+    <rule ref="PEAR.Files.IncludingFile">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PEAR.Files.IncludingFile.BracketsNotRequired">
+        <severity>5</severity>
+    </rule>
+    <rule ref="PEAR.Files.IncludingFile.UseRequire">
+        <severity>5</severity>
+        <type>warning</type>
+    </rule>
+    <rule ref="PEAR.Files.IncludingFile.UseRequireOnce">
+        <severity>5</severity>
+        <type>warning</type>
+    </rule>
+    <rule ref="PEAR.Formatting.MultiLineAssignment"/>
+    <rule ref="PEAR.Functions.FunctionCallSignature">
+        <properties>
+            <property name="requiredSpacesAfterOpen" value="1"/>
+            <property name="requiredSpacesBeforeClose" value="1"/>
+            <property name="allowMultipleArguments" value="false"/>
+        </properties>
+    </rule>
+    <rule ref="PEAR.Functions.ValidDefaultValue"/>
+    <rule ref="PEAR.NamingConventions.ValidClassName"/>
+    <rule ref="PEAR.WhiteSpace.ObjectOperatorIndent"/>
+    <rule ref="PSR12.Classes.AnonClassDeclaration"/>
+    <rule ref="PSR12.Classes.ClassInstantiation"/>
+    <rule ref="PSR12.Classes.ClosingBrace"/>
+    <rule ref="PSR12.ControlStructures.BooleanOperatorPlacement"/>
+    <rule ref="PSR12.Files.DeclareStatement"/>
+    <rule ref="PSR12.Files.FileHeader">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR12.Files.FileHeader.IncorrectGrouping">
+        <severity>5</severity>
+    </rule>
+    <rule ref="PSR12.Files.FileHeader.IncorrectOrder">
+        <severity>5</severity>
+    </rule>
+    <rule ref="PSR12.Files.ImportStatement"/>
+    <rule ref="PSR12.Files.OpenTag"/>
+    <rule ref="PSR12.Functions.NullableTypeDeclaration"/>
+    <rule ref="PSR12.Functions.ReturnTypeDeclaration"/>
+    <rule ref="PSR12.Keywords.ShortFormTypeKeywords"/>
+    <rule ref="PSR12.Traits.UseDeclaration"/>
+    <rule ref="PSR12.Traits.UseDeclaration.SpaceAfterComma">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR12.Traits.UseDeclaration.SpaceAfterUse">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR12.Traits.UseDeclaration.SpaceBeforeComma">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR12.Traits.UseDeclaration.UseAfterBrace">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.Classes.ClassDeclaration"/>
+    <rule ref="PSR2.Classes.ClassDeclaration.OpenBraceNewLine">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.Classes.ClassDeclaration.OpenBraceWrongLine">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.Classes.PropertyDeclaration"/>
+    <rule ref="PSR2.Classes.PropertyDeclaration.Underscore">
+        <severity>5</severity>
+    </rule>
+    <rule ref="PSR2.ControlStructures.ElseIfDeclaration"/>
+    <rule ref="PSR2.ControlStructures.SwitchDeclaration"/>
+    <rule ref="PSR2.ControlStructures.SwitchDeclaration.BodyOnNextLine">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.ControlStructures.SwitchDeclaration.BreakNotNewLine">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.ControlStructures.SwitchDeclaration.NotLower">
+        <severity>0</severity>
+    </rule>
+    <rule ref="PSR2.Files.ClosingTag"/>
+    <rule ref="PSR2.Files.EndFileNewline"/>
+    <rule ref="PSR2.Methods.FunctionClosingBrace"/>
+    <rule ref="PSR2.Methods.MethodDeclaration"/>
+    <rule ref="PSR2.Methods.MethodDeclaration.Underscore">
+        <severity>5</severity>
+    </rule>
+    <rule ref="PSR2.Namespaces.NamespaceDeclaration"/>
+    <rule ref="SlevomatCodingStandard.Functions.StaticClosure"/>
+    <rule ref="SlevomatCodingStandard.Functions.UnusedParameter"/>
+    <rule ref="SlevomatCodingStandard.Namespaces.AlphabeticallySortedUses">
+        <properties>
+            <property name="psr12Compatible" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="SlevomatCodingStandard.Namespaces.UnusedUses"/>
+    <rule ref="SlevomatCodingStandard.Operators.DisallowEqualOperators"/>
+    <rule ref="SlevomatCodingStandard.PHP.OptimizedFunctionsWithoutUnpacking"/>
+    <rule ref="SlevomatCodingStandard.Variables.UnusedVariable"/>
+    <rule ref="SlevomatCodingStandard.Variables.UselessVariable"/>
+    <rule ref="Squiz.Classes.SelfMemberReference"/>
+    <rule ref="Squiz.Classes.SelfMemberReference.NotUsed">
+        <severity>5</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.BlockComment"/>
+    <rule ref="Squiz.Commenting.BlockComment.FirstLineIndent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.BlockComment.LastLineIndent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.BlockComment.LineIndent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.BlockComment.NoEmptyLineAfter">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.BlockComment.SingleLine">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.BlockComment.WrongStart">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.ClassComment"/>
+    <rule ref="Squiz.Commenting.ClassComment.TagNotAllowed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.ClosingDeclarationComment"/>
+    <rule ref="Squiz.Commenting.ClosingDeclarationComment.Missing">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.DocCommentAlignment"/>
+    <rule ref="Squiz.Commenting.DocCommentAlignment.SpaceAfterStar">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.EmptyCatchComment"/>
+    <rule ref="Squiz.Commenting.FileComment"/>
+    <rule ref="Squiz.Commenting.FileComment.AuthorTagOrder">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.CopyrightTagOrder">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.IncorrectAuthor">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.IncorrectCopyright">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.MissingAuthorTag">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.MissingCopyrightTag">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.MissingSubpackageTag">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.PackageTagOrder">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FileComment.SubpackageTagOrder">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment"/>
+    <rule ref="Squiz.Commenting.FunctionComment.IncorrectParamVarName">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.InvalidReturn">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.InvalidReturnNotVoid">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.MissingReturn">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.ParamCommentNotCapital">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.ScalarTypeHintMissing">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.SpacingAfterParamName">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionComment.TypeHintMissing">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.FunctionCommentThrowTag"/>
+    <rule ref="Squiz.Commenting.InlineComment"/>
+    <rule ref="Squiz.Commenting.InlineComment.DocBlock">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.InlineComment.NotCapital">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.InlineComment.SpacingAfter">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.VariableComment"/>
+    <rule ref="Squiz.Commenting.VariableComment.IncorrectVarType">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.VariableComment.TagNotAllowed">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Commenting.VariableComment.VarOrder">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.ControlStructures.ControlSignature"/>
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing">
+        <properties>
+            <property name="equalsSpacing" value="1"/>
+            <property name="requiredSpacesAfterOpen" value="1"/>
+            <property name="requiredSpacesBeforeClose" value="1"/>
+        </properties>
+    </rule>
+    <rule ref="Squiz.Functions.FunctionDeclarationArgumentSpacing.SpacingAfterVariadic">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Functions.FunctionDuplicateArgument"/>
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration"/>
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration.BraceIndent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration.BraceOnSameLine">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Functions.MultiLineFunctionDeclaration.BraceSpacing">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Operators.IncrementDecrementUsage"/>
+    <rule ref="Squiz.Operators.ValidLogicalOperators"/>
+    <rule ref="Squiz.PHP.CommentedOutCode">
+        <properties>
+            <property name="maxPercentage" value="40"/>
+        </properties>
+    </rule>
+    <rule ref="Squiz.PHP.DisallowMultipleAssignments"/>
+    <rule ref="Squiz.PHP.DisallowSizeFunctionsInLoops"/>
+    <rule ref="Squiz.PHP.EmbeddedPhp"/>
+    <rule ref="Squiz.PHP.EmbeddedPhp.Indent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.PHP.EmbeddedPhp.OpenTagIndent">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.PHP.EmbeddedPhp.SpacingAfter">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.PHP.EmbeddedPhp.SpacingBefore">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.PHP.Eval">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.PHP.Eval.Discouraged">
+        <severity>5</severity>
+        <type>error</type>
+        <message>`eval()` is a security risk, please refrain from using it.</message>
+    </rule>
+    <rule ref="Squiz.PHP.NonExecutableCode"/>
+    <rule ref="Squiz.Scope.MethodScope"/>
+    <rule ref="Squiz.Strings.ConcatenationSpacing">
+        <properties>
+            <property name="spacing" value="1"/>
+            <property name="ignoreNewlines" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="Squiz.Strings.DoubleQuoteUsage">
+        <severity>0</severity>
+    </rule>
+    <rule ref="Squiz.Strings.DoubleQuoteUsage.NotRequired">
+        <severity>5</severity>
+    </rule>
+    <rule ref="Squiz.WhiteSpace.CastSpacing"/>
+    <rule ref="Squiz.WhiteSpace.MemberVarSpacing"/>
+    <rule ref="Squiz.WhiteSpace.ScopeKeywordSpacing"/>
+    <rule ref="Squiz.WhiteSpace.SemicolonSpacing"/>
+    <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace"/>
     <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EmptyLines">
         <severity>5</severity>
     </rule>
     <rule ref="Squiz.WhiteSpace.SuperfluousWhitespace.EndLine">
         <severity>5</severity>
     </rule>
+    <rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis">
+        <properties>
+            <property name="allowUnusedVariablesBeforeRequire" value="true"/>
+            <property name="allowUndefinedVariablesInFileScope" value="true"/>
+        </properties>
+    </rule>
+    <rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis.UndefinedVariable">
+        <severity>3</severity>
+    </rule>
     <rule ref="VariableAnalysis.CodeAnalysis.VariableAnalysis.UnusedVariable">
         <severity>5</severity>
     </rule>
-    <rule ref="WordPress.DB.SlowDBQuery.slow_db_query_meta_key">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.PHP.DevelopmentFunctions.prevent_path_disclosure_error_reporting">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.Security.EscapeOutput.ExceptionNotEscaped">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.Security.ValidatedSanitizedInput.MissingUnslash">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chgrp">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chmod">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_chown">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fclose">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fputs">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_fwrite">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_is_writable">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_is_writeable">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_mkdir">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_readfile">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_rmdir">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.file_system_operations_touch">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.rename_rename">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.strip_tags_strip_tags">
-        <severity>5</severity>
-    </rule>
-    <rule ref="WordPress.WP.AlternativeFunctions.unlink_unlink">
-        <severity>5</severity>
-    </rule>
-
-    <!-- WordPress documentation standards -->
-    <rule ref="WordPress-Docs"/>
-
-    <!-- COMMENTED OUT: These rules enforce spaces instead of tabs, which conflicts with WordPress standards -->
-    <!-- WordPress standards actually require TABS for indentation, not spaces -->
-    <!-- 
-    <rule ref="Generic.WhiteSpace.DisallowTabIndent">
-    </rule>
-    <rule ref="Generic.WhiteSpace.ScopeIndent">
-        <properties>
-            <property name="indent" value="4"/>
-            <property name="tabIndent" value="false"/>
-        </properties>
-    </rule>
-    -->
-
-    <!-- COMMENTED OUT: Disallow Rule Flagging Space Indents - not needed with tab indentation -->
-    <!--
-    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent">
-        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent"/>
-    </rule>
-
-    <rule ref="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed">
-        <exclude name="Generic.WhiteSpace.DisallowSpaceIndent.SpacesUsed"/>
-    </rule>
-    -->
-
-    <!-- COMMENTED OUT: Disallow inline tabs - WordPress allows tabs for indentation -->
-    <!--
-    <rule ref="Universal.WhiteSpace.DisallowInlineTabs">
-    </rule>
-    -->
-
-    <!-- Additional WordPress-specific spacing rules -->
-    <rule ref="WordPress.WhiteSpace.ControlStructureSpacing"/>
-    <rule ref="WordPress.WhiteSpace.OperatorSpacing"/>
-
-    <!-- Enforce WordPress indentation standards -->
-    <rule ref="WordPress.Arrays.ArrayIndentation"/>
-    <rule ref="WordPress.Arrays.MultipleStatementAlignment"/>
-
-    <!-- WordPress function call formatting -->
-    <rule ref="PEAR.Functions.FunctionCallSignature">
-        <properties>
-            <property name="allowMultipleArguments" value="false"/>
-        </properties>
-    </rule>
-
-    <!-- WordPress class and method formatting -->
-    <rule ref="PSR2.Classes.ClassDeclaration"/>
-    <rule ref="PSR2.Methods.MethodDeclaration"/>
-
-    <!-- File formatting -->
-    <rule ref="Generic.Files.ByteOrderMark"/>
-    <rule ref="Generic.Files.LineEndings">
-        <properties>
-            <property name="eolChar" value="\n"/>
-        </properties>
-    </rule>
-
-    <!-- WordPress security and best practices -->
-    <rule ref="WordPress.Security"/>
-
-    <!-- WordPress internationalization configuration -->
-    <rule ref="WordPress.WP.I18n">
-        <properties>
-            <!-- Set the text domain for internationalization -->
-            <property name="text_domain" type="array">
-                <element value="enginescript-site-exporter"/>
-            </property>
-        </properties>
-    </rule>
-
-    <!-- Every function, class, constant, global variable and hook that the plugin declares starts with its prefix. -->
-    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
-        <properties>
-            <property name="prefixes" type="array">
-                <element value="esse"/>
-            </property>
-        </properties>
-    </rule>
-
-    <!-- WordPress naming conventions (snake_case) -->
-    <rule ref="WordPress.NamingConventions.ValidFunctionName"/>
-    <rule ref="WordPress.NamingConventions.ValidVariableName"/>
-    <rule ref="WordPress.NamingConventions.ValidHookName"/>
-
-    <!-- WordPress PHP compatibility -->
-    <rule ref="PHPCompatibilityWP">
-        <include-pattern>*\.php$</include-pattern>
-    </rule>
-
-    <!-- PHPCSExtra standards for additional code quality checks -->
-    <rule ref="Modernize"/>
-
-    <!-- Allow PHP short array syntax. -->
-    <rule ref="Universal.Arrays.DisallowShortArraySyntax">
-        <severity>0</severity>
-    </rule>
-
-    <rule ref="NormalizedArrays">
-        <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
-    </rule>
-
-    <!-- Every EngineScript plugin writes arrays one way: the short syntax. -->
-    <rule ref="Generic.Arrays.DisallowLongArraySyntax"/>
-
-    <!-- Set minimum WordPress version for deprecated function checks -->
-    <config name="minimum_wp_version" value="7.0"/>
-    <config name="testVersion" value="8.3-"/>
+    <rule ref="Zend.Files.ClosingTag"/>
+    <!-- END GENERATED RULES -->
 
     <!-- Report every message, including those that a standard rates below the default severity of 5. -->
     <arg name="severity" value="1"/>
 
     <!-- Show progress -->
     <arg value="p"/>
-    
+
     <!-- Show sniff codes in all reports -->
     <arg value="s"/>
-    
+
     <!-- Use colors in output -->
     <arg name="colors"/>
 

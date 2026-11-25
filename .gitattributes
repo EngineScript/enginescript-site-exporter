@@ -15,6 +15,7 @@
 /.yamllint.yml export-ignore
 /composer.json export-ignore
 /eslint.config.mjs export-ignore
+/eslint.wordpress.config.mjs export-ignore
 /composer.lock export-ignore
 /CHANGELOG.md export-ignore
 /CONTRIBUTING.md export-ignore
@@ -22,12 +23,18 @@
 /package.json export-ignore
 /package-lock.json export-ignore
 /phpcs.xml export-ignore
+/bandit.yml export-ignore
+/.pylintrc export-ignore
+/biome.json export-ignore
+/phpcs-wordpress.xml export-ignore
 /phpmd.xml export-ignore
+/phpmd-extra.xml export-ignore
 /phpstan.neon export-ignore
 /phpunit.xml export-ignore
 /psalm.xml export-ignore
 /README.md export-ignore
 /rector.php export-ignore
+/stylelint-wordpress.json export-ignore
 /SECURITY.md export-ignore
 /stubs export-ignore
 /tests export-ignore

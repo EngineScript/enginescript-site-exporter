@@ -1,0 +1,3 @@
+# Bandit settings: every test runs, none skipped. Codacy's Bandit reads this file, and the lint job
+# of wp-compatibility-test.yml runs Bandit with it.
+skips: []

@@ -58,7 +58,12 @@ testing:
       - any-glob-to-any-file: stubs/**/*
       - any-glob-to-any-file: phpunit.xml
       - any-glob-to-any-file: phpcs.xml
+      - any-glob-to-any-file: bandit.yml
+      - any-glob-to-any-file: .pylintrc
+      - any-glob-to-any-file: biome.json
+      - any-glob-to-any-file: phpcs-wordpress.xml
       - any-glob-to-any-file: phpmd.xml
+      - any-glob-to-any-file: phpmd-extra.xml
       - any-glob-to-any-file: phpstan.neon
       - any-glob-to-any-file: psalm.xml
       - any-glob-to-any-file: rector.php
@@ -67,6 +72,8 @@ testing:
       - any-glob-to-any-file: .mypy.ini
       - any-glob-to-any-file: .ruff.toml
       - any-glob-to-any-file: eslint.config.mjs
+      - any-glob-to-any-file: eslint.wordpress.config.mjs
       - any-glob-to-any-file: .github/lint-requirements.txt
       - any-glob-to-any-file: .stylelintrc.json
+      - any-glob-to-any-file: stylelint-wordpress.json
       - any-glob-to-any-file: .yamllint.yml
