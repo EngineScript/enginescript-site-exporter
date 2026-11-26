@@ -479,6 +479,15 @@
     <rule ref="Zend.Files.ClosingTag"/>
     <!-- END GENERATED RULES -->
 
+    <!--
+        WordPress-Docs asks for @since on properties and mutes
+        Squiz.Commenting.VariableComment.TagNotAllowed (above). PHPCS 4, which Codacy runs, reports
+        @since under a code of its own that PHPCS 3 does not have, so it is muted here as well.
+    -->
+    <rule ref="Squiz.Commenting.VariableComment.SinceTagNotAllowed">
+        <severity>0</severity>
+    </rule>
+
     <!-- Report every message, including those that a standard rates below the default severity of 5. -->
     <arg name="severity" value="1"/>
 
