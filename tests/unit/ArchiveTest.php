@@ -172,7 +172,7 @@ final class ArchiveTest extends SseTestCase {
 		$this->assertFileDoesNotExist( $paths['combined_zip_path'] );
 	}
 
-	public function test_full_build_stops_at_the_files_step_and_removes_its_staging_directory(): void {
+	public function test_full_build_removes_its_staging_directory_whether_or_not_it_completes(): void {
 		$dump = $this->write( $this->export_dir . '/dump.sql', 'SQL' );
 
 		$result = esse_create_site_archive(
@@ -182,8 +182,22 @@ final class ArchiveTest extends SseTestCase {
 			'20260101_120000'
 		);
 
-		$this->assertInstanceOf( WP_Error::class, $result );
+		// ABSPATH is /var/www/html/: missing on most machines, so the files step fails, but present on
+		// some (GitHub's Ubuntu runner has it), so the build completes. Either outcome must be clean.
 		$this->assertDirectoryDoesNotExist( $this->export_dir . '/staging-20260101_120000' );
+		if ( $result instanceof WP_Error ) {
+			$this->assertFileDoesNotExist( $this->export_dir . '/example.com_enginescript_site_export_20260101_120000.zip' );
+
+			return;
+		}
+
+		$this->assertSame( 'example.com_enginescript_site_export_20260101_120000.zip', $result['filename'] );
+		$zip = new ZipArchive();
+		$this->assertTrue( $zip->open( $result['filepath'] ) );
+		$this->assertNotFalse( $zip->locateName( 'manifest.txt' ) );
+		$this->assertNotFalse( $zip->locateName( 'database/example.com_db_20260101_120000.sql.gz' ) );
+		$this->assertNotFalse( $zip->locateName( 'files/example.com_files_20260101_120000.tar.gz' ) );
+		$zip->close();
 	}
 
 	public function test_full_build_stops_when_the_lease_was_lost(): void {

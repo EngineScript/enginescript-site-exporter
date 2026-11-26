@@ -152,6 +152,7 @@ final class CleanupTest extends SseTestCase {
 		file_put_contents( $this->base . '/stray.txt', 'x' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test fixture.
 		$this->assertFalse( esse_remove_export_base_directory( $this->base ) );
 
+		// nosemgrep: php.lang.security.unlink-use.unlink-use -- a path the test created, or the test double's own argument
 		unlink( $this->base . '/stray.txt' );
 		file_put_contents( $this->base . '/.htaccess', 'Deny from all' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Test fixture.
 		$this->assertTrue( esse_remove_export_base_directory( $this->base ) );

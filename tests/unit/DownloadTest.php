@@ -139,6 +139,7 @@ final class DownloadTest extends SseTestCase {
 
 		$this->assertSame( 'download_identity_changed', esse_open_validated_export_download( array_merge( $file, array( 'filesize' => 1 ) ) )->get_error_code() );
 
+		// nosemgrep: php.lang.security.unlink-use.unlink-use -- a path the test created, or the test double's own argument
 		unlink( $this->archive_path() );
 		$this->assertSame( 'invalid_download_path', esse_open_validated_export_download( $file )->get_error_code() );
 	}

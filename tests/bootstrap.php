@@ -267,6 +267,7 @@ class WP_Filesystem_Direct {
 	 */
 	public function delete( $file, $recursive = false, $type = false ) {
 		if ( 'f' === $type || is_file( $file ) || is_link( $file ) ) {
+			// nosemgrep: php.lang.security.unlink-use.unlink-use -- a path the test created, or the test double's own argument
 			return @unlink( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Mirrors WordPress.
 		}
 
@@ -1059,6 +1060,7 @@ function wp_mkdir_p( $target ) {
  * @return bool Deleted or not.
  */
 function wp_delete_file( $file ) {
+	// nosemgrep: php.lang.security.unlink-use.unlink-use -- a path the test created, or the test double's own argument
 	return @unlink( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Mirrors WordPress.
 }
 
@@ -1080,6 +1082,7 @@ function wp_delete_file_from_directory( $file, $directory ) {
 		return false;
 	}
 
+	// nosemgrep: php.lang.security.unlink-use.unlink-use -- a path the test created, or the test double's own argument
 	return @unlink( $real_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Mirrors WordPress.
 }
 
