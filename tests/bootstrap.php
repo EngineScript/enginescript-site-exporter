@@ -112,6 +112,13 @@ class WP_Error {
 class WP_Filesystem_Direct {
 
 	/**
+	 * Modes set through chmod(), reported back by getchmod() on systems without POSIX modes.
+	 *
+	 * @var array<string, int>
+	 */
+	public static array $modes = array();
+
+	/**
 	 * Whether a path exists.
 	 *
 	 * @param string $path Path.
@@ -129,6 +136,184 @@ class WP_Filesystem_Direct {
 	 */
 	public function is_dir( $path ) {
 		return is_dir( $path );
+	}
+
+	/**
+	 * Whether a path is a regular file.
+	 *
+	 * @param string $path Path.
+	 * @return bool
+	 */
+	public function is_file( $path ) {
+		return is_file( $path );
+	}
+
+	/**
+	 * Whether a path is readable.
+	 *
+	 * @param string $path Path.
+	 * @return bool
+	 */
+	public function is_readable( $path ) {
+		return is_readable( $path );
+	}
+
+	/**
+	 * Whether a path is writable.
+	 *
+	 * @param string $path Path.
+	 * @return bool
+	 */
+	public function is_writable( $path ) {
+		return is_writable( $path );
+	}
+
+	/**
+	 * Modification time.
+	 *
+	 * @param string $path Path.
+	 * @return int|false
+	 */
+	public function mtime( $path ) {
+		return @filemtime( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Mirrors WordPress.
+	}
+
+	/**
+	 * File size.
+	 *
+	 * @param string $path Path.
+	 * @return int|false
+	 */
+	public function size( $path ) {
+		return @filesize( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Mirrors WordPress.
+	}
+
+	/**
+	 * Permissions as an octal string, as WordPress returns them.
+	 *
+	 * @param string $path Path.
+	 * @return string
+	 */
+	public function getchmod( $path ) {
+		// Windows keeps no POSIX permissions, so the mode a test set is reported back, as on Linux.
+		if ( isset( self::$modes[ $path ] ) && file_exists( $path ) ) {
+			return substr( decoct( self::$modes[ $path ] ), -3 );
+		}
+
+		return substr( decoct( (int) @fileperms( $path ) ), -3 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Mirrors WordPress.
+	}
+
+	/**
+	 * Change permissions.
+	 *
+	 * @param string    $path Path.
+	 * @param int|false $mode Mode.
+	 * @return bool
+	 */
+	public function chmod( $path, $mode = false ) {
+		if ( false === $mode || ! @chmod( $path, $mode ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Mirrors WordPress.
+			return false;
+		}
+
+		self::$modes[ $path ] = $mode;
+		return true;
+	}
+
+	/**
+	 * Write a file.
+	 *
+	 * @param string    $path     Path.
+	 * @param string    $contents Contents.
+	 * @param int|false $mode     Mode.
+	 * @return bool
+	 */
+	public function put_contents( $path, $contents, $mode = false ) {
+		if ( false === @file_put_contents( $path, $contents ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- Mirrors WordPress.
+			return false;
+		}
+
+		return false === $mode || chmod( $path, $mode );
+	}
+
+	/**
+	 * Create a directory.
+	 *
+	 * @param string    $path  Path.
+	 * @param int|false $chmod Mode.
+	 * @return bool
+	 */
+	public function mkdir( $path, $chmod = false ) {
+		return @mkdir( $path, false === $chmod ? 0755 : $chmod ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Mirrors WordPress.
+	}
+
+	/**
+	 * Remove an empty directory.
+	 *
+	 * @param string $path      Path.
+	 * @param bool   $recursive Whether to remove contents.
+	 * @return bool
+	 */
+	public function rmdir( $path, $recursive = false ) {
+		return $this->delete( $path, $recursive, 'd' );
+	}
+
+	/**
+	 * Delete a file or directory, as WordPress does.
+	 *
+	 * @param string       $file      Path.
+	 * @param bool         $recursive Whether to delete contents.
+	 * @param string|false $type      'f', 'd', or false to detect.
+	 * @return bool
+	 */
+	public function delete( $file, $recursive = false, $type = false ) {
+		if ( 'f' === $type || is_file( $file ) || is_link( $file ) ) {
+			return @unlink( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Mirrors WordPress.
+		}
+
+		if ( ! $recursive ) {
+			return @rmdir( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Mirrors WordPress.
+		}
+
+		foreach ( (array) $this->dirlist( $file, true ) as $entry ) {
+			if ( ! $this->delete( trailingslashit( $file ) . $entry['name'], true, $entry['type'] ) ) {
+				return false;
+			}
+		}
+
+		return @rmdir( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- Mirrors WordPress.
+	}
+
+	/**
+	 * List a directory as WordPress does: entries keyed by name, type 'f' or 'd'.
+	 *
+	 * @param string $path           Directory.
+	 * @param bool   $include_hidden Whether to include dotfiles.
+	 * @param bool   $recursive      Whether to list subdirectories.
+	 * @return array<string, array<string, mixed>>|false
+	 */
+	public function dirlist( $path, $include_hidden = true, $recursive = false ) {
+		if ( ! is_dir( $path ) ) {
+			return false;
+		}
+
+		$entries = array();
+		foreach ( (array) scandir( $path ) as $name ) {
+			if ( '.' === $name || '..' === $name || ( ! $include_hidden && '.' === $name[0] ) ) {
+				continue;
+			}
+
+			$full             = trailingslashit( $path ) . $name;
+			$entry            = array(
+				'name'        => $name,
+				'size'        => is_file( $full ) ? filesize( $full ) : 0,
+				'lastmodunix' => (int) @filemtime( $full ), // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Mirrors WordPress.
+				'type'        => is_dir( $full ) ? 'd' : 'f',
+			);
+			$entry['files']   = 'd' === $entry['type'] && $recursive ? $this->dirlist( $full, $include_hidden, true ) : array();
+			$entries[ $name ] = $entry;
+		}
+
+		return $entries;
 	}
 }
 
@@ -161,7 +346,8 @@ function sse_test_reset(): void {
 		'recurring_event' => array(),
 	);
 
-	unset( $GLOBALS['wp_filesystem'] );
+	unset( $GLOBALS['wp_filesystem'], $GLOBALS['wpdb'], $GLOBALS['esse_export_resource_budget'] );
+	WP_Filesystem_Direct::$modes = array();
 	$_POST = array();
 }
 
@@ -620,6 +806,18 @@ function wp_die( $message = '', $title = '', $args = array() ) {
 }
 
 /**
+ * End the request with a redirect, as wp_safe_redirect() followed by exit does: throws, so the
+ * test sees the target (status 302).
+ *
+ * @param string $location Redirect target.
+ * @return never
+ * @throws Sse_Test_Die_Exception Always.
+ */
+function wp_safe_redirect( $location ) {
+	throw new Sse_Test_Die_Exception( (string) $location, 302 );
+}
+
+/**
  * Check the request's nonce; a failed check ends the request with status 403.
  *
  * @return int
@@ -699,7 +897,12 @@ function delete_transient( $name ) {
  * @param string $hook Hook name.
  * @return int|false
  */
-function wp_next_scheduled( $hook ) {
+function wp_next_scheduled( $hook, $args = array() ) {
+	$single = $GLOBALS['sse_test']['single_events'][ $hook . '|' . serialize( $args ) ] ?? null; // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Event key, as WordPress builds it.
+	if ( null !== $single ) {
+		return $single['time'];
+	}
+
 	return $GLOBALS['sse_test']['recurring_event'][ $hook ]['time'] ?? false;
 }
 
@@ -725,10 +928,159 @@ function wp_schedule_event( $timestamp, $recurrence, $hook ) {
  * @param string $hook Hook name.
  * @return int
  */
-function wp_clear_scheduled_hook( $hook ) {
-	$removed = isset( $GLOBALS['sse_test']['recurring_event'][ $hook ] ) ? 1 : 0;
-	unset( $GLOBALS['sse_test']['recurring_event'][ $hook ] );
+function wp_clear_scheduled_hook( $hook, $args = array() ) {
+	$key     = $hook . '|' . serialize( $args ); // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Event key, as WordPress builds it.
+	$removed = isset( $GLOBALS['sse_test']['recurring_event'][ $hook ] ) || isset( $GLOBALS['sse_test']['single_events'][ $key ] ) ? 1 : 0;
+	unset( $GLOBALS['sse_test']['recurring_event'][ $hook ], $GLOBALS['sse_test']['single_events'][ $key ] );
 	return $removed;
+}
+
+/**
+ * Record a single event, or return the error a test set in schedule_error.
+ *
+ * @param int    $timestamp Run time.
+ * @param string $hook      Hook name.
+ * @param array  $args      Arguments.
+ * @param bool   $wp_error  Whether to return a WP_Error on failure.
+ * @return true|WP_Error
+ */
+function wp_schedule_single_event( $timestamp, $hook, $args = array(), $wp_error = false ) {
+	if ( ! empty( $GLOBALS['sse_test']['schedule_error'] ) ) {
+		return new WP_Error( 'could_not_set', 'The cron event list could not be saved.' );
+	}
+
+	$GLOBALS['sse_test']['single_events'][ $hook . '|' . serialize( $args ) ] = array( // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.serialize_serialize -- Event key, as WordPress builds it.
+		'time' => (int) $timestamp,
+		'hook' => $hook,
+		'args' => $args,
+	);
+	return true;
+}
+
+/**
+ * Remove every event of a hook.
+ *
+ * @param string $hook Hook name.
+ * @return int Number removed.
+ */
+function wp_unschedule_hook( $hook ) {
+	$removed = 0;
+	foreach ( array_keys( $GLOBALS['sse_test']['single_events'] ?? array() ) as $key ) {
+		if ( str_starts_with( $key, $hook . '|' ) ) {
+			unset( $GLOBALS['sse_test']['single_events'][ $key ] );
+			++$removed;
+		}
+	}
+
+	if ( isset( $GLOBALS['sse_test']['recurring_event'][ $hook ] ) ) {
+		unset( $GLOBALS['sse_test']['recurring_event'][ $hook ] );
+		++$removed;
+	}
+
+	$GLOBALS['sse_test']['unscheduled'][] = $hook;
+	return $removed;
+}
+
+/**
+ * Delete an option from the option store, and from the wpdb double when one is set.
+ *
+ * @param string $name Option name.
+ * @return bool True.
+ */
+function delete_option( $name ) {
+	unset( $GLOBALS['sse_test']['options'][ $name ] );
+	$GLOBALS['sse_test']['deleted_options'][] = $name;
+	if ( isset( $GLOBALS['wpdb'] ) && $GLOBALS['wpdb'] instanceof wpdb ) {
+		$GLOBALS['wpdb']->exec( 'DELETE FROM wp_options WHERE option_name = ?', array( $name ) );
+	}
+	return true;
+}
+
+/**
+ * Delete a network option from the wpdb double.
+ *
+ * @param int    $network_id Network ID.
+ * @param string $name       Option name.
+ * @return bool True.
+ */
+function delete_network_option( $network_id, $name ) {
+	$GLOBALS['sse_test']['deleted_network_options'][] = $network_id . ':' . $name;
+	if ( isset( $GLOBALS['wpdb'] ) && $GLOBALS['wpdb'] instanceof wpdb ) {
+		$GLOBALS['wpdb']->exec( 'DELETE FROM wp_sitemeta WHERE site_id = ? AND meta_key = ?', array( $network_id, $name ) );
+	}
+	return true;
+}
+
+/**
+ * Return a page of the site IDs a test set in sites.
+ *
+ * @param array $args Query arguments: number and offset.
+ * @return array<int, int|string>
+ */
+function get_sites( $args = array() ) {
+	return array_slice( $GLOBALS['sse_test']['sites'] ?? array(), (int) ( $args['offset'] ?? 0 ), (int) ( $args['number'] ?? 100 ) );
+}
+
+/**
+ * Record a switch to a site.
+ *
+ * @param int $site_id Site ID.
+ * @return true
+ */
+function switch_to_blog( $site_id ) {
+	$GLOBALS['sse_test']['switched_to'][] = (int) $site_id;
+	return true;
+}
+
+/**
+ * Record a switch back.
+ *
+ * @return true
+ */
+function restore_current_blog() {
+	$GLOBALS['sse_test']['restored'] = ( $GLOBALS['sse_test']['restored'] ?? 0 ) + 1;
+	return true;
+}
+
+/**
+ * Create a directory and its parents, as WordPress does.
+ *
+ * @param string $target Directory.
+ * @return bool Created or already present.
+ */
+function wp_mkdir_p( $target ) {
+	return is_dir( $target ) || @mkdir( $target, 0755, true ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.file_system_operations_mkdir -- Mirrors WordPress.
+}
+
+/**
+ * Delete a file, as WordPress does.
+ *
+ * @param string $file File path.
+ * @return bool Deleted or not.
+ */
+function wp_delete_file( $file ) {
+	return @unlink( $file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Mirrors WordPress.
+}
+
+/**
+ * Delete a file when it is inside a directory, as WordPress does.
+ *
+ * @param string $file      File path.
+ * @param string $directory Directory it must be in.
+ * @return bool Deleted or not.
+ */
+function wp_delete_file_from_directory( $file, $directory ) {
+	if ( ! empty( $GLOBALS['sse_test']['fail_delete'] ) ) {
+		return false;
+	}
+
+	$real_file      = realpath( $file );
+	$real_directory = realpath( $directory );
+	if ( false === $real_file || false === $real_directory || ! str_starts_with( $real_file, rtrim( $real_directory, '/' . chr( 92 ) ) . DIRECTORY_SEPARATOR ) ) {
+		return false;
+	}
+
+	return @unlink( $real_file ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged,WordPress.WP.AlternativeFunctions.unlink_unlink -- Mirrors WordPress.
 }
 
 // --- Admin screens and assets ---------------------------------------------------
@@ -910,6 +1262,9 @@ function wp_date( $format, $timestamp ) {
 }
 
 sse_test_reset();
+
+// The SQLite wpdb double and the option functions that write through it.
+require_once __DIR__ . '/WpdbDouble.php';
 
 require_once dirname( __DIR__ ) . '/enginescript-site-exporter.php';
 

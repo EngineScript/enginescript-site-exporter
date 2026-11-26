@@ -1467,7 +1467,7 @@ jobs:
     env:
       # The unit suite must cover at least this percentage of the production lines. It is set a few
       # points below the measured value, so it stops a real drop without failing on small changes.
-      MINIMUM_LINE_COVERAGE: '15'
+      MINIMUM_LINE_COVERAGE: '58'
 
     steps:
       - name: Checkout code
@@ -1481,7 +1481,7 @@ jobs:
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962  # 2.40.0
         with:
           php-version: '8.4'
-          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml
+          extensions: mysqli, curl, zip, intl, gd, mbstring, fileinfo, xml, pdo_sqlite
           coverage: pcov
           tools: composer:v2
 
