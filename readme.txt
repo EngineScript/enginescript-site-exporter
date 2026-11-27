@@ -3,7 +3,7 @@ Contributors: enginescript
 Tags: backup, export, migration, site export, database export
 Requires at least: 7.0
 Tested up to: 7.1
-Stable tag: 2.1.2
+Stable tag: 2.1.3
 Requires PHP: 8.3
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -121,7 +121,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 Released entries describe their historical versions, including earlier tool results and security claims. They are not guarantees about the current build; see the current installation instructions and FAQs for supported behavior.
 
-= 2.1.3 - Unreleased =
+= 2.1.3 =
 * **Fix**: `manifest.txt` records the site's stored addresses (the `home` and `siteurl` options) as `home_url` and `site_url`, in place of `home_url()` and `site_url()`, which take the scheme of the admin page and pass through plugin filters; the warning that neither `WP_HOME` nor `WP_SITEURL` is defined was removed, because EngineScript's importer reads the address from the manifest
 * **Fix**: A site whose Site Address or WordPress Address has a path (a site in `/blog`, or WordPress in its own `/wp` folder) is no longer exported, because EngineScript only hosts sites at the root of their domain; the exporter page shows an error in place of the export form
 * **Compatibility**: "Tested up to" is declared only in `readme.txt`, not in the plugin header, as Plugin Check 2.2 requires

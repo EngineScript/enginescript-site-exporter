@@ -2,7 +2,7 @@
 /**
  * Plugin Name: EngineScript Site Exporter
  * Description: Exports the site files and the database as an EngineScript-compatible site archive.
- * Version: 2.1.2
+ * Version: 2.1.3
  * Author: EngineScript
  * Requires at least: 7.0
  * Requires PHP: 8.3
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define plugin version.
 if ( ! defined( 'ESSE_VERSION' ) ) {
-	define( 'ESSE_VERSION', '2.1.2' );
+	define( 'ESSE_VERSION', '2.1.3' );
 }
 
 // Define allowed file extensions for export operations.
