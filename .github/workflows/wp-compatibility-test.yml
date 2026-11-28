@@ -438,7 +438,9 @@ jobs:
               <rule ref="WordPressVIPMinimum.Security"/>
               <rule ref="WordPressVIPMinimum.Performance"/>
               <rule ref="WordPressVIPMinimum.UserExperience"/>
-              <rule ref="WordPressVIPMinimum.Functions"/>
+              <rule ref="WordPressVIPMinimum.Functions.CheckReturnValue"/>
+              <rule ref="WordPressVIPMinimum.Functions.RestrictedFunctions"/>
+              <rule ref="WordPressVIPMinimum.Functions.StripTags"/>
               <rule ref="WordPressVIPMinimum.Variables"/>
               <rule ref="WordPressVIPMinimum.Files"/>
               <rule ref="WordPressVIPMinimum.Hooks"/>
